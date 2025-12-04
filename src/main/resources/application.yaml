@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: hrm
+  jpa:
+    hibernate:
+      ddl-auto: update
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/hr_management_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: root
+    password: huyVu@2025
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+jwt:
+    secret-key: "8fB3Kq9x$Zt1@pLh7Qm2#Vr!Wd5Ty*JcGo6UvBn0XyRz%HaPi"
+    expiration: 86400000
+company:
+    email-domain: "congty.abc.com"
