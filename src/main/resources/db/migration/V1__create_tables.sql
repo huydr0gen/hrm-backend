@@ -1,13 +1,11 @@
--- Tạo bảng roles
-CREATE TABLE IF NOT EXISTS roles (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE roles (
+    id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     description VARCHAR(255)
 );
 
--- Tạo bảng employees
-CREATE TABLE IF NOT EXISTS employees (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE employees (
+    id BIGSERIAL PRIMARY KEY,
     code VARCHAR(255) NOT NULL UNIQUE,
     full_name VARCHAR(255) NOT NULL,
     date_of_birth DATE,
@@ -17,23 +15,22 @@ CREATE TABLE IF NOT EXISTS employees (
     phone_number VARCHAR(50)
 );
 
--- Tạo bảng users
-CREATE TABLE IF NOT EXISTS users (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
     username VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     status VARCHAR(50) NOT NULL,
     employee_id BIGINT UNIQUE,
     refresh_token VARCHAR(500),
-    refresh_token_expiry DATETIME,
-    created_at DATETIME,
-    updated_at DATETIME,
-    last_login DATETIME,
-    CONSTRAINT fk_user_employee FOREIGN KEY (employee_id) REFERENCES employees(id)
+    refresh_token_expiry TIMESTAMP,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    last_login TIMESTAMP,
+    CONSTRAINT fk_user_employee 
+        FOREIGN KEY (employee_id) REFERENCES employees(id)
 );
 
--- Bảng user_roles (many-to-many)
-CREATE TABLE IF NOT EXISTS user_roles (
+CREATE TABLE user_roles (
     user_id BIGINT NOT NULL,
     role_id BIGINT NOT NULL,
     PRIMARY KEY (user_id, role_id),
