@@ -1,12 +1,10 @@
 services:
   - type: web
     name: hrm-backend
-    env: java
+    runtime: docker
     plan: free
     buildCommand: "./mvnw clean package -DskipTests"
-    startCommand: "java -jar target/hrm-0.0.1-SNAPSHOT.jar"
+    startCommand: ""   # để trống vì Dockerfile đã define ENTRYPOINT
     envVars:
-      - key: JAVA_VERSION
-        value: 21
       - key: SPRING_PROFILES_ACTIVE
         value: prod
