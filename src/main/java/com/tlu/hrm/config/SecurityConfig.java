@@ -45,10 +45,11 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
             		.requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
             		.requestMatchers(
-            				"/v3/api-docs/**",
-                            "/swagger-ui/**",
-                            "/swagger-resources/**",
-                            "/webjars/**"
+            				 "/swagger-ui.html",
+            				 "/swagger-ui/**",
+            				 "/v3/api-docs/**",
+            				 "/swagger-resources/**",
+            				 "/webjars/**"
                             ).permitAll()
             		.anyRequest().authenticated())
             .authenticationProvider(authenticationProvider())
