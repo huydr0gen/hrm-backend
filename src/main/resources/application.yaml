@@ -16,8 +16,17 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     validate-on-migrate: true
+springdoc:
+  api-docs:
+    enabled: true
+    path: /api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+server: 
+  forward-headers-strategy: framework
 jwt:
-    secret-key: "8fB3Kq9x$Zt1@pLh7Qm2#Vr!Wd5Ty*JcGo6UvBn0XyRz%HaPi"
-    expiration: 86400000
+    secret-key: "3f8c1e9b6a24d7f0c92e4b71a3fd58c1e6ad47b29ac3f410b9c83db41ff29a3e"
+    expiration: 1800000
 company:
     email-domain: "congty.abc.com"

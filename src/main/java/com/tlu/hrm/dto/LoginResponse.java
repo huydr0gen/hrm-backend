@@ -10,8 +10,8 @@ public class LoginResponse {
     private String username;
     private Set<String> roles;
     private UserStatus status;
+    private String refreshToken;
     private LocalDateTime lastLogin;
-    
 	public String getToken() {
 		return token;
 	}
@@ -35,6 +35,12 @@ public class LoginResponse {
 	}
 	public void setStatus(UserStatus status) {
 		this.status = status;
+	}
+	public String getRefreshToken() {
+		return refreshToken;
+	}
+	public void setRefreshToken(String refreshToken) {
+		this.refreshToken = refreshToken;
 	}
 	public LocalDateTime getLastLogin() {
 		return lastLogin;
