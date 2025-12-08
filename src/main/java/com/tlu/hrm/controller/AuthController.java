@@ -12,16 +12,17 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.tlu.hrm.dto.LoginRequest;
 import com.tlu.hrm.dto.LoginResponse;
+import com.tlu.hrm.dto.RefreshTokenRequest;
 import com.tlu.hrm.entities.User;
 import com.tlu.hrm.enums.UserStatus;
 import com.tlu.hrm.repository.UserRepository;
 import com.tlu.hrm.security.JwtProvider;
-import com.tlu.hrm.service.RefreshTokenService;
+import com.tlu.hrm.service.AuditLogService;
+import com.tlu.hrm.service.UserService;
 
 @RestController
 @RequestMapping("/auth")
@@ -29,96 +30,96 @@ public class AuthController {
 	
 	private final AuthenticationManager authenticationManager;
 	
-	private final JwtProvider jwtProvider;
-	
-	private final UserRepository userRepository;
-	
-	private final RefreshTokenService refreshTokenService;
-	
+    private final JwtProvider jwtProvider;
+    
+    private final UserRepository userRepository;
+    
+    private final UserService userService;
+    
+    private final AuditLogService auditLogService;
+
 	public AuthController(AuthenticationManager authenticationManager, JwtProvider jwtProvider,
-			UserRepository userRepository, RefreshTokenService refreshTokenService) {
+			UserRepository userRepository, UserService userService, AuditLogService auditLogService) {
 		super();
 		this.authenticationManager = authenticationManager;
 		this.jwtProvider = jwtProvider;
 		this.userRepository = userRepository;
-		this.refreshTokenService = refreshTokenService;
+		this.userService = userService;
+		this.auditLogService = auditLogService;
 	}
 
+	// LOGIN -----------------------------------------------------------------------
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
 
+        User user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new BadCredentialsException("Invalid username or password"));
 
-	@PostMapping("/login")
-	public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
-		User user = userRepository.findByUsername(request.getUsername())
-	            .orElseThrow(() -> new BadCredentialsException("Invalid username or password"));
+        if (user.getStatus() == UserStatus.INACTIVE)
+            throw new DisabledException("Your account is inactive");
 
-	    if (user.getStatus() == UserStatus.INACTIVE) {
-	        throw new DisabledException("Your account is inactive");
-	    }
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+            );
+        } catch (BadCredentialsException e) {
 
-	    Authentication authentication;
-	    try {
-	        authentication = authenticationManager.authenticate(
-	                new UsernamePasswordAuthenticationToken(
-	                        request.getUsername(),
-	                        request.getPassword()));
-	    } catch (BadCredentialsException e) {
-	        throw new BadCredentialsException("Invalid username or password");
-	    }
+            // ⭐ GHI LOG khi login failed
+            auditLogService.log(null, "LOGIN_FAILED", "Username: " + request.getUsername());
 
-	    SecurityContextHolder.getContext().setAuthentication(authentication);
+            throw new BadCredentialsException("Invalid username or password");
+        }
 
-	    String accessToken = jwtProvider.generateToken(user.getUsername());
+        String accessToken = jwtProvider.generateAccessToken(user.getUsername());
+        String refreshToken = jwtProvider.generateRefreshToken(user.getUsername());
 
-	    String refreshToken = refreshTokenService.createRefreshToken(user);
+        userService.updateRefreshToken(user.getId(), refreshToken);
 
-	    user.setLastLogin(java.time.LocalDateTime.now());
-	    userRepository.save(user);
+        user.setLastLogin(java.time.LocalDateTime.now());
+        userRepository.save(user);
 
-	    LoginResponse response = new LoginResponse();
-	    response.setToken(accessToken);
-	    response.setRefreshToken(refreshToken);
-	    response.setUsername(user.getUsername());
-	    response.setRoles(
-	            user.getRoles().stream()
-	                    .map(r -> r.getName())
-	                    .collect(Collectors.toSet()));
-	    response.setStatus(user.getStatus());
-	    response.setLastLogin(user.getLastLogin());
+        // ⭐ GHI LOG login thành công
+        auditLogService.log(user.getId(), "LOGIN_SUCCESS", "User logged in successfully");
 
-	    return ResponseEntity.ok(response);
-	}
-	
-	@PostMapping("/refresh")
-	public ResponseEntity<?> refreshToken(@RequestParam("refreshToken") String requestToken) {
+        return ResponseEntity.ok(buildResponse(user, accessToken, refreshToken));
+    }
 
-	    User user = userRepository.findByRefreshToken(requestToken)
-	            .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+    // REFRESH TOKEN -------------------------------------------------------------------
+    @PostMapping("/refresh")
+    public ResponseEntity<LoginResponse> refresh(@RequestBody RefreshTokenRequest request) {
 
-	    if (refreshTokenService.isRefreshTokenExpired(user)) {
-	        refreshTokenService.revokeRefreshToken(user);
-	        throw new RuntimeException("Refresh token expired");
-	    }
+        User user = userRepository.findByRefreshToken(request.getRefreshToken())
+                .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
 
-	    // Tạo access token mới
-	    String newAccessToken = jwtProvider.generateToken(user.getUsername());
+        if (!jwtProvider.validateToken(request.getRefreshToken())) {
 
-	    // Tạo refresh token mới (tuỳ chọn)
-	    String newRefreshToken = refreshTokenService.createRefreshToken(user);
+            // ⭐ Log refresh token bị từ chối
+            auditLogService.log(user.getId(), "REFRESH_TOKEN_FAILED", "Expired or invalid refresh token");
 
-	    LoginResponse response = new LoginResponse();
-	    response.setToken(newAccessToken);
-	    response.setRefreshToken(newRefreshToken);
-	    response.setUsername(user.getUsername());
-	    response.setRoles(
-	            user.getRoles().stream()
-	                    .map(r -> r.getName())
-	                    .collect(Collectors.toSet()));
-	    response.setStatus(user.getStatus());
-	    response.setLastLogin(user.getLastLogin());
+            throw new RuntimeException("Refresh token expired or invalid");
+        }
 
-	    return ResponseEntity.ok(response);
-	}
-	
-	
+        String newAccessToken = jwtProvider.generateAccessToken(user.getUsername());
+        String newRefreshToken = jwtProvider.generateRefreshToken(user.getUsername());
+
+        userService.updateRefreshToken(user.getId(), newRefreshToken);
+
+        // ⭐ Log refresh token thành công
+        auditLogService.log(user.getId(), "REFRESH_TOKEN_SUCCESS", "Refresh token rotated successfully");
+
+        return ResponseEntity.ok(buildResponse(user, newAccessToken, newRefreshToken));
+    }
+
+    // BUILD RESPONSE -----------------------------------------------------------------
+    private LoginResponse buildResponse(User user, String accessToken, String refreshToken) {
+        LoginResponse res = new LoginResponse();
+        res.setAccessToken(accessToken);
+        res.setRefreshToken(refreshToken);
+        res.setUsername(user.getUsername());
+        res.setRoles(user.getRoles().stream().map(r -> r.getName()).collect(Collectors.toSet()));
+        res.setStatus(user.getStatus());
+        res.setLastLogin(user.getLastLogin());
+        return res;
+    }
 
 }

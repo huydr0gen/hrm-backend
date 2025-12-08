@@ -4,6 +4,9 @@ import java.text.Normalizer;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -31,14 +34,18 @@ public class UserServiceImpl implements UserService {
 	
 	private final CompanyConfig companyConfig;
 	
+	private final AuditLogService auditLogService;
+	
 	public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository,
-			PasswordEncoder passwordEncoder, EmployeeRepository employeeRepository, CompanyConfig companyConfig) {
+			PasswordEncoder passwordEncoder, EmployeeRepository employeeRepository, 
+			CompanyConfig companyConfig, AuditLogService auditLogService) {
 		super();
 		this.userRepository = userRepository;
 		this.roleRepository = roleRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.employeeRepository = employeeRepository;
 		this.companyConfig = companyConfig;
+		this.auditLogService = auditLogService;
 	}
 
 	@Override
@@ -59,7 +66,16 @@ public class UserServiceImpl implements UserService {
         user.setStatus(UserStatus.ACTIVE);
         user.setEmployee(employee);
 
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+
+        // ⭐ LOG
+        auditLogService.log(
+                saved.getId(),
+                "CREATE_USER_FROM_EMPLOYEE",
+                "User auto-created for employee ID " + employeeId
+        );
+
+        return saved;
     }
 
     @Override
@@ -85,7 +101,16 @@ public class UserServiceImpl implements UserService {
             user.setEmployee(employee);
         }
 
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+
+        // ⭐ LOG
+        auditLogService.log(
+                saved.getId(),
+                "CREATE_USER",
+                "User created: " + saved.getUsername()
+        );
+
+        return saved;
     }
 
     @Override
@@ -105,23 +130,28 @@ public class UserServiceImpl implements UserService {
             user.setStatus(dto.getStatus());
         }
 
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+
+        // ⭐ LOG
+        auditLogService.log(
+                saved.getId(),
+                "UPDATE_USER",
+                "User updated"
+        );
+
+        return saved;
     }
 
     @Override
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
-    }
 
-    @Override
-    public User getUserById(Long id) {
-        return userRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-    }
-
-    @Override
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+        // ⭐ LOG
+        auditLogService.log(
+                id,
+                "DELETE_USER",
+                "User deleted"
+        );
     }
 
     @Override
@@ -129,14 +159,34 @@ public class UserServiceImpl implements UserService {
         User user = getUserById(userId);
         Set<Role> roles = roleRepository.findByNameIn(roleNames);
         user.setRoles(roles);
-        return userRepository.save(user);
+
+        User saved = userRepository.save(user);
+
+        // ⭐ LOG
+        auditLogService.log(
+                userId,
+                "ASSIGN_ROLES",
+                "Roles assigned: " + String.join(", ", roleNames)
+        );
+
+        return saved;
     }
 
     @Override
     public User resetPassword(Long userId) {
         User user = getUserById(userId);
         user.setPassword(passwordEncoder.encode("1"));
-        return userRepository.save(user);
+
+        User saved = userRepository.save(user);
+
+        // ⭐ LOG
+        auditLogService.log(
+                userId,
+                "RESET_PASSWORD",
+                "Password reset to default"
+        );
+
+        return saved;
     }
 
     @Override
@@ -144,6 +194,8 @@ public class UserServiceImpl implements UserService {
         User user = getUserById(id);
         user.setStatus(UserStatus.ACTIVE);
         userRepository.save(user);
+
+        auditLogService.log(id, "ACTIVATE_USER", "Activated");
     }
 
     @Override
@@ -151,6 +203,8 @@ public class UserServiceImpl implements UserService {
         User user = getUserById(id);
         user.setStatus(UserStatus.INACTIVE);
         userRepository.save(user);
+
+        auditLogService.log(id, "DEACTIVATE_USER", "Deactivated");
     }
 
     @Override
@@ -158,6 +212,8 @@ public class UserServiceImpl implements UserService {
         User user = getUserById(id);
         user.setStatus(UserStatus.LOCKED);
         userRepository.save(user);
+
+        auditLogService.log(id, "LOCK_USER", "Account locked");
     }
 
     @Override
@@ -165,6 +221,39 @@ public class UserServiceImpl implements UserService {
         return userRepository.existsByUsername(username);
     }
 
+    @Override
+    public void updateRefreshToken(Long userId, String refreshToken) {
+        User user = getUserById(userId);
+        user.setRefreshToken(refreshToken);
+        userRepository.save(user);
+
+        auditLogService.log(userId, "REFRESH_TOKEN_UPDATE", "Refresh token updated");
+    }
+
+    @Override
+    public Page<User> getUsers(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return userRepository.findAll(pageable);
+    }
+
+    @Override
+    public User getUserByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+    
+    @Override
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+    
+    @Override
+    public User getUserById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    // Generate username helpers
     private String generateBaseUsername(String fullName) {
         fullName = Normalizer.normalize(fullName.trim().toLowerCase(), Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "");
@@ -191,5 +280,4 @@ public class UserServiceImpl implements UserService {
 
         return username;
     }
-	
 }

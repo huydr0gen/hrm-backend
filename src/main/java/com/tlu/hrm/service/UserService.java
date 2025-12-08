@@ -3,11 +3,10 @@ package com.tlu.hrm.service;
 import java.util.List;
 import java.util.Set;
 
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.data.domain.Page;
 
 import com.tlu.hrm.dto.UserCreateDTO;
 import com.tlu.hrm.dto.UserUpdateDTO;
-import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.entities.User;
 
 public interface UserService {
@@ -35,5 +34,11 @@ public interface UserService {
     void lockUser(Long id);          // LOCKED
 
     boolean existsByUsername(String username);
+    
+    void updateRefreshToken(Long userId, String refreshToken);
+    
+    Page<User> getUsers(int page, int size);
+    
+    User getUserByUsername(String username);
 
 }

@@ -30,7 +30,7 @@ public class User {
 	@JoinColumn(name = "employee_id", unique = true)
 	private Employee employee;
 	
-	@ManyToMany(fetch = FetchType.LAZY)
+	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(
 			name = "user_roles",
 			joinColumns = @JoinColumn(name = "user_id"),
@@ -40,9 +40,6 @@ public class User {
 	
 	@Column(name = "refresh_token")
     private String refreshToken;
-
-    @Column(name = "refresh_token_expiry")
-    private LocalDateTime refreshTokenExpiry;
 	
 	@Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -58,7 +55,7 @@ public class User {
 	}
 
 	public User(Long id, String username, String password, UserStatus status, Employee employee, Set<Role> roles,
-			String refreshToken, LocalDateTime refreshTokenExpiry, LocalDateTime createdAt, LocalDateTime updatedAt,
+			String refreshToken, LocalDateTime createdAt, LocalDateTime updatedAt,
 			LocalDateTime lastLogin) {
 		super();
 		this.id = id;
@@ -68,7 +65,6 @@ public class User {
 		this.employee = employee;
 		this.roles = roles;
 		this.refreshToken = refreshToken;
-		this.refreshTokenExpiry = refreshTokenExpiry;
 		this.createdAt = createdAt;
 		this.updatedAt = updatedAt;
 		this.lastLogin = lastLogin;
@@ -106,14 +102,6 @@ public class User {
 
 	public void setRefreshToken(String refreshToken) {
 		this.refreshToken = refreshToken;
-	}
-
-	public LocalDateTime getRefreshTokenExpiry() {
-		return refreshTokenExpiry;
-	}
-
-	public void setRefreshTokenExpiry(LocalDateTime refreshTokenExpiry) {
-		this.refreshTokenExpiry = refreshTokenExpiry;
 	}
 
 	public UserStatus getStatus() {

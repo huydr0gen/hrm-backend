@@ -1,18 +1,23 @@
 package com.tlu.hrm.service;
 
-import java.util.List;
+import org.springframework.data.domain.Page;
 
 import com.tlu.hrm.dto.EmployeeCreateDTO;
-import com.tlu.hrm.entities.Employee;
+import com.tlu.hrm.dto.EmployeeDTO;
+import com.tlu.hrm.dto.EmployeeUpdateDTO;
 
 public interface EmployeeService {
 	
-	Employee createEmployee(EmployeeCreateDTO dto);
+	EmployeeDTO createEmployee(EmployeeCreateDTO dto);
 
-    List<Employee> getAllEmployees();
+    Page<EmployeeDTO> getAllEmployees(int page, int size);
 
-    List<Employee> getEmployeesWithoutUser();
+    EmployeeDTO getEmployeeById(Long id);
 
-    Employee getEmployeeById(Long id);
+    Page<EmployeeDTO> getEmployeesWithoutUser(int page, int size);
+
+    EmployeeDTO updateEmployee(Long id, EmployeeUpdateDTO dto);
+
+    void deleteEmployee(Long id);
 
 }

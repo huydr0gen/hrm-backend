@@ -23,7 +23,7 @@ public class Role {
 	public Role(Long id, String name, String description) {
 		super();
 		this.id = id;
-		this.name = name;
+		this.name = name != null ? name.toUpperCase() : null;
 		this.description = description;
 	}
 
@@ -40,7 +40,7 @@ public class Role {
 	}
 
 	public void setName(String name) {
-		this.name = name;
+		this.name = name != null ? name.toUpperCase() : null;
 	}
 
 	public String getDescription() {

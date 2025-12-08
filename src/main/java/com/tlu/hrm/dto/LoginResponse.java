@@ -6,17 +6,23 @@ import java.util.Set;
 import com.tlu.hrm.enums.UserStatus;
 
 public class LoginResponse {
-	private String token;
+	private String accessToken;
+    private String refreshToken;
     private String username;
     private Set<String> roles;
     private UserStatus status;
-    private String refreshToken;
     private LocalDateTime lastLogin;
-	public String getToken() {
-		return token;
+	public String getAccessToken() {
+		return accessToken;
 	}
-	public void setToken(String token) {
-		this.token = token;
+	public void setAccessToken(String accessToken) {
+		this.accessToken = accessToken;
+	}
+	public String getRefreshToken() {
+		return refreshToken;
+	}
+	public void setRefreshToken(String refreshToken) {
+		this.refreshToken = refreshToken;
 	}
 	public String getUsername() {
 		return username;
@@ -36,18 +42,11 @@ public class LoginResponse {
 	public void setStatus(UserStatus status) {
 		this.status = status;
 	}
-	public String getRefreshToken() {
-		return refreshToken;
-	}
-	public void setRefreshToken(String refreshToken) {
-		this.refreshToken = refreshToken;
-	}
 	public LocalDateTime getLastLogin() {
 		return lastLogin;
 	}
 	public void setLastLogin(LocalDateTime lastLogin) {
 		this.lastLogin = lastLogin;
 	}
-    
 
 }
