@@ -1,6 +1,7 @@
 package com.tlu.hrm.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,4 +16,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 	List<Employee> findByUserIsNull();
 
 	Page<Employee> findByUserIsNull(Pageable pageable);
+	
+	Optional<Employee> findByUserId(Long userId);
 }
