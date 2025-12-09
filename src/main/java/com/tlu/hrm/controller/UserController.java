@@ -36,6 +36,13 @@ public class UserController {
         return ResponseEntity.ok(mapToDto(userService.createUser(dto)));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','HR')")
+    @PostMapping("/from-employee/{employeeId}")
+    public ResponseEntity<UserDTO> createUserFromEmployee(@PathVariable Long employeeId) {
+        User user = userService.createUserFromEmployee(employeeId);
+        return ResponseEntity.ok(mapToDto(user));
+    }
+    
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/reset-password")
     public ResponseEntity<UserDTO> resetPassword(@PathVariable Long id) {
@@ -43,27 +50,18 @@ public class UserController {
         return ResponseEntity.ok(mapToDto(user));
     }
 
-    // GET USERS WITH PAGINATION  <-- CHUẨN
+    // GET USERS WITH PAGINATION
     @PreAuthorize("hasAnyRole('ADMIN','HR')")
     @GetMapping
-    public ResponseEntity<?> getUsers(
+    public ResponseEntity<Page<UserDTO>> getUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         Page<User> users = userService.getUsers(page, size);
 
-        List<UserDTO> content = users.getContent()
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+        Page<UserDTO> dtoPage = users.map(this::mapToDto);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("users", content);
-        response.put("currentPage", users.getNumber());
-        response.put("totalPages", users.getTotalPages());
-        response.put("totalItems", users.getTotalElements());
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(dtoPage);
     }
 
     // GET USER BY ID
