@@ -1,5 +1,7 @@
 package com.tlu.hrm.controller;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,63 +21,67 @@ public class LeaveRequestController {
 		this.service = service;
 	}
 	
-	// -----------------------------------------------------
-    // EMPLOYEE: CREATE REQUEST
-    // -----------------------------------------------------
+	// CREATE (Employee)
     @PreAuthorize("hasRole('EMPLOYEE')")
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody LeaveRequestCreateDTO dto) {
-        dto.setEmployeeId(getCurrentUserEmployeeId());
+    public ResponseEntity<LeaveRequestDTO> create(@RequestBody LeaveRequestCreateDTO dto) {
+        dto.setEmployeeId(getCurrentEmployeeId());
         return ResponseEntity.ok(service.createRequest(dto));
     }
 
-    // -----------------------------------------------------
-    // EMPLOYEE: UPDATE REQUEST
-    // -----------------------------------------------------
+    // UPDATE (Employee)
     @PreAuthorize("hasRole('EMPLOYEE')")
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(
+    public ResponseEntity<LeaveRequestDTO> update(
             @PathVariable Long id,
             @RequestBody LeaveRequestUpdateDTO dto) {
         return ResponseEntity.ok(service.updateRequest(id, dto));
     }
 
-    // -----------------------------------------------------
-    // EMPLOYEE: DELETE REQUEST
-    // -----------------------------------------------------
+    // DELETE (Employee)
     @PreAuthorize("hasRole('EMPLOYEE')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.deleteRequest(id);
         return ResponseEntity.noContent().build();
     }
 
-    // -----------------------------------------------------
-    // EMPLOYEE: VIEW MY REQUESTS
-    // -----------------------------------------------------
+    // DELETE (HR + Admin)
+    @PreAuthorize("hasAnyRole('HR','ADMIN')")
+    @DeleteMapping("/admin/{id}")
+    public ResponseEntity<Void> deleteByAdmin(@PathVariable Long id) {
+        service.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasAnyRole('HR','ADMIN')")
+    @DeleteMapping("/admin/batch")
+    public ResponseEntity<Void> deleteMany(@RequestBody List<Long> ids) {
+        service.deleteMany(ids);
+        return ResponseEntity.noContent().build();
+    }
+
+    // EMPLOYEE view own requests
     @PreAuthorize("hasRole('EMPLOYEE')")
     @GetMapping("/my")
-    public ResponseEntity<?> getMyRequests(
+    public ResponseEntity<?> myRequests(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
+
         return ResponseEntity.ok(service.getMyRequests(getCurrentUserId(), page, size));
     }
 
-    // -----------------------------------------------------
-    // MANAGER: VIEW DEPARTMENT REQUESTS
-    // -----------------------------------------------------
+    // MANAGER view department
     @PreAuthorize("hasRole('MANAGER')")
     @GetMapping("/department")
-    public ResponseEntity<?> getDepartmentRequests(
+    public ResponseEntity<?> managerRequests(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         return ResponseEntity.ok(service.getDepartmentRequests(getCurrentUserId(), page, size));
     }
 
-    // -----------------------------------------------------
-    // HR + ADMIN: FILTER view ALL company
-    // -----------------------------------------------------
+    // HR + Admin filter
     @PreAuthorize("hasAnyRole('HR','ADMIN')")
     @GetMapping
     public ResponseEntity<?> filter(
@@ -86,49 +92,49 @@ public class LeaveRequestController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        return ResponseEntity.ok(service.getAllFiltered(
-                employeeName, department, status, type, page, size));
+        return ResponseEntity.ok(service.getAllFiltered(employeeName, department, status, type, page, size));
     }
 
-    // -----------------------------------------------------
-    // APPROVE (MANAGER, HR)
-    // -----------------------------------------------------
+    // Approve / Reject
     @PreAuthorize("hasAnyRole('MANAGER','HR')")
     @PutMapping("/{id}/approve")
-    public ResponseEntity<?> approve(
-            @PathVariable Long id,
-            @RequestBody LeaveRequestDecisionDTO dto) {
+    public ResponseEntity<?> approve(@PathVariable Long id, @RequestBody LeaveRequestDecisionDTO dto) {
         return ResponseEntity.ok(service.approve(id, dto));
     }
 
-    // -----------------------------------------------------
-    // REJECT (MANAGER, HR)
-    // -----------------------------------------------------
     @PreAuthorize("hasAnyRole('MANAGER','HR')")
     @PutMapping("/{id}/reject")
-    public ResponseEntity<?> reject(
-            @PathVariable Long id,
-            @RequestBody LeaveRequestDecisionDTO dto) {
+    public ResponseEntity<?> reject(@PathVariable Long id, @RequestBody LeaveRequestDecisionDTO dto) {
         return ResponseEntity.ok(service.reject(id, dto));
     }
 
-    // -----------------------------------------------------
-    // GET BY ID (any authenticated user)
-    // -----------------------------------------------------
-    @PreAuthorize("isAuthenticated()")
+    // Bulk approve/reject
+    @PreAuthorize("hasAnyRole('MANAGER','HR')")
+    @PutMapping("/approve-batch")
+    public ResponseEntity<Void> approveBatch(@RequestBody List<Long> ids) {
+        service.approveMany(ids);
+        return ResponseEntity.ok().build();
+    }
+
+    @PreAuthorize("hasAnyRole('MANAGER','HR')")
+    @PutMapping("/reject-batch")
+    public ResponseEntity<Void> rejectBatch(@RequestBody List<Long> ids) {
+        service.rejectMany(ids);
+        return ResponseEntity.ok().build();
+    }
+
+    // Get by ID
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
-    // -----------------------------------------------------
-    // HELPERS
-    // -----------------------------------------------------
+    // Helpers
     private Long getCurrentUserId() {
         return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
     }
 
-    private Long getCurrentUserEmployeeId() {
+    private Long getCurrentEmployeeId() {
         return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getDetails().toString());
     }
 }

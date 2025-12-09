@@ -1,5 +1,7 @@
 package com.tlu.hrm.service;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 
 import com.tlu.hrm.dto.*;
@@ -10,7 +12,11 @@ public interface LeaveRequestService {
 
     LeaveRequestDTO updateRequest(Long id, LeaveRequestUpdateDTO dto);
 
-    void deleteRequest(Long id);
+    void deleteRequest(Long id);   // Employee delete own request
+
+    void delete(Long id);          // HR / ADMIN delete any request
+
+    void deleteMany(List<Long> ids);  // HR / ADMIN delete multiple
 
     LeaveRequestDTO approve(Long id, LeaveRequestDecisionDTO dto);
 
@@ -29,4 +35,9 @@ public interface LeaveRequestService {
             String type,
             int page,
             int size);
+
+    void approveMany(List<Long> ids);
+
+    void rejectMany(List<Long> ids);
+
 }
