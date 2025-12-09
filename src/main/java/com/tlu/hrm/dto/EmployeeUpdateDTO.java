@@ -14,8 +14,8 @@ public class EmployeeUpdateDTO {
 		return fullName;
 	}
 	public void setFullName(String fullName) {
-		this.fullName = fullName;
-	}
+        this.fullName = (fullName == null || fullName.isBlank()) ? null : fullName;
+    }
 	public LocalDate getDateOfBirth() {
 		return dateOfBirth;
 	}
@@ -32,19 +32,19 @@ public class EmployeeUpdateDTO {
 		return department;
 	}
 	public void setDepartment(String department) {
-		this.department = department;
-	}
+        this.department = (department == null || department.isBlank()) ? null : department;
+    }
 	public String getEmail() {
 		return email;
 	}
 	public void setEmail(String email) {
-		this.email = email;
-	}
+        this.email = (email == null || email.isBlank()) ? null : email;
+    }
 	public String getPhoneNumber() {
 		return phoneNumber;
 	}
 	public void setPhoneNumber(String phoneNumber) {
-		this.phoneNumber = phoneNumber;
-	}
+        this.phoneNumber = (phoneNumber == null || phoneNumber.isBlank()) ? null : phoneNumber;
+    }
     
 }

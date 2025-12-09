@@ -38,7 +38,9 @@ public class EmployeeServiceImpl implements EmployeeService {
         emp.setDateOfBirth(dto.getDateOfBirth());
         emp.setPosition(dto.getPosition());
         emp.setDepartment(dto.getDepartment());
+
         emp.setEmail(dto.getEmail() == null || dto.getEmail().isBlank() ? null : dto.getEmail());
+
         emp.setPhoneNumber(dto.getPhoneNumber());
 
         Employee saved = employeeRepository.save(emp);
@@ -68,21 +70,16 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public Page<EmployeeDTO> getEmployeesWithoutUser(int page, int size) {
-        PageRequest pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size);
 
-        // Fetch all employees without user (not paginated)
-        List<Employee> allNoUser = employeeRepository.findByUserIsNull();
+        Page<Employee> employees = employeeRepository.findByUserIsNull(pageable);
 
-        // Manual pagination
-        int start = Math.min(pageable.getPageNumber() * pageable.getPageSize(), allNoUser.size());
-        int end = Math.min(start + pageable.getPageSize(), allNoUser.size());
-
-        List<EmployeeDTO> dtos = allNoUser.subList(start, end)
+        List<EmployeeDTO> dtos = employees.getContent()
                 .stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
 
-        return new PageImpl<>(dtos, pageable, allNoUser.size());
+        return new PageImpl<>(dtos, pageable, employees.getTotalElements());
     }
 
     @Override
@@ -95,7 +92,10 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (dto.getDateOfBirth() != null) emp.setDateOfBirth(dto.getDateOfBirth());
         if (dto.getPosition() != null) emp.setPosition(dto.getPosition());
         if (dto.getDepartment() != null) emp.setDepartment(dto.getDepartment());
-        if (dto.getEmail() != null) emp.setEmail(dto.getEmail());
+
+        if (dto.getEmail() != null)
+            emp.setEmail(dto.getEmail().isBlank() ? null : dto.getEmail());
+
         if (dto.getPhoneNumber() != null) emp.setPhoneNumber(dto.getPhoneNumber());
 
         Employee updated = employeeRepository.save(emp);
@@ -110,11 +110,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         employeeRepository.deleteById(id);
     }
 
-    // -------------------------------
-    // Mapping Entity → DTO
-    // -------------------------------
     private EmployeeDTO mapToDTO(Employee emp) {
-
         EmployeeDTO dto = new EmployeeDTO();
         dto.setId(emp.getId());
         dto.setCode(emp.getCode());
