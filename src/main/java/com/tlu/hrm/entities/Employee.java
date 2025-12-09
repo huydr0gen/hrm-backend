@@ -80,10 +80,14 @@ public class Employee {
     public void setDepartment(String department) { this.department = department; }
 
     public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public void setEmail(String email) {
+        this.email = (email == null || email.isBlank()) ? null : email;
+    }
 
     public String getPhoneNumber() { return phoneNumber; }
-    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = (phoneNumber == null || phoneNumber.isBlank()) ? null : phoneNumber;
+    }
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }

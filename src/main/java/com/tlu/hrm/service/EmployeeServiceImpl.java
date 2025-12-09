@@ -38,7 +38,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         emp.setDateOfBirth(dto.getDateOfBirth());
         emp.setPosition(dto.getPosition());
         emp.setDepartment(dto.getDepartment());
-        emp.setEmail(dto.getEmail());
+        emp.setEmail(dto.getEmail() == null || dto.getEmail().isBlank() ? null : dto.getEmail());
         emp.setPhoneNumber(dto.getPhoneNumber());
 
         Employee saved = employeeRepository.save(emp);
