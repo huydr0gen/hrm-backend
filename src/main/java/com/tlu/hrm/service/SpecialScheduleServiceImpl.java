@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
 
 import com.tlu.hrm.dto.SpecialScheduleApproveDTO;
 import com.tlu.hrm.dto.SpecialScheduleBulkApproveDTO;
@@ -26,6 +27,7 @@ import com.tlu.hrm.repository.SpecialScheduleRepository;
 import com.tlu.hrm.security.CustomUserDetails;
 import com.tlu.hrm.spec.SpecialScheduleSpecification;
 
+@Service
 public class SpecialScheduleServiceImpl implements SpecialScheduleService {
 
 	private final SpecialScheduleRepository repository;
