@@ -1,5 +1,5 @@
 CREATE TABLE special_schedules (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id BIGSERIAL PRIMARY KEY,
     employee_id BIGINT NOT NULL,
     date DATE NOT NULL,
     shift VARCHAR(100),
@@ -7,7 +7,14 @@ CREATE TABLE special_schedules (
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     created_by VARCHAR(100),
     approved_by VARCHAR(100),
-    created_at DATETIME,
-    updated_at DATETIME,
-    approved_at DATETIME
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    approved_at TIMESTAMP
 );
+
+-- Add FK constraint to employees table
+ALTER TABLE special_schedules
+ADD CONSTRAINT fk_special_schedule_employee
+FOREIGN KEY (employee_id)
+REFERENCES employees(id)
+ON DELETE CASCADE;
