@@ -16,13 +16,6 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     validate-on-migrate: true
-springdoc:
-  api-docs:
-    enabled: true
-    path: /api-docs
-  swagger-ui:
-    enabled: true
-    path: /swagger-ui.html
 server: 
   forward-headers-strategy: framework
 jwt:
