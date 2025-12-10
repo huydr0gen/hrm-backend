@@ -34,19 +34,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        String path = request.getRequestURI();
+		String path = request.getRequestURI();
 
-        // Allow login + refresh token API + swagger + preflight requests
-        if (path.startsWith("/auth/login") ||
-            path.startsWith("/auth/refresh") ||
-            path.startsWith("/swagger-ui.html") ||
-            path.startsWith("/swagger-ui") ||
-            path.startsWith("/v3/api-docs") ||
-            path.startsWith("/api-docs") ||
-            request.getMethod().equalsIgnoreCase("OPTIONS")) {
+		if (path.startsWith("/auth/login")
+		        || path.startsWith("/auth/refresh")
+		        || path.equals("/swagger-ui.html")
+		        || path.startsWith("/swagger-ui")
+		        || path.startsWith("/v3/api-docs")
+		        || path.startsWith("/api-docs")
+		        || path.startsWith("/swagger-resources")
+		        || path.startsWith("/webjars")
+		        || request.getMethod().equalsIgnoreCase("OPTIONS")) {
 
-            filterChain.doFilter(request, response);
-            return;
+		    filterChain.doFilter(request, response);
+		    return;
         }
 
         String authHeader = request.getHeader("Authorization");
