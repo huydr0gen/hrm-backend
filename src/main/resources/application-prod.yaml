@@ -20,13 +20,20 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     validate-on-migrate: true
-
+springdoc: 
+  api-docs:
+    enabled: true
+    path: /api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui
 jwt:
   secret-key: ${JWT_SECRET_KEY}
-  expiration: 86400000
-
+  access-expiration: ${JWT_ACCESS_EXPIRATION}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION}
 company:
   email-domain: ${EMAIL_DOMAIN}
 
 server:
   port: 8080
+  forward-headers-strategy: framework
