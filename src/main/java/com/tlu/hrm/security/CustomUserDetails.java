@@ -12,6 +12,8 @@ import com.tlu.hrm.enums.UserStatus;
 
 public class CustomUserDetails implements UserDetails {
 
+	private static final long serialVersionUID = 1L;
+	
     private final User user;
 
     public CustomUserDetails(User user) {
@@ -20,7 +22,6 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-
         if (user.getRoles() == null)
             return java.util.List.of();
 
@@ -35,6 +36,11 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getUsername() { return user.getUsername(); }
+
+    public Long getEmployeeId() {
+        if (user.getEmployee() == null) return null;
+        return user.getEmployee().getId();
+    }
 
     @Override
     public boolean isAccountNonExpired() { return true; }
@@ -51,4 +57,5 @@ public class CustomUserDetails implements UserDetails {
     public boolean isEnabled() {
         return user.getStatus() == UserStatus.ACTIVE;
     }
+
 }
