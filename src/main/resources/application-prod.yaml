@@ -27,6 +27,7 @@ springdoc:
   swagger-ui:
     enabled: true
     path: /swagger-ui
+    deep-linking: true
 jwt:
   secret-key: ${JWT_SECRET_KEY}
   access-expiration: ${JWT_ACCESS_EXPIRATION}
