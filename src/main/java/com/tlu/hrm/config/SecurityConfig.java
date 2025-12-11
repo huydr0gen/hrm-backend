@@ -57,6 +57,7 @@ public class SecurityConfig {
                 .requestMatchers(
                         "/swagger-ui.html",
                         "/swagger-ui/**",
+                        "/swagger-ui/index.html",
                         "/api-docs",
                         "/api-docs/**",
                         "/v3/api-docs",
@@ -84,6 +85,7 @@ public class SecurityConfig {
 
         // Không cần credentials cho JWT
         config.setAllowCredentials(false);
+        config.addExposedHeader("Authorization");
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
