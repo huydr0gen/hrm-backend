@@ -1,0 +1,3 @@
+ALTER TABLE leave_requests
+    ADD COLUMN IF NOT EXISTS decided_by BIGINT,
+    ADD COLUMN IF NOT EXISTS decided_at TIMESTAMP;

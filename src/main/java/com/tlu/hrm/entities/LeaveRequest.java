@@ -32,7 +32,14 @@ public class LeaveRequest {
     @Enumerated(EnumType.STRING)
     private LeaveStatus status = LeaveStatus.PENDING;
 
+    // Manager/HR ghi chú khi quyết định
     private String managerNote;
+
+    @Column(name = "decided_by")
+    private Long decidedBy;
+
+    @Column(name = "decided_at")
+    private LocalDateTime decidedAt;
 
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -102,6 +109,22 @@ public class LeaveRequest {
 		this.managerNote = managerNote;
 	}
 
+	public Long getDecidedBy() {
+		return decidedBy;
+	}
+
+	public void setDecidedBy(Long decidedBy) {
+		this.decidedBy = decidedBy;
+	}
+
+	public LocalDateTime getDecidedAt() {
+		return decidedAt;
+	}
+
+	public void setDecidedAt(LocalDateTime decidedAt) {
+		this.decidedAt = decidedAt;
+	}
+
 	public LocalDateTime getCreatedAt() {
 		return createdAt;
 	}
@@ -119,5 +142,4 @@ public class LeaveRequest {
 	}
     
     
-
 }

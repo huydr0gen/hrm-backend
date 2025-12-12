@@ -21,8 +21,11 @@ public class LeaveRequestDTO {
     private LeaveStatus status;
     private String managerNote;
 
+    private Long decidedBy;
+    private LocalDateTime decidedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    
 	public Long getId() {
 		return id;
 	}
@@ -82,6 +85,18 @@ public class LeaveRequestDTO {
 	}
 	public void setManagerNote(String managerNote) {
 		this.managerNote = managerNote;
+	}
+	public Long getDecidedBy() {
+		return decidedBy;
+	}
+	public void setDecidedBy(Long decidedBy) {
+		this.decidedBy = decidedBy;
+	}
+	public LocalDateTime getDecidedAt() {
+		return decidedAt;
+	}
+	public void setDecidedAt(LocalDateTime decidedAt) {
+		this.decidedAt = decidedAt;
 	}
 	public LocalDateTime getCreatedAt() {
 		return createdAt;

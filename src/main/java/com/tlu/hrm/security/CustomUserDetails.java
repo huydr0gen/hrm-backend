@@ -37,9 +37,17 @@ public class CustomUserDetails implements UserDetails {
     @Override
     public String getUsername() { return user.getUsername(); }
 
+    public Long getId() {
+        return user.getId();
+    }
+
     public Long getEmployeeId() {
         if (user.getEmployee() == null) return null;
         return user.getEmployee().getId();
+    }
+
+    public User getUser() {
+        return this.user;
     }
 
     @Override
