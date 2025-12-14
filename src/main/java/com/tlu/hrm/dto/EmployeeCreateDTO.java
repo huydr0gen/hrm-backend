@@ -2,15 +2,53 @@ package com.tlu.hrm.dto;
 
 import java.time.LocalDate;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Dữ liệu tạo mới nhân viên")
 public class EmployeeCreateDTO {
 
+	@Schema(
+	        description = "Mã nhân viên",
+	        example = "EMP002"
+	    )
 	private String code;
+	
+	@Schema(
+	        description = "Họ và tên nhân viên",
+	        example = "Trần Thị B"
+	    )
     private String fullName;
+	
+	@Schema(
+	        description = "Ngày sinh",
+	        example = "2000-10-15"
+	    )
     private LocalDate dateOfBirth;
+	
+	@Schema(
+	        description = "Chức vụ",
+	        example = "Kế toán"
+	    )
     private String position;
+	
+	@Schema(
+	        description = "Phòng ban",
+	        example = "Kế toán"
+	    )
     private String department;
-    private String email;       
+	
+	@Schema(
+	        description = "Email liên hệ",
+	        example = "b.tran@company.com"
+	    )
+    private String email;     
+	
+	@Schema(
+	        description = "Số điện thoại",
+	        example = "0912345678"
+	    )
     private String phoneNumber;
+	
 	public String getCode() {
 		return code;
 	}

@@ -2,7 +2,6 @@ package com.tlu.hrm.controller;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.annotation.RequestScope;
 
 import com.tlu.hrm.entities.Role;
 import com.tlu.hrm.service.RoleService;

@@ -7,8 +7,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,6 +22,14 @@ import com.tlu.hrm.security.JwtProvider;
 import com.tlu.hrm.service.AuditLogService;
 import com.tlu.hrm.service.UserService;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.*;
+
+@Tag(
+	    name = "Authentication",
+	    description = "API xác thực người dùng: đăng nhập, refresh token"
+	)
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -49,6 +55,26 @@ public class AuthController {
 	}
 
 	// LOGIN -----------------------------------------------------------------------
+	@Operation(
+	        summary = "Đăng nhập hệ thống",
+	        description = """
+	            Màn hình: Login
+	            
+	            Luồng nghiệp vụ:
+	            - Người dùng nhập username + password
+	            - Nếu hợp lệ → trả về accessToken + refreshToken
+	            - Token dùng cho các API bảo mật phía sau
+	            
+	            Ghi chú cho FE:
+	            - accessToken dùng để gắn vào Authorization header
+	            - refreshToken dùng khi accessToken hết hạn
+	            """
+	        )
+	@ApiResponses({
+	        @ApiResponse(responseCode = "200", description = "Đăng nhập thành công"),
+	        @ApiResponse(responseCode = "400", description = "Sai username hoặc password"),
+	        @ApiResponse(responseCode = "403", description = "Tài khoản bị khóa / inactive")
+	    })
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
 
@@ -85,6 +111,28 @@ public class AuthController {
     }
 
     // REFRESH TOKEN -------------------------------------------------------------------
+	@Operation(
+	        summary = "Làm mới access token",
+	        description = """
+	            Màn hình: Token refresh (ẩn)
+	            
+	            Khi nào gọi:
+	            - accessToken hết hạn (401)
+	            
+	            Luồng:
+	            - FE gửi refreshToken
+	            - Backend kiểm tra hợp lệ
+	            - Trả về accessToken mới + refreshToken mới
+	            
+	            Ghi chú:
+	            - refreshToken sẽ bị rotate (đổi mới)
+	            - FE phải lưu lại token mới
+	            """
+	        )
+	@ApiResponses({
+	        @ApiResponse(responseCode = "200", description = "Refresh token thành công"),
+	        @ApiResponse(responseCode = "400", description = "Refresh token không hợp lệ hoặc hết hạn")
+	        })
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponse> refresh(@RequestBody RefreshTokenRequest request) {
 

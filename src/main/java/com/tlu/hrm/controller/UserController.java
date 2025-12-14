@@ -12,12 +12,18 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(
+		name = "User",
+		description = "Quản lý tài khoản người dùng trong hệ thống (ADMIN / HR)"
+	    )
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -30,12 +36,49 @@ public class UserController {
 	}
     
  // CREATE USER
+    @Operation(
+            summary = "Tạo user mới",
+            description = """
+                Màn hình: Quản lý người dùng (Admin)
+                
+                Luồng:
+                - ADMIN tạo user mới thủ công
+                - Gán role ngay khi tạo
+                
+                Ghi chú:
+                - Dùng khi user chưa gắn với employee
+                """
+            )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Tạo user thành công"),
+            @ApiResponse(responseCode = "403", description = "Không có quyền ADMIN")
+            })
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<UserDTO> createUser(@RequestBody UserCreateDTO dto) {
         return ResponseEntity.ok(mapToDto(userService.createUser(dto)));
     }
 
+ // CREATE USER FROM EMPLOYEE --------------------------------------------------
+
+    @Operation(
+        summary = "Tạo user từ employee có sẵn",
+        description = """
+            Màn hình: Quản lý nhân sự
+            
+            Luồng:
+            - HR / ADMIN tạo employee trước
+            - Sau đó tạo user gắn với employee
+            
+            Ghi chú cho FE:
+            - Không cần gửi username / password
+            - Backend tự sinh thông tin đăng nhập
+            """
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Tạo user từ employee thành công"),
+        @ApiResponse(responseCode = "403", description = "Không có quyền")
+    })
     @PreAuthorize("hasAnyRole('ADMIN','HR')")
     @PostMapping("/from-employee/{employeeId}")
     public ResponseEntity<UserDTO> createUserFromEmployee(@PathVariable Long employeeId) {
@@ -43,6 +86,21 @@ public class UserController {
         return ResponseEntity.ok(mapToDto(user));
     }
     
+ // RESET PASSWORD ------------------------------------------------------------
+
+    @Operation(
+        summary = "Reset mật khẩu user",
+        description = """
+            Màn hình: Quản lý người dùng
+            
+            Luồng:
+            - ADMIN reset mật khẩu user
+            - Mật khẩu mới được sinh tự động
+            
+            Ghi chú:
+            - FE không cần gửi body
+            """
+    )
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/reset-password")
     public ResponseEntity<UserDTO> resetPassword(@PathVariable Long id) {
@@ -51,6 +109,19 @@ public class UserController {
     }
 
     // GET USERS WITH PAGINATION
+    @Operation(
+            summary = "Lấy danh sách user (phân trang)",
+            description = """
+                Màn hình: Danh sách người dùng
+                
+                Role:
+                - ADMIN
+                - HR
+                
+                Ghi chú:
+                - Dùng để hiển thị bảng user
+                """
+            )
     @PreAuthorize("hasAnyRole('ADMIN','HR')")
     @GetMapping
     public ResponseEntity<Page<UserDTO>> getUsers(
@@ -65,6 +136,18 @@ public class UserController {
     }
 
     // GET USER BY ID
+    @Operation(
+            summary = "Lấy thông tin user theo ID",
+            description = """
+                Màn hình: Chi tiết người dùng
+                
+                Role:
+                - ADMIN
+                - HR
+                - MANAGER
+                - EMPLOYEE
+                """
+        )
     @PreAuthorize("hasAnyRole('ADMIN','HR','MANAGER','EMPLOYEE')")
     @GetMapping("/{id}")
     public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
@@ -73,6 +156,16 @@ public class UserController {
     }
 
     // UPDATE USER
+    @Operation(
+            summary = "Cập nhật thông tin user",
+            description = """
+                Màn hình: Chỉnh sửa người dùng
+                
+                Role:
+                - ADMIN
+                - HR
+                """
+        )
     @PreAuthorize("hasAnyRole('ADMIN','HR')")
     @PutMapping("/{id}")
     public ResponseEntity<UserDTO> updateUser(@PathVariable Long id, @RequestBody UserUpdateDTO dto) {
@@ -81,6 +174,15 @@ public class UserController {
     }
 
     // DELETE USER
+    @Operation(
+            summary = "Xóa user",
+            description = """
+                Màn hình: Quản lý người dùng
+                
+                Ghi chú:
+                - Chỉ ADMIN được phép xóa
+                """
+        )
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
@@ -88,6 +190,20 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+ // ASSIGN ROLES --------------------------------------------------------------
+
+    @Operation(
+        summary = "Gán role cho user",
+        description = """
+            Màn hình: Phân quyền người dùng
+            
+            FE gửi:
+            - Danh sách tên role (String)
+            
+            Ví dụ:
+            ["ADMIN", "HR"]
+            """
+    )
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/roles")
     public ResponseEntity<UserDTO> assignRoles(@PathVariable Long id, @RequestBody Set<String> roleNames) {
@@ -95,6 +211,9 @@ public class UserController {
         return ResponseEntity.ok(mapToDto(user));
     }
 
+ // ACTIVATE / DEACTIVATE / LOCK ----------------------------------------------
+
+    @Operation(summary = "Kích hoạt user")
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/activate")
     public ResponseEntity<Void> activateUser(@PathVariable Long id) {
@@ -102,6 +221,7 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Vô hiệu hóa user")
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/deactivate")
     public ResponseEntity<Void> deactivateUser(@PathVariable Long id) {
@@ -109,6 +229,7 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Khóa user")
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/lock")
     public ResponseEntity<Void> lockUser(@PathVariable Long id) {
@@ -117,6 +238,16 @@ public class UserController {
     }
 
     // GET CURRENT LOGGED-IN USER
+    @Operation(
+            summary = "Lấy thông tin user đang đăng nhập",
+            description = """
+                Màn hình: Profile cá nhân
+                
+                Ghi chú:
+                - Dùng accessToken hiện tại
+                - Không cần truyền ID
+                """
+        )
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/me")
     public ResponseEntity<UserDTO> getCurrentUser() {

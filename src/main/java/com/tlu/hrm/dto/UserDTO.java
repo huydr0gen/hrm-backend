@@ -5,15 +5,57 @@ import java.util.Set;
 
 import com.tlu.hrm.enums.UserStatus;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Thông tin user trả về cho frontend")
 public class UserDTO {
 
+	@Schema(
+	        description = "ID của user",
+	        example = "1"
+	    )
 	private Long id;
+	
+	@Schema(
+	        description = "Tên đăng nhập",
+	        example = "admin"
+	    )
     private String username;
+	
+	@Schema(
+	        description = "Danh sách role của user",
+	        example = "[\"ADMIN\", \"HR\"]"
+	    )
     private Set<String> roles;
+	
+	@Schema(
+	        description = "Trạng thái tài khoản",
+	        example = "ACTIVE"
+	    )
     private UserStatus status;
+	
+	@Schema(
+	        description = "ID employee liên kết (nếu có)",
+	        example = "10"
+	    )
     private Long employeeId;
+	
+	@Schema(
+	        description = "Thời điểm tạo user",
+	        example = "2025-12-01T09:00:00"
+	    )
     private LocalDateTime createdAt;
+	
+	@Schema(
+	        description = "Thời điểm cập nhật gần nhất",
+	        example = "2025-12-10T14:30:00"
+	    )
     private LocalDateTime updatedAt;
+	
+	@Schema(
+	        description = "Thời điểm đăng nhập gần nhất",
+	        example = "2025-12-15T10:15:00"
+	    )
     private LocalDateTime lastLogin;
 	public Long getId() {
 		return id;

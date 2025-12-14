@@ -5,12 +5,45 @@ import java.util.Set;
 
 import com.tlu.hrm.enums.UserStatus;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Response trả về sau khi đăng nhập hoặc refresh token")
 public class LoginResponse {
+	
+	@Schema(
+	        description = "Access token dùng để gọi các API bảo mật",
+	        example = "eyJhbGciOiJIUzI1NiJ9.xxx.yyy"
+	        )
 	private String accessToken;
+	
+	@Schema(
+	        description = "Refresh token dùng để lấy access token mới khi hết hạn",
+	        example = "eyJhbGciOiJIUzI1NiJ9.aaa.bbb"
+	        )
     private String refreshToken;
+	
+	@Schema(
+	        description = "Username của người dùng",
+	        example = "admin"
+	        )
     private String username;
+	
+	@Schema(
+	        description = "Danh sách role của người dùng",
+	        example = "[\"ADMIN\", \"HR\"]"
+	        )
     private Set<String> roles;
+	
+	@Schema(
+	        description = "Trạng thái tài khoản",
+	        example = "ACTIVE"
+	        )
     private UserStatus status;
+	
+	@Schema(
+	        description = "Thời điểm đăng nhập gần nhất",
+	        example = "2025-12-15T10:30:00"
+	        )
     private LocalDateTime lastLogin;
 	public String getAccessToken() {
 		return accessToken;

@@ -13,6 +13,15 @@ import com.tlu.hrm.dto.*;
 import com.tlu.hrm.security.CustomUserDetails;
 import com.tlu.hrm.service.LeaveRequestService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(
+	    name = "Leave Request",
+	    description = "Quản lý đơn xin nghỉ phép (Employee / Manager / HR / Admin)"
+	)
 @RestController
 @RequestMapping("/api/leave")
 public class LeaveRequestController {
@@ -52,6 +61,22 @@ public class LeaveRequestController {
     // =====================================================
     // CREATE – EMPLOYEE
     // =====================================================
+    
+    @Operation(
+            summary = "Nhân viên tạo đơn xin nghỉ phép",
+            description = """
+                Màn hình: Tạo đơn nghỉ phép (Employee)
+                
+                Luồng:
+                - Nhân viên gửi thông tin nghỉ
+                - Đơn ở trạng thái PENDING
+                - Chờ Manager / HR duyệt
+                """
+        )
+        @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Tạo đơn thành công"),
+            @ApiResponse(responseCode = "403", description = "Không có quyền EMPLOYEE")
+        })
     @PreAuthorize("hasRole('EMPLOYEE')")
     @PostMapping
     public ResponseEntity<LeaveRequestDTO> create(
@@ -64,6 +89,15 @@ public class LeaveRequestController {
     // =====================================================
     // EMPLOYEE – MY REQUESTS
     // =====================================================
+    @Operation(
+            summary = "Nhân viên xem các đơn nghỉ của mình",
+            description = """
+                Màn hình: Danh sách đơn nghỉ của tôi
+                
+                Ghi chú:
+                - Chỉ lấy đơn của user đang đăng nhập
+                """
+        )
     @PreAuthorize("hasRole('EMPLOYEE')")
     @GetMapping("/my")
     public ResponseEntity<Page<LeaveRequestDTO>> myRequests(
@@ -77,6 +111,15 @@ public class LeaveRequestController {
     // =====================================================
     // MANAGER – DEPARTMENT REQUESTS
     // =====================================================
+    @Operation(
+            summary = "Quản lý xem đơn nghỉ của phòng ban",
+            description = """
+                Màn hình: Duyệt đơn nghỉ (Manager)
+                
+                Ghi chú:
+                - Chỉ hiển thị đơn của nhân viên trong phòng ban
+                """
+        )
     @PreAuthorize("hasRole('MANAGER')")
     @GetMapping("/department")
     public ResponseEntity<Page<LeaveRequestDTO>> departmentRequests(
@@ -90,6 +133,18 @@ public class LeaveRequestController {
     // =====================================================
     // HR / ADMIN – FILTER LIST
     // =====================================================
+    @Operation(
+            summary = "HR / Admin tìm kiếm và lọc đơn nghỉ",
+            description = """
+                Màn hình: Danh sách đơn nghỉ (HR / Admin)
+                
+                Có thể lọc theo:
+                - Tên nhân viên
+                - Phòng ban
+                - Trạng thái đơn
+                - Loại nghỉ
+                """
+        )
     @PreAuthorize("hasAnyRole('HR','ADMIN')")
     @GetMapping
     public ResponseEntity<Page<LeaveRequestDTO>> filter(
@@ -108,6 +163,16 @@ public class LeaveRequestController {
     // =====================================================
     // GET BY ID
     // =====================================================
+    @Operation(
+            summary = "Xem chi tiết đơn nghỉ phép",
+            description = """
+                Màn hình: Chi tiết đơn nghỉ
+                
+                Role:
+                - EMPLOYEE (đơn của mình)
+                - MANAGER / HR / ADMIN
+                """
+        )
     @GetMapping("/{id}")
     public ResponseEntity<LeaveRequestDTO> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
@@ -116,6 +181,15 @@ public class LeaveRequestController {
     // =====================================================
     // HR / ADMIN – UPDATE
     // =====================================================
+    @Operation(
+            summary = "HR / Admin chỉnh sửa đơn nghỉ",
+            description = """
+                Màn hình: Chỉnh sửa đơn nghỉ
+                
+                Ghi chú:
+                - Chỉ HR / Admin được phép
+                """
+        )
     @PreAuthorize("hasAnyRole('HR','ADMIN')")
     @PutMapping("/admin/{id}")
     public ResponseEntity<LeaveRequestDTO> adminUpdate(
@@ -129,6 +203,15 @@ public class LeaveRequestController {
     // =====================================================
     // HR / ADMIN – DELETE
     // =====================================================
+    @Operation(
+            summary = "HR / Admin xóa đơn nghỉ",
+            description = """
+                Màn hình: Quản lý đơn nghỉ
+                
+                Ghi chú:
+                - Xóa một đơn theo ID
+                """
+        )
     @PreAuthorize("hasAnyRole('HR','ADMIN')")
     @DeleteMapping("/admin/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
@@ -136,6 +219,15 @@ public class LeaveRequestController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(
+            summary = "HR / Admin xóa nhiều đơn nghỉ",
+            description = """
+                Màn hình: Quản lý đơn nghỉ
+                
+                Ghi chú:
+                - Xóa hàng loạt theo danh sách ID
+                """
+        )
     @PreAuthorize("hasAnyRole('HR','ADMIN')")
     @DeleteMapping("/admin/batch")
     public ResponseEntity<Void> deleteMany(@RequestBody List<Long> ids) {
@@ -146,6 +238,16 @@ public class LeaveRequestController {
     // =====================================================
     // DECIDE – MANAGER / HR
     // =====================================================
+    @Operation(
+            summary = "Duyệt hoặc từ chối đơn nghỉ",
+            description = """
+                Màn hình: Duyệt đơn nghỉ (Manager / HR)
+                
+                Action:
+                - APPROVE
+                - REJECT
+                """
+        )
     @PreAuthorize("hasAnyRole('MANAGER','HR')")
     @PatchMapping("/{id}/decision")
     public ResponseEntity<LeaveRequestDTO> decide(
@@ -160,9 +262,16 @@ public class LeaveRequestController {
 
     // =====================================================
     // BULK DECIDE – MANAGER / HR
-    // ⚠ BulkDecisionDTO hiện KHÔNG có managerNote
-    // → truyền null (đúng với Service hiện tại)
     // =====================================================
+    @Operation(
+            summary = "Duyệt / từ chối nhiều đơn nghỉ cùng lúc",
+            description = """
+                Màn hình: Duyệt hàng loạt
+                
+                Ghi chú:
+                - Áp dụng cùng một action cho nhiều đơn
+                """
+        )
     @PreAuthorize("hasAnyRole('MANAGER','HR')")
     @PatchMapping("/decision")
     public ResponseEntity<BulkDecisionResultDTO> decideMany(
