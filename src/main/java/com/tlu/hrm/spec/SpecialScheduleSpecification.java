@@ -21,39 +21,45 @@ public class SpecialScheduleSpecification {
             List<Predicate> predicates = new ArrayList<>();
 
             // ======================================================
-            // 1) Filter theo employeeId (dùng cho EMPLOYEE hoặc filter riêng)
+            // 1) Filter theo employeeId
             // ======================================================
             if (f.getEmployeeId() != null) {
-                predicates.add(cb.equal(root.get("employeeId"), f.getEmployeeId()));
+                predicates.add(
+                    cb.equal(root.get("employee").get("id"), f.getEmployeeId())
+                );
             }
 
             // ======================================================
-            // 2) Filter theo danh sách employeeIds (dùng cho MANAGER)
+            // 2) Filter theo danh sách employeeIds (MANAGER)
             // ======================================================
             if (f.getEmployeeIds() != null && !f.getEmployeeIds().isEmpty()) {
-                predicates.add(root.get("employeeId").in(f.getEmployeeIds()));
+                predicates.add(
+                    root.get("employee").get("id").in(f.getEmployeeIds())
+                );
             }
 
             // ======================================================
             // 3) Filter theo khoảng ngày
             // ======================================================
-            LocalDate dateFrom = f.getDateFrom();
-            LocalDate dateTo = f.getDateTo();
-
-            if (dateFrom != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("date"), dateFrom));
+            if (f.getDateFrom() != null) {
+                predicates.add(
+                    cb.greaterThanOrEqualTo(root.get("date"), f.getDateFrom())
+                );
             }
 
-            if (dateTo != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("date"), dateTo));
+            if (f.getDateTo() != null) {
+                predicates.add(
+                    cb.lessThanOrEqualTo(root.get("date"), f.getDateTo())
+                );
             }
 
             // ======================================================
             // 4) Filter theo trạng thái
             // ======================================================
-            SpecialScheduleStatus status = f.getStatus();
-            if (status != null) {
-                predicates.add(cb.equal(root.get("status"), status));
+            if (f.getStatus() != null) {
+                predicates.add(
+                    cb.equal(root.get("status"), f.getStatus())
+                );
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

@@ -24,9 +24,9 @@ public class LeaveRequestController {
 		this.service = service;
 	}
 	
-	// ---------------------------
-    // Helper: resolve current user id from security context
-    // ---------------------------
+	// =====================================================
+    // Helper: get current user id
+    // =====================================================
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
@@ -38,32 +38,32 @@ public class LeaveRequestController {
             return ud.getId();
         }
 
-        // sometimes principal is username (String) - attempt to parse as id
-        if (principal instanceof String name) {
+        if (principal instanceof String username) {
             try {
-                return Long.parseLong(name);
-            } catch (NumberFormatException ex) {
-                throw new RuntimeException("Cannot resolve current user id from principal");
+                return Long.parseLong(username);
+            } catch (NumberFormatException e) {
+                throw new RuntimeException("Cannot resolve user id");
             }
         }
 
-        throw new RuntimeException("Cannot resolve current user id");
+        throw new RuntimeException("Cannot resolve user id");
     }
 
-    // ---------------------------
-    // CREATE (Employee)
-    // ---------------------------
+    // =====================================================
+    // CREATE – EMPLOYEE
+    // =====================================================
     @PreAuthorize("hasRole('EMPLOYEE')")
     @PostMapping
-    public ResponseEntity<LeaveRequestDTO> create(@RequestBody LeaveRequestCreateDTO dto) {
-        // service will fallback to current user if dto.employeeId == null
+    public ResponseEntity<LeaveRequestDTO> create(
+            @RequestBody LeaveRequestCreateDTO dto) {
+
         LeaveRequestDTO created = service.createRequest(dto);
         return ResponseEntity.ok(created);
     }
 
-    // ---------------------------
-    // EMPLOYEE - view own requests
-    // ---------------------------
+    // =====================================================
+    // EMPLOYEE – MY REQUESTS
+    // =====================================================
     @PreAuthorize("hasRole('EMPLOYEE')")
     @GetMapping("/my")
     public ResponseEntity<Page<LeaveRequestDTO>> myRequests(
@@ -71,27 +71,25 @@ public class LeaveRequestController {
             @RequestParam(defaultValue = "10") int size) {
 
         Long userId = getCurrentUserId();
-        Page<LeaveRequestDTO> result = service.getMyRequests(userId, page, size);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(service.getMyRequests(userId, page, size));
     }
 
-    // ---------------------------
-    // MANAGER - view department requests
-    // ---------------------------
+    // =====================================================
+    // MANAGER – DEPARTMENT REQUESTS
+    // =====================================================
     @PreAuthorize("hasRole('MANAGER')")
     @GetMapping("/department")
-    public ResponseEntity<Page<LeaveRequestDTO>> managerRequests(
+    public ResponseEntity<Page<LeaveRequestDTO>> departmentRequests(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        Long managerUserId = getCurrentUserId();
-        Page<LeaveRequestDTO> result = service.getDepartmentRequests(managerUserId, page, size);
-        return ResponseEntity.ok(result);
+        Long managerId = getCurrentUserId();
+        return ResponseEntity.ok(service.getDepartmentRequests(managerId, page, size));
     }
 
-    // ---------------------------
-    // HR / ADMIN - list & filter
-    // ---------------------------
+    // =====================================================
+    // HR / ADMIN – FILTER LIST
+    // =====================================================
     @PreAuthorize("hasAnyRole('HR','ADMIN')")
     @GetMapping
     public ResponseEntity<Page<LeaveRequestDTO>> filter(
@@ -102,23 +100,22 @@ public class LeaveRequestController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        Page<LeaveRequestDTO> result = service.getAllFiltered(employeeName, department, status, type, page, size);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(
+                service.getAllFiltered(employeeName, department, status, type, page, size)
+        );
     }
 
-    // ---------------------------
-    // GET BY ID (any authenticated user who can access resource)
-    // Note: consider restricting access by owner/manager/hr if needed
-    // ---------------------------
+    // =====================================================
+    // GET BY ID
+    // =====================================================
     @GetMapping("/{id}")
     public ResponseEntity<LeaveRequestDTO> getById(@PathVariable Long id) {
-        LeaveRequestDTO dto = service.getById(id);
-        return ResponseEntity.ok(dto);
+        return ResponseEntity.ok(service.getById(id));
     }
 
-    // ---------------------------
-    // ADMIN update (HR / ADMIN only)
-    // ---------------------------
+    // =====================================================
+    // HR / ADMIN – UPDATE
+    // =====================================================
     @PreAuthorize("hasAnyRole('HR','ADMIN')")
     @PutMapping("/admin/{id}")
     public ResponseEntity<LeaveRequestDTO> adminUpdate(
@@ -126,30 +123,29 @@ public class LeaveRequestController {
             @RequestBody LeaveRequestUpdateDTO dto) {
 
         Long actorId = getCurrentUserId();
-        LeaveRequestDTO updated = service.adminUpdate(id, dto, actorId);
-        return ResponseEntity.ok(updated);
+        return ResponseEntity.ok(service.adminUpdate(id, dto, actorId));
     }
 
-    // ---------------------------
-    // ADMIN delete (HR / ADMIN only)
-    // ---------------------------
+    // =====================================================
+    // HR / ADMIN – DELETE
+    // =====================================================
     @PreAuthorize("hasAnyRole('HR','ADMIN')")
     @DeleteMapping("/admin/{id}")
-    public ResponseEntity<Void> deleteByAdmin(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("hasAnyRole('HR','ADMIN')")
     @DeleteMapping("/admin/batch")
-    public ResponseEntity<Void> deleteManyByAdmin(@RequestBody List<Long> ids) {
+    public ResponseEntity<Void> deleteMany(@RequestBody List<Long> ids) {
         service.deleteMany(ids);
         return ResponseEntity.noContent().build();
     }
 
-    // ---------------------------
-    // Approve / Reject => unified decision endpoint (Manager & HR)
-    // ---------------------------
+    // =====================================================
+    // DECIDE – MANAGER / HR
+    // =====================================================
     @PreAuthorize("hasAnyRole('MANAGER','HR')")
     @PatchMapping("/{id}/decision")
     public ResponseEntity<LeaveRequestDTO> decide(
@@ -157,18 +153,24 @@ public class LeaveRequestController {
             @RequestBody LeaveRequestDecisionDTO dto) {
 
         Long actorId = getCurrentUserId();
-        LeaveRequestDTO result = service.decide(id, dto.getAction(), dto.getManagerNote(), actorId);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(
+                service.decide(id, dto.getAction(), dto.getManagerNote(), actorId)
+        );
     }
 
-    // ---------------------------
-    // Bulk decision (Manager & HR)
-    // ---------------------------
+    // =====================================================
+    // BULK DECIDE – MANAGER / HR
+    // ⚠ BulkDecisionDTO hiện KHÔNG có managerNote
+    // → truyền null (đúng với Service hiện tại)
+    // =====================================================
     @PreAuthorize("hasAnyRole('MANAGER','HR')")
     @PatchMapping("/decision")
-    public ResponseEntity<BulkDecisionResultDTO> decideMany(@RequestBody BulkDecisionDTO dto) {
+    public ResponseEntity<BulkDecisionResultDTO> decideMany(
+            @RequestBody BulkDecisionDTO dto) {
+
         Long actorId = getCurrentUserId();
-        BulkDecisionResultDTO result = service.decideMany(dto.getIds(), dto.getAction(), dto.getComment(), actorId);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(
+                service.decideMany(dto.getIds(), dto.getAction(), null, actorId)
+        );
     }
 }

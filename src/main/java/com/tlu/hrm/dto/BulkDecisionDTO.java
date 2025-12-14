@@ -8,17 +8,17 @@ public class BulkDecisionDTO {
 
 	private List<Long> ids;
     private DecisionAction action;
-    private String comment;
+    private String managerNote;
     
 	public BulkDecisionDTO() {
 		super();
 	}
 	
-	public BulkDecisionDTO(List<Long> ids, DecisionAction action, String comment) {
+	public BulkDecisionDTO(List<Long> ids, DecisionAction action, String managerNote) {
 		super();
 		this.ids = ids;
 		this.action = action;
-		this.comment = comment;
+		this.managerNote = managerNote;
 	}
 	
 	public List<Long> getIds() {
@@ -33,13 +33,13 @@ public class BulkDecisionDTO {
 	public void setAction(DecisionAction action) {
 		this.action = action;
 	}
-	public String getComment() {
-		return comment;
+
+	public String getManagerNote() {
+		return managerNote;
 	}
-	public void setComment(String comment) {
-		this.comment = comment;
+
+	public void setManagerNote(String managerNote) {
+		this.managerNote = managerNote;
 	}
-    
-    
     
 }

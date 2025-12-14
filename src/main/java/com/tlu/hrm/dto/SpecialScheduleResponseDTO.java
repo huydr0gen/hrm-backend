@@ -9,21 +9,38 @@ public class SpecialScheduleResponseDTO {
 
 	private Long id;
     private Long employeeId;
+    private String employeeName;
+    private String department;
+
     private LocalDate date;
-    private String shift;
     private String reason;
 
     private SpecialScheduleStatus status;
-    private String createdBy;
-    private String approvedBy;
+    private Long decidedBy;
+    private LocalDateTime decidedAt;
 
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private LocalDateTime approvedAt;
     
 	public SpecialScheduleResponseDTO() {
 		super();
 	}
+
+	public SpecialScheduleResponseDTO(Long id, Long employeeId, String employeeName, String department, LocalDate date,
+			String reason, SpecialScheduleStatus status, Long decidedBy, LocalDateTime decidedAt,
+			LocalDateTime createdAt) {
+		super();
+		this.id = id;
+		this.employeeId = employeeId;
+		this.employeeName = employeeName;
+		this.department = department;
+		this.date = date;
+		this.reason = reason;
+		this.status = status;
+		this.decidedBy = decidedBy;
+		this.decidedAt = decidedAt;
+		this.createdAt = createdAt;
+	}
+
 
 	public Long getId() {
 		return id;
@@ -41,20 +58,28 @@ public class SpecialScheduleResponseDTO {
 		this.employeeId = employeeId;
 	}
 
+	public String getEmployeeName() {
+		return employeeName;
+	}
+
+	public void setEmployeeName(String employeeName) {
+		this.employeeName = employeeName;
+	}
+
+	public String getDepartment() {
+		return department;
+	}
+
+	public void setDepartment(String department) {
+		this.department = department;
+	}
+
 	public LocalDate getDate() {
 		return date;
 	}
 
 	public void setDate(LocalDate date) {
 		this.date = date;
-	}
-
-	public String getShift() {
-		return shift;
-	}
-
-	public void setShift(String shift) {
-		this.shift = shift;
 	}
 
 	public String getReason() {
@@ -73,20 +98,20 @@ public class SpecialScheduleResponseDTO {
 		this.status = status;
 	}
 
-	public String getCreatedBy() {
-		return createdBy;
+	public Long getDecidedBy() {
+		return decidedBy;
 	}
 
-	public void setCreatedBy(String createdBy) {
-		this.createdBy = createdBy;
+	public void setDecidedBy(Long decidedBy) {
+		this.decidedBy = decidedBy;
 	}
 
-	public String getApprovedBy() {
-		return approvedBy;
+	public LocalDateTime getDecidedAt() {
+		return decidedAt;
 	}
 
-	public void setApprovedBy(String approvedBy) {
-		this.approvedBy = approvedBy;
+	public void setDecidedAt(LocalDateTime decidedAt) {
+		this.decidedAt = decidedAt;
 	}
 
 	public LocalDateTime getCreatedAt() {
@@ -96,22 +121,5 @@ public class SpecialScheduleResponseDTO {
 	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
 	}
-
-	public LocalDateTime getUpdatedAt() {
-		return updatedAt;
-	}
-
-	public void setUpdatedAt(LocalDateTime updatedAt) {
-		this.updatedAt = updatedAt;
-	}
-
-	public LocalDateTime getApprovedAt() {
-		return approvedAt;
-	}
-
-	public void setApprovedAt(LocalDateTime approvedAt) {
-		this.approvedAt = approvedAt;
-	}
-    
     
 }

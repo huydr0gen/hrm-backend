@@ -15,43 +15,40 @@ public class SpecialSchedule {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long employeeId;
+    @ManyToOne
+    @JoinColumn(name = "employee_id", nullable = false)
+    private Employee employee;
 
     private LocalDate date;
-
-    private String shift;
 
     private String reason;
 
     @Enumerated(EnumType.STRING)
-    private SpecialScheduleStatus status;
+    private SpecialScheduleStatus status = SpecialScheduleStatus.PENDING;
 
-    private String createdBy;
-    private String approvedBy;
+    // HR / Manager quyết định
+    private Long decidedBy;
+    private LocalDateTime decidedAt;
 
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
     private LocalDateTime updatedAt;
-    private LocalDateTime approvedAt;
     
 	public SpecialSchedule() {
 		super();
 	}
 
-	public SpecialSchedule(Long id, Long employeeId, LocalDate date, String shift, String reason,
-			SpecialScheduleStatus status, String createdBy, String approvedBy, LocalDateTime createdAt,
-			LocalDateTime updatedAt, LocalDateTime approvedAt) {
+	public SpecialSchedule(Long id, Employee employee, LocalDate date, String reason, SpecialScheduleStatus status,
+			Long decidedBy, LocalDateTime decidedAt, LocalDateTime createdAt, LocalDateTime updatedAt) {
 		super();
 		this.id = id;
-		this.employeeId = employeeId;
+		this.employee = employee;
 		this.date = date;
-		this.shift = shift;
 		this.reason = reason;
 		this.status = status;
-		this.createdBy = createdBy;
-		this.approvedBy = approvedBy;
+		this.decidedBy = decidedBy;
+		this.decidedAt = decidedAt;
 		this.createdAt = createdAt;
 		this.updatedAt = updatedAt;
-		this.approvedAt = approvedAt;
 	}
 
 	public Long getId() {
@@ -62,12 +59,12 @@ public class SpecialSchedule {
 		this.id = id;
 	}
 
-	public Long getEmployeeId() {
-		return employeeId;
+	public Employee getEmployee() {
+		return employee;
 	}
 
-	public void setEmployeeId(Long employeeId) {
-		this.employeeId = employeeId;
+	public void setEmployee(Employee employee) {
+		this.employee = employee;
 	}
 
 	public LocalDate getDate() {
@@ -76,14 +73,6 @@ public class SpecialSchedule {
 
 	public void setDate(LocalDate date) {
 		this.date = date;
-	}
-
-	public String getShift() {
-		return shift;
-	}
-
-	public void setShift(String shift) {
-		this.shift = shift;
 	}
 
 	public String getReason() {
@@ -102,20 +91,20 @@ public class SpecialSchedule {
 		this.status = status;
 	}
 
-	public String getCreatedBy() {
-		return createdBy;
+	public Long getDecidedBy() {
+		return decidedBy;
 	}
 
-	public void setCreatedBy(String createdBy) {
-		this.createdBy = createdBy;
+	public void setDecidedBy(Long decidedBy) {
+		this.decidedBy = decidedBy;
 	}
 
-	public String getApprovedBy() {
-		return approvedBy;
+	public LocalDateTime getDecidedAt() {
+		return decidedAt;
 	}
 
-	public void setApprovedBy(String approvedBy) {
-		this.approvedBy = approvedBy;
+	public void setDecidedAt(LocalDateTime decidedAt) {
+		this.decidedAt = decidedAt;
 	}
 
 	public LocalDateTime getCreatedAt() {
@@ -134,13 +123,5 @@ public class SpecialSchedule {
 		this.updatedAt = updatedAt;
 	}
 
-	public LocalDateTime getApprovedAt() {
-		return approvedAt;
-	}
-
-	public void setApprovedAt(LocalDateTime approvedAt) {
-		this.approvedAt = approvedAt;
-	}
-    
-    
+	
 }

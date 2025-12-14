@@ -1,288 +1,244 @@
 package com.tlu.hrm.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import com.tlu.hrm.dto.SpecialScheduleApproveDTO;
-import com.tlu.hrm.dto.SpecialScheduleBulkApproveDTO;
+import com.tlu.hrm.dto.BulkDecisionResultDTO;
 import com.tlu.hrm.dto.SpecialScheduleCreateDTO;
 import com.tlu.hrm.dto.SpecialScheduleFilterDTO;
 import com.tlu.hrm.dto.SpecialScheduleResponseDTO;
 import com.tlu.hrm.dto.SpecialScheduleUpdateDTO;
 import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.entities.SpecialSchedule;
+import com.tlu.hrm.enums.DecisionAction;
 import com.tlu.hrm.enums.SpecialScheduleStatus;
-import com.tlu.hrm.mapper.SpecialScheduleMapper;
 import com.tlu.hrm.repository.EmployeeRepository;
 import com.tlu.hrm.repository.SpecialScheduleRepository;
 import com.tlu.hrm.security.CustomUserDetails;
 import com.tlu.hrm.spec.SpecialScheduleSpecification;
 
+import jakarta.transaction.Transactional;
+
 @Service
+@Transactional
 public class SpecialScheduleServiceImpl implements SpecialScheduleService {
 
 	private final SpecialScheduleRepository repository;
     private final EmployeeRepository employeeRepository;
-    private final SpecialScheduleMapper mapper = new SpecialScheduleMapper();
 
-    private static final Logger log = LoggerFactory.getLogger(SpecialScheduleServiceImpl.class);
-    
 	public SpecialScheduleServiceImpl(SpecialScheduleRepository repository, EmployeeRepository employeeRepository) {
 		super();
 		this.repository = repository;
 		this.employeeRepository = employeeRepository;
 	}
 
-	// ================================
-    //  HELPER: Kiểm tra xem Manager và nhân viên có cùng phòng ban không
-    // ================================
-    private boolean isInManagerDepartment(Long managerEmployeeId, Long targetEmployeeId) {
-
-        Employee manager = employeeRepository.findById(managerEmployeeId)
-                .orElseThrow(() -> new RuntimeException("Manager employee not found"));
-
-        Employee target = employeeRepository.findById(targetEmployeeId)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
-
-        if (manager.getDepartment() == null || target.getDepartment() == null)
-            return false;
-
-        return manager.getDepartment().equalsIgnoreCase(target.getDepartment());
-    }
-
-    // ================================
-    // LIST (phân quyền theo role + phòng ban)
-    // ================================
+	// ======================================================
+    // LIST
+    // ======================================================
     @Override
-    public Page<SpecialScheduleResponseDTO> list(SpecialScheduleFilterDTO filter, Pageable pageable) {
+    public Page<SpecialScheduleResponseDTO> list(SpecialScheduleFilterDTO filter) {
 
-        log.info("Listing SpecialSchedule with filter {}", filter);
+        Employee actor = getCurrentEmployee();
+        Set<String> roles = getCurrentRoles();
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        CustomUserDetails currentUser = (CustomUserDetails) auth.getPrincipal();
-
-        Long currentEmployeeId = currentUser.getEmployeeId();
-        String roles = auth.getAuthorities().toString();
-
-        // EMPLOYEE -> chỉ xem lịch của chính họ
+        // EMPLOYEE: chỉ xem của chính mình
         if (roles.contains("ROLE_EMPLOYEE")) {
-            filter.setEmployeeId(currentEmployeeId);
-            log.info("EMPLOYEE -> filter only their schedules, employeeId={}", currentEmployeeId);
+            filter.setEmployeeId(actor.getId());
         }
 
-        // MANAGER -> xem danh sách nhân viên trong phòng ban
-        else if (roles.contains("ROLE_MANAGER")) {
+        // MANAGER: chỉ xem trong phòng ban
+        if (roles.contains("ROLE_MANAGER") && !isHRorAdmin(roles)) {
+            List<Long> empIds = employeeRepository
+                    .findByDepartment(actor.getDepartment())
+                    .stream()
+                    .map(Employee::getId)
+                    .toList();
 
-            Employee manager = employeeRepository.findById(currentEmployeeId)
-                    .orElseThrow(() -> new RuntimeException("Manager employee not found"));
-
-            List<Long> employeeIds = employeeRepository.findByDepartment(manager.getDepartment())
-                    .stream().map(Employee::getId).toList();
-
-            filter.setEmployeeIds(employeeIds);
-
-            log.info("MANAGER -> filter by department={}, employeeIds={}",
-                    manager.getDepartment(), employeeIds);
+            filter.setEmployeeIds(empIds);
         }
 
-        // HR + ADMIN -> xem tất cả
+        Specification<SpecialSchedule> spec =
+                SpecialScheduleSpecification.build(filter);
 
-        return repository.findAll(SpecialScheduleSpecification.build(filter), pageable)
-                .map(mapper::toResponse);
+        Pageable pageable = PageRequest.of(filter.getPage(), filter.getSize());
+
+        return repository.findAll(spec, pageable)
+                .map(this::toDTO);
     }
 
-    // ================================
-    // CREATE
-    // ================================
+    // ======================================================
+    // CREATE – EMPLOYEE
+    // ======================================================
     @Override
     public SpecialScheduleResponseDTO create(SpecialScheduleCreateDTO dto) {
-        log.info("Creating SpecialSchedule for employee {}", dto.getEmployeeId());
 
-        SpecialSchedule entity = mapper.toEntity(dto, "system");
+        requireRole("ROLE_EMPLOYEE");
 
-        repository.save(entity);
-        return mapper.toResponse(entity);
+        Employee emp = getCurrentEmployee();
+
+        SpecialSchedule ss = new SpecialSchedule();
+        ss.setEmployee(emp);
+        ss.setDate(dto.getDate());
+        ss.setReason(dto.getReason());
+        ss.setStatus(SpecialScheduleStatus.PENDING);
+
+        return toDTO(repository.save(ss));
     }
 
-    // ================================
-    // UPDATE (EMPLOYEE không được phép)
-    // MANAGER/HR/ADMIN -> được phép
-    // ================================
+    // ======================================================
+    // UPDATE – HR / ADMIN (PENDING ONLY)
+    // ======================================================
     @Override
     public SpecialScheduleResponseDTO update(Long id, SpecialScheduleUpdateDTO dto) {
 
-        log.info("Updating SpecialSchedule {}", id);
+        requireHRorAdmin();
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String roles = auth.getAuthorities().toString();
-        CustomUserDetails currentUser = (CustomUserDetails) auth.getPrincipal();
+        SpecialSchedule ss = getById(id);
 
-        // EMPLOYEE không được update
-        if (roles.contains("ROLE_EMPLOYEE")) {
-            throw new AccessDeniedException("Employees cannot update schedules");
+        if (ss.getStatus() != SpecialScheduleStatus.PENDING) {
+            throw new IllegalStateException("Only PENDING schedule can be updated");
         }
 
-        // Tải dữ liệu lịch
-        SpecialSchedule schedule = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("SpecialSchedule not found"));
+        ss.setDate(dto.getDate());
+        ss.setReason(dto.getReason());
+        ss.setUpdatedAt(LocalDateTime.now());
 
-        // MANAGER -> chỉ update nhân viên trong phòng ban của họ
-        if (roles.contains("ROLE_MANAGER")) {
-            if (!isInManagerDepartment(currentUser.getEmployeeId(), schedule.getEmployeeId())) {
-                throw new AccessDeniedException("Manager cannot update schedules outside their department");
-            }
-        }
-
-        // HR + ADMIN -> OK
-
-        if (schedule.getStatus() != SpecialScheduleStatus.PENDING) {
-            throw new RuntimeException("Only PENDING schedules can be updated");
-        }
-
-        mapper.updateEntity(schedule, dto);
-        repository.save(schedule);
-
-        return mapper.toResponse(schedule);
+        return toDTO(repository.save(ss));
     }
 
-    // ================================
-    // APPROVE (duyệt 1 lịch)
-    // EMPLOYEE -> không được
-    // MANAGER -> chỉ duyệt nhân viên trong phòng ban
-    // HR/ADMIN -> full
-    // ================================
+    // ======================================================
+    // DECIDE – HR / MANAGER
+    // ======================================================
     @Override
-    public SpecialScheduleResponseDTO approve(Long id, SpecialScheduleApproveDTO dto) {
+    public SpecialScheduleResponseDTO decide(Long id, DecisionAction action) {
 
-        log.info("Approving schedule {} with status {}", id, dto.getStatus());
+        Employee actor = getCurrentEmployee();
+        Set<String> roles = getCurrentRoles();
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String roles = auth.getAuthorities().toString();
-        CustomUserDetails currentUser = (CustomUserDetails) auth.getPrincipal();
+        SpecialSchedule ss = getById(id);
 
-        // EMPLOYEE không được duyệt
-        if (roles.contains("ROLE_EMPLOYEE")) {
-            throw new AccessDeniedException("Employees cannot approve schedules");
+        if (ss.getStatus() != SpecialScheduleStatus.PENDING) {
+            throw new IllegalStateException("Already processed");
         }
 
-        SpecialSchedule schedule = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("SpecialSchedule not found"));
-
-        // MANAGER -> chỉ duyệt nhân viên cùng phòng ban
-        if (roles.contains("ROLE_MANAGER")) {
-            if (!isInManagerDepartment(currentUser.getEmployeeId(), schedule.getEmployeeId())) {
-                throw new AccessDeniedException("Manager cannot approve schedules outside their department");
+        // MANAGER chỉ được quyết trong phòng ban
+        if (roles.contains("ROLE_MANAGER") && !isHRorAdmin(roles)) {
+            if (!actor.getDepartment()
+                    .equals(ss.getEmployee().getDepartment())) {
+                throw new AccessDeniedException("Out of department");
             }
         }
 
-        // HR + ADMIN → full quyền
+        // HR / ADMIN thì ok
 
-        if (schedule.getStatus() != SpecialScheduleStatus.PENDING) {
-            throw new RuntimeException("Schedule already processed");
-        }
+        ss.setStatus(
+                action == DecisionAction.APPROVE
+                        ? SpecialScheduleStatus.APPROVED
+                        : SpecialScheduleStatus.REJECTED
+        );
 
-        schedule.setStatus(dto.getStatus());
-        schedule.setApprovedBy("system");
-        schedule.setApprovedAt(LocalDateTime.now());
+        ss.setDecidedBy(actor.getUser().getId());
+        ss.setDecidedAt(LocalDateTime.now());
 
-        repository.save(schedule);
-        return mapper.toResponse(schedule);
+        return toDTO(repository.save(ss));
     }
 
-    // ================================
-    // APPROVE MANY (duyệt nhiều lịch)
-    // ADMIN -> full
-    // MANAGER -> chỉ duyệt nhiều nếu toàn bộ thuộc phòng ban của họ
-    // HR -> không bulk approve (tùy chính sách, nhưng bạn yêu cầu như vậy)
-    // EMPLOYEE -> không được
-    // ================================
+    // ======================================================
+    // BULK DECIDE
+    // ======================================================
     @Override
-    public int approveMany(SpecialScheduleBulkApproveDTO dto) {
+    public BulkDecisionResultDTO decideMany(List<Long> ids, DecisionAction action) {
 
-        log.info("Bulk approving schedules");
+        List<Long> success = new ArrayList<>();
+        List<Long> failed = new ArrayList<>();
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String roles = auth.getAuthorities().toString();
-        CustomUserDetails currentUser = (CustomUserDetails) auth.getPrincipal();
-
-        // EMPLOYEE -> không được approve-many
-        if (roles.contains("ROLE_EMPLOYEE")) {
-            throw new AccessDeniedException("Employees cannot approve schedules");
-        }
-
-        // HR -> không được bulk approve
-        if (roles.contains("ROLE_HR")) {
-            throw new AccessDeniedException("HR cannot bulk approve schedules");
-        }
-
-        List<SpecialSchedule> schedules = repository.findAllById(dto.getIds());
-
-        // MANAGER -> tất cả phải thuộc phòng ban họ quản lý
-        if (roles.contains("ROLE_MANAGER")) {
-            for (SpecialSchedule s : schedules) {
-                if (!isInManagerDepartment(currentUser.getEmployeeId(), s.getEmployeeId())) {
-                    throw new AccessDeniedException(
-                            "Manager cannot bulk approve schedules outside their department");
-                }
+        for (Long id : ids) {
+            try {
+                decide(id, action);
+                success.add(id);
+            } catch (Exception e) {
+                failed.add(id);
             }
         }
 
-        // ADMIN -> FULL QUYỀN
-
-        int count = 0;
-        for (SpecialSchedule e : schedules) {
-            if (e.getStatus() == SpecialScheduleStatus.PENDING) {
-                e.setStatus(dto.getStatus());
-                e.setApprovedBy("system");
-                e.setApprovedAt(LocalDateTime.now());
-                count++;
-            }
-        }
-
-        repository.saveAll(schedules);
-        return count;
+        return new BulkDecisionResultDTO(success, failed);
     }
 
-    // ================================
-    // DETAIL (phân quyền đầy đủ)
-    // ================================
+    // ======================================================
+    // DETAIL
+    // ======================================================
     @Override
     public SpecialScheduleResponseDTO detail(Long id) {
+        return toDTO(getById(id));
+    }
 
-        log.info("Getting detail schedule {}", id);
+    // ======================================================
+    // HELPERS
+    // ======================================================
+    private SpecialSchedule getById(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Special schedule not found"));
+    }
 
+    private Employee getCurrentEmployee() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        CustomUserDetails currentUser = (CustomUserDetails) auth.getPrincipal();
-        String roles = auth.getAuthorities().toString();
+        CustomUserDetails ud = (CustomUserDetails) auth.getPrincipal();
 
-        SpecialSchedule schedule = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("SpecialSchedule not found"));
+        return employeeRepository.findByUserId(ud.getId())
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+    }
 
-        // EMPLOYEE -> chỉ xem lịch của chính họ
-        if (roles.contains("ROLE_EMPLOYEE")) {
-            if (!schedule.getEmployeeId().equals(currentUser.getEmployeeId())) {
-                throw new AccessDeniedException("You cannot view schedules of other employees");
-            }
+    private Set<String> getCurrentRoles() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth.getAuthorities()
+                .stream()
+                .map(a -> a.getAuthority())
+                .collect(Collectors.toSet());
+    }
+
+    private void requireRole(String role) {
+        if (!getCurrentRoles().contains(role)) {
+            throw new AccessDeniedException("Forbidden");
         }
+    }
 
-        // MANAGER -> chỉ xem lịch của nhân viên phòng ban họ
-        if (roles.contains("ROLE_MANAGER")) {
-            if (!isInManagerDepartment(currentUser.getEmployeeId(), schedule.getEmployeeId())) {
-                throw new AccessDeniedException("Manager cannot view schedules outside their department");
-            }
+    private void requireHRorAdmin() {
+        Set<String> roles = getCurrentRoles();
+        if (!isHRorAdmin(roles)) {
+            throw new AccessDeniedException("Only HR/Admin allowed");
         }
+    }
 
-        // HR + ADMIN -> full quyền
+    private boolean isHRorAdmin(Set<String> roles) {
+        return roles.contains("ROLE_HR") || roles.contains("ROLE_ADMIN");
+    }
 
-        return mapper.toResponse(schedule);
+    private SpecialScheduleResponseDTO toDTO(SpecialSchedule e) {
+        SpecialScheduleResponseDTO dto = new SpecialScheduleResponseDTO();
+
+        dto.setId(e.getId());
+        dto.setEmployeeId(e.getEmployee().getId());
+        dto.setEmployeeName(e.getEmployee().getFullName());
+        dto.setDepartment(e.getEmployee().getDepartment());
+        dto.setDate(e.getDate());
+        dto.setReason(e.getReason());
+        dto.setStatus(e.getStatus());
+        dto.setDecidedBy(e.getDecidedBy());
+        dto.setDecidedAt(e.getDecidedAt());
+        dto.setCreatedAt(e.getCreatedAt());
+
+        return dto;
     }
 }

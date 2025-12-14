@@ -2,7 +2,6 @@ package com.tlu.hrm.dto;
 
 import java.time.LocalDate;
 
-import com.tlu.hrm.enums.LeaveStatus;
 import com.tlu.hrm.enums.LeaveType;
 
 public class LeaveRequestUpdateDTO {
