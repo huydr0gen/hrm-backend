@@ -170,7 +170,7 @@ public class LeaveRequestController {
 
         Long actorId = getCurrentUserId();
         return ResponseEntity.ok(
-                service.decideMany(dto.getIds(), dto.getAction(), null, actorId)
+                service.decideMany(dto.getIds(), dto.getAction(), dto.getManagerNote(), actorId)
         );
     }
 }
