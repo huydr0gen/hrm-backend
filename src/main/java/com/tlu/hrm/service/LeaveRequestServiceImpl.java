@@ -244,8 +244,11 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             throw new IllegalArgumentException("Unsupported decision action");
         }
 
+        Employee actorEmp = employeeRepo.findByUserId(actorId)
+        		.orElseThrow(() -> new RuntimeException("Actor employee not found"));
+        
         lr.setManagerNote(comment);
-        lr.setDecidedBy(actorId);
+        lr.setDecidedBy(actorEmp.getId());
         lr.setDecidedAt(LocalDateTime.now());
         lr.setUpdatedAt(LocalDateTime.now());
 
