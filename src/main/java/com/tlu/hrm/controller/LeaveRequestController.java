@@ -75,6 +75,8 @@ public class LeaveRequestController {
         )
         @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Tạo đơn thành công"),
+            @ApiResponse(responseCode = "400", description = "Dữ liệu đầu vào không hợp lệ"),
+            @ApiResponse(responseCode = "401", description = "Chưa đăng nhập"),
             @ApiResponse(responseCode = "403", description = "Không có quyền EMPLOYEE")
         })
     @PreAuthorize("hasRole('EMPLOYEE')")
@@ -98,6 +100,11 @@ public class LeaveRequestController {
                 - Chỉ lấy đơn của user đang đăng nhập
                 """
         )
+    @ApiResponses({
+    	@ApiResponse(responseCode = "200", description = "Lấy danh sách đơn nghỉ thành công"),
+        @ApiResponse(responseCode = "401", description = "Chưa đăng nhập"),
+        @ApiResponse(responseCode = "403", description = "Không có quyền EMPLOYEE")
+    })
     @PreAuthorize("hasRole('EMPLOYEE')")
     @GetMapping("/my")
     public ResponseEntity<Page<LeaveRequestDTO>> myRequests(
@@ -120,6 +127,10 @@ public class LeaveRequestController {
                 - Chỉ hiển thị đơn của nhân viên trong phòng ban
                 """
         )
+    @ApiResponses({
+    	@ApiResponse(responseCode = "200", description = "Lấy danh sách đơn nghỉ phòng ban thành công"),
+        @ApiResponse(responseCode = "403", description = "Không có quyền MANAGER")
+    })
     @PreAuthorize("hasRole('MANAGER')")
     @GetMapping("/department")
     public ResponseEntity<Page<LeaveRequestDTO>> departmentRequests(
@@ -145,6 +156,10 @@ public class LeaveRequestController {
                 - Loại nghỉ
                 """
         )
+    @ApiResponses({
+    	@ApiResponse(responseCode = "200", description = "Lấy danh sách đơn nghỉ thành công"),
+        @ApiResponse(responseCode = "403", description = "Không có quyền HR / ADMIN")
+    })
     @PreAuthorize("hasAnyRole('HR','ADMIN')")
     @GetMapping
     public ResponseEntity<Page<LeaveRequestDTO>> filter(
@@ -173,6 +188,11 @@ public class LeaveRequestController {
                 - MANAGER / HR / ADMIN
                 """
         )
+    @ApiResponses({
+    	@ApiResponse(responseCode = "200", description = "Lấy chi tiết đơn nghỉ thành công"),
+        @ApiResponse(responseCode = "403", description = "Không có quyền truy cập"),
+        @ApiResponse(responseCode = "404", description = "Không tìm thấy đơn nghỉ")
+    })
     @GetMapping("/{id}")
     public ResponseEntity<LeaveRequestDTO> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
@@ -190,6 +210,11 @@ public class LeaveRequestController {
                 - Chỉ HR / Admin được phép
                 """
         )
+    @ApiResponses({
+    	@ApiResponse(responseCode = "200", description = "Cập nhật đơn nghỉ thành công"),
+        @ApiResponse(responseCode = "403", description = "Không có quyền HR / ADMIN"),
+        @ApiResponse(responseCode = "404", description = "Không tìm thấy đơn nghỉ")
+    })
     @PreAuthorize("hasAnyRole('HR','ADMIN')")
     @PutMapping("/admin/{id}")
     public ResponseEntity<LeaveRequestDTO> adminUpdate(
@@ -212,6 +237,11 @@ public class LeaveRequestController {
                 - Xóa một đơn theo ID
                 """
         )
+    @ApiResponses({
+    	@ApiResponse(responseCode = "204", description = "Xóa đơn nghỉ thành công"),
+        @ApiResponse(responseCode = "403", description = "Không có quyền HR / ADMIN"),
+        @ApiResponse(responseCode = "404", description = "Không tìm thấy đơn nghỉ")
+    })
     @PreAuthorize("hasAnyRole('HR','ADMIN')")
     @DeleteMapping("/admin/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
@@ -228,6 +258,10 @@ public class LeaveRequestController {
                 - Xóa hàng loạt theo danh sách ID
                 """
         )
+    @ApiResponses({
+    	@ApiResponse(responseCode = "204", description = "Xóa nhiều đơn nghỉ thành công"),
+        @ApiResponse(responseCode = "403", description = "Không có quyền HR / ADMIN")
+    })
     @PreAuthorize("hasAnyRole('HR','ADMIN')")
     @DeleteMapping("/admin/batch")
     public ResponseEntity<Void> deleteMany(@RequestBody List<Long> ids) {
@@ -248,6 +282,11 @@ public class LeaveRequestController {
                 - REJECT
                 """
         )
+    @ApiResponses({
+    	@ApiResponse(responseCode = "200", description = "Xử lý đơn nghỉ thành công"),
+        @ApiResponse(responseCode = "400", description = "Đơn đã được xử lý hoặc action không hợp lệ"),
+        @ApiResponse(responseCode = "403", description = "Không có quyền MANAGER / HR")
+    })
     @PreAuthorize("hasAnyRole('MANAGER','HR')")
     @PatchMapping("/{id}/decision")
     public ResponseEntity<LeaveRequestDTO> decide(
@@ -272,6 +311,10 @@ public class LeaveRequestController {
                 - Áp dụng cùng một action cho nhiều đơn
                 """
         )
+    @ApiResponses({
+    	@ApiResponse(responseCode = "200", description = "Xử lý hàng loạt thành công"),
+        @ApiResponse(responseCode = "403", description = "Không có quyền MANAGER / HR")
+    })
     @PreAuthorize("hasAnyRole('MANAGER','HR')")
     @PatchMapping("/decision")
     public ResponseEntity<BulkDecisionResultDTO> decideMany(

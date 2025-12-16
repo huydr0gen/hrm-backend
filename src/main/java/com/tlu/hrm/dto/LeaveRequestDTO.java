@@ -17,6 +17,9 @@ public class LeaveRequestDTO {
 	@Schema(description = "ID của nhân viên gửi đơn", example = "5")
     private Long employeeId;
 	
+	@Schema(description = "Mã nhân viên", example = "EMP001")
+	private String employeeCode;
+	
 	@Schema(description = "Tên nhân viên", example = "Nguyễn Văn A")
     private String employeeName;
 	
@@ -64,6 +67,12 @@ public class LeaveRequestDTO {
 	}
 	public void setEmployeeId(Long employeeId) {
 		this.employeeId = employeeId;
+	}
+	public String getEmployeeCode() {
+		return employeeCode;
+	}
+	public void setEmployeeCode(String employeeCode) {
+		this.employeeCode = employeeCode;
 	}
 	public String getEmployeeName() {
 		return employeeName;

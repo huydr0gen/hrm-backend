@@ -3,7 +3,6 @@ package com.tlu.hrm.service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -288,6 +287,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 
         dto.setId(req.getId());
         dto.setEmployeeId(req.getEmployee().getId());
+        dto.setEmployeeCode(req.getEmployee().getCode());
         dto.setEmployeeName(req.getEmployee().getFullName());
         dto.setDepartment(req.getEmployee().getDepartment());
 

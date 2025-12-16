@@ -1,7 +1,6 @@
 package com.tlu.hrm.entities;
 
 import jakarta.persistence.*;
-import lombok.*;
 
 @Entity
 @Table(name = "roles")

@@ -7,7 +7,6 @@ import java.util.Set;
 import com.tlu.hrm.enums.UserStatus;
 
 import jakarta.persistence.*;
-import lombok.*;
 
 @Entity
 @Table(name = "users")
