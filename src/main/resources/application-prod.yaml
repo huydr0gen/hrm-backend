@@ -38,3 +38,7 @@ company:
 server:
   port: 8080
   forward-headers-strategy: framework
+logging:
+  level:
+    org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping: TRACE
+    org.springframework.web.servlet.DispatcherServlet: DEBUG

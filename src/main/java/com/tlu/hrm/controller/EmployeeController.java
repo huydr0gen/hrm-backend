@@ -115,20 +115,20 @@ public class EmployeeController {
 
  // GET EMPLOYEE BY ID ---------------------------------------------------------
 
-//    @Operation(
-//        summary = "Lấy chi tiết nhân viên",
-//        description = """
-//            Màn hình: Chi tiết nhân viên
-//            
-//            Role:
-//            - HR
-//            """
-//    )
-//    @PreAuthorize("hasRole('HR')")
-//    @GetMapping("/{id:\\d+}")
-//    public ResponseEntity<EmployeeDTO> getById(@PathVariable Long id) {
-//        return ResponseEntity.ok(employeeService.getEmployeeById(id));
-//    }
+    @Operation(
+        summary = "Lấy chi tiết nhân viên",
+        description = """
+            Màn hình: Chi tiết nhân viên
+            
+            Role:
+            - HR
+            """
+    )
+    @PreAuthorize("hasRole('HR')")
+    @GetMapping("/{id:\\d+}")
+    public ResponseEntity<EmployeeDTO> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(employeeService.getEmployeeById(id));
+    }
 
  // UPDATE EMPLOYEE ------------------------------------------------------------
 
