@@ -125,7 +125,7 @@ public class EmployeeController {
             """
     )
     @PreAuthorize("hasRole('HR')")
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<EmployeeDTO> getById(@PathVariable Long id) {
         return ResponseEntity.ok(employeeService.getEmployeeById(id));
     }
