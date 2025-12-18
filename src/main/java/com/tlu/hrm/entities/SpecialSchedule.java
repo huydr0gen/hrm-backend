@@ -2,8 +2,10 @@ package com.tlu.hrm.entities;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import com.tlu.hrm.enums.SpecialScheduleStatus;
+import com.tlu.hrm.enums.SpecialScheduleType;
 
 import jakarta.persistence.*;
 
@@ -19,17 +21,45 @@ public class SpecialSchedule {
     @JoinColumn(name = "employee_id", nullable = false)
     private Employee employee;
 
-    private LocalDate date;
+    // =========================
+    // Date range
+    // =========================
+    @Column(name = "start_date", nullable = false)
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
+
+    // =========================
+    // On-site time range
+    // =========================
+    private LocalTime morningStart;
+    private LocalTime morningEnd;
+
+    private LocalTime afternoonStart;
+    private LocalTime afternoonEnd;
+
+    // =========================
+    // Type & Reason
+    // =========================
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SpecialScheduleType type;
 
     private String reason;
 
+    // =========================
+    // Approval
+    // =========================
     @Enumerated(EnumType.STRING)
     private SpecialScheduleStatus status = SpecialScheduleStatus.PENDING;
 
-    // HR / Manager quyết định
     private Long decidedBy;
     private LocalDateTime decidedAt;
 
+    // =========================
+    // Audit
+    // =========================
     private LocalDateTime createdAt = LocalDateTime.now();
     private LocalDateTime updatedAt;
     
@@ -37,12 +67,20 @@ public class SpecialSchedule {
 		super();
 	}
 
-	public SpecialSchedule(Long id, Employee employee, LocalDate date, String reason, SpecialScheduleStatus status,
-			Long decidedBy, LocalDateTime decidedAt, LocalDateTime createdAt, LocalDateTime updatedAt) {
+	public SpecialSchedule(Long id, Employee employee, LocalDate startDate, LocalDate endDate, LocalTime morningStart,
+			LocalTime morningEnd, LocalTime afternoonStart, LocalTime afternoonEnd, SpecialScheduleType type,
+			String reason, SpecialScheduleStatus status, Long decidedBy, LocalDateTime decidedAt,
+			LocalDateTime createdAt, LocalDateTime updatedAt) {
 		super();
 		this.id = id;
 		this.employee = employee;
-		this.date = date;
+		this.startDate = startDate;
+		this.endDate = endDate;
+		this.morningStart = morningStart;
+		this.morningEnd = morningEnd;
+		this.afternoonStart = afternoonStart;
+		this.afternoonEnd = afternoonEnd;
+		this.type = type;
 		this.reason = reason;
 		this.status = status;
 		this.decidedBy = decidedBy;
@@ -67,12 +105,60 @@ public class SpecialSchedule {
 		this.employee = employee;
 	}
 
-	public LocalDate getDate() {
-		return date;
+	public LocalDate getStartDate() {
+		return startDate;
 	}
 
-	public void setDate(LocalDate date) {
-		this.date = date;
+	public void setStartDate(LocalDate startDate) {
+		this.startDate = startDate;
+	}
+
+	public LocalDate getEndDate() {
+		return endDate;
+	}
+
+	public void setEndDate(LocalDate endDate) {
+		this.endDate = endDate;
+	}
+
+	public LocalTime getMorningStart() {
+		return morningStart;
+	}
+
+	public void setMorningStart(LocalTime morningStart) {
+		this.morningStart = morningStart;
+	}
+
+	public LocalTime getMorningEnd() {
+		return morningEnd;
+	}
+
+	public void setMorningEnd(LocalTime morningEnd) {
+		this.morningEnd = morningEnd;
+	}
+
+	public LocalTime getAfternoonStart() {
+		return afternoonStart;
+	}
+
+	public void setAfternoonStart(LocalTime afternoonStart) {
+		this.afternoonStart = afternoonStart;
+	}
+
+	public LocalTime getAfternoonEnd() {
+		return afternoonEnd;
+	}
+
+	public void setAfternoonEnd(LocalTime afternoonEnd) {
+		this.afternoonEnd = afternoonEnd;
+	}
+
+	public SpecialScheduleType getType() {
+		return type;
+	}
+
+	public void setType(SpecialScheduleType type) {
+		this.type = type;
 	}
 
 	public String getReason() {
@@ -122,6 +208,7 @@ public class SpecialSchedule {
 	public void setUpdatedAt(LocalDateTime updatedAt) {
 		this.updatedAt = updatedAt;
 	}
-
+	
+    
 	
 }

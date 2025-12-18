@@ -2,45 +2,71 @@ package com.tlu.hrm.dto;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import com.tlu.hrm.enums.SpecialScheduleStatus;
+import com.tlu.hrm.enums.SpecialScheduleType;
 
 public class SpecialScheduleResponseDTO {
 
 	private Long id;
+
+    // ===== Employee info =====
     private Long employeeId;
+    private String employeeCode;     // ✅ NEW
     private String employeeName;
     private String department;
 
-    private LocalDate date;
+    // ===== Date range =====
+    private LocalDate startDate;
+    private LocalDate endDate;
+
+    // ===== On-site time =====
+    private LocalTime morningStart;
+    private LocalTime morningEnd;
+
+    private LocalTime afternoonStart;
+    private LocalTime afternoonEnd;
+
+    // ===== Type & Reason =====
+    private SpecialScheduleType type;
     private String reason;
 
+    // ===== Approval =====
     private SpecialScheduleStatus status;
     private Long decidedBy;
     private LocalDateTime decidedAt;
 
+    // ===== Audit =====
     private LocalDateTime createdAt;
-    
+
 	public SpecialScheduleResponseDTO() {
 		super();
 	}
 
-	public SpecialScheduleResponseDTO(Long id, Long employeeId, String employeeName, String department, LocalDate date,
-			String reason, SpecialScheduleStatus status, Long decidedBy, LocalDateTime decidedAt,
-			LocalDateTime createdAt) {
+	public SpecialScheduleResponseDTO(Long id, Long employeeId, String employeeCode, String employeeName,
+			String department, LocalDate startDate, LocalDate endDate, LocalTime morningStart, LocalTime morningEnd,
+			LocalTime afternoonStart, LocalTime afternoonEnd, SpecialScheduleType type, String reason,
+			SpecialScheduleStatus status, Long decidedBy, LocalDateTime decidedAt, LocalDateTime createdAt) {
 		super();
 		this.id = id;
 		this.employeeId = employeeId;
+		this.employeeCode = employeeCode;
 		this.employeeName = employeeName;
 		this.department = department;
-		this.date = date;
+		this.startDate = startDate;
+		this.endDate = endDate;
+		this.morningStart = morningStart;
+		this.morningEnd = morningEnd;
+		this.afternoonStart = afternoonStart;
+		this.afternoonEnd = afternoonEnd;
+		this.type = type;
 		this.reason = reason;
 		this.status = status;
 		this.decidedBy = decidedBy;
 		this.decidedAt = decidedAt;
 		this.createdAt = createdAt;
 	}
-
 
 	public Long getId() {
 		return id;
@@ -56,6 +82,14 @@ public class SpecialScheduleResponseDTO {
 
 	public void setEmployeeId(Long employeeId) {
 		this.employeeId = employeeId;
+	}
+
+	public String getEmployeeCode() {
+		return employeeCode;
+	}
+
+	public void setEmployeeCode(String employeeCode) {
+		this.employeeCode = employeeCode;
 	}
 
 	public String getEmployeeName() {
@@ -74,12 +108,60 @@ public class SpecialScheduleResponseDTO {
 		this.department = department;
 	}
 
-	public LocalDate getDate() {
-		return date;
+	public LocalDate getStartDate() {
+		return startDate;
 	}
 
-	public void setDate(LocalDate date) {
-		this.date = date;
+	public void setStartDate(LocalDate startDate) {
+		this.startDate = startDate;
+	}
+
+	public LocalDate getEndDate() {
+		return endDate;
+	}
+
+	public void setEndDate(LocalDate endDate) {
+		this.endDate = endDate;
+	}
+
+	public LocalTime getMorningStart() {
+		return morningStart;
+	}
+
+	public void setMorningStart(LocalTime morningStart) {
+		this.morningStart = morningStart;
+	}
+
+	public LocalTime getMorningEnd() {
+		return morningEnd;
+	}
+
+	public void setMorningEnd(LocalTime morningEnd) {
+		this.morningEnd = morningEnd;
+	}
+
+	public LocalTime getAfternoonStart() {
+		return afternoonStart;
+	}
+
+	public void setAfternoonStart(LocalTime afternoonStart) {
+		this.afternoonStart = afternoonStart;
+	}
+
+	public LocalTime getAfternoonEnd() {
+		return afternoonEnd;
+	}
+
+	public void setAfternoonEnd(LocalTime afternoonEnd) {
+		this.afternoonEnd = afternoonEnd;
+	}
+
+	public SpecialScheduleType getType() {
+		return type;
+	}
+
+	public void setType(SpecialScheduleType type) {
+		this.type = type;
 	}
 
 	public String getReason() {
@@ -121,5 +203,6 @@ public class SpecialScheduleResponseDTO {
 	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
 	}
+    
     
 }

@@ -25,7 +25,7 @@ public class SpecialScheduleSpecification {
             // ======================================================
             if (f.getEmployeeId() != null) {
                 predicates.add(
-                    cb.equal(root.get("employee").get("id"), f.getEmployeeId())
+                        cb.equal(root.get("employee").get("id"), f.getEmployeeId())
                 );
             }
 
@@ -34,22 +34,39 @@ public class SpecialScheduleSpecification {
             // ======================================================
             if (f.getEmployeeIds() != null && !f.getEmployeeIds().isEmpty()) {
                 predicates.add(
-                    root.get("employee").get("id").in(f.getEmployeeIds())
+                        root.get("employee").get("id").in(f.getEmployeeIds())
                 );
             }
 
             // ======================================================
-            // 3) Filter theo khoảng ngày
+            // 3) Filter theo khoảng ngày (OVERLAP LOGIC)
             // ======================================================
-            if (f.getDateFrom() != null) {
+            if (f.getDateFrom() != null && f.getDateTo() != null) {
                 predicates.add(
-                    cb.greaterThanOrEqualTo(root.get("date"), f.getDateFrom())
+                        cb.and(
+                                cb.lessThanOrEqualTo(
+                                        root.get("startDate"),
+                                        f.getDateTo()
+                                ),
+                                cb.greaterThanOrEqualTo(
+                                        root.get("endDate"),
+                                        f.getDateFrom()
+                                )
+                        )
                 );
-            }
-
-            if (f.getDateTo() != null) {
+            } else if (f.getDateFrom() != null) {
                 predicates.add(
-                    cb.lessThanOrEqualTo(root.get("date"), f.getDateTo())
+                        cb.greaterThanOrEqualTo(
+                                root.get("endDate"),
+                                f.getDateFrom()
+                        )
+                );
+            } else if (f.getDateTo() != null) {
+                predicates.add(
+                        cb.lessThanOrEqualTo(
+                                root.get("startDate"),
+                                f.getDateTo()
+                        )
                 );
             }
 
@@ -58,7 +75,7 @@ public class SpecialScheduleSpecification {
             // ======================================================
             if (f.getStatus() != null) {
                 predicates.add(
-                    cb.equal(root.get("status"), f.getStatus())
+                        cb.equal(root.get("status"), f.getStatus())
                 );
             }
 

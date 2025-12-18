@@ -1,31 +1,96 @@
 package com.tlu.hrm.dto;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 public class SpecialScheduleUpdateDTO {
 
-	private LocalDate date;
+    private LocalDate startDate;
+    private LocalDate endDate;
+
+    private LocalTime morningStart;
+    private LocalTime morningEnd;
+
+    private LocalTime afternoonStart;
+    private LocalTime afternoonEnd;
+
     private String reason;
+
     
 	public SpecialScheduleUpdateDTO() {
 		super();
 	}
 
-	public LocalDate getDate() {
-		return date;
+
+	public LocalDate getStartDate() {
+		return startDate;
 	}
 
-	public void setDate(LocalDate date) {
-		this.date = date;
+
+	public void setStartDate(LocalDate startDate) {
+		this.startDate = startDate;
 	}
-	
+
+
+	public LocalDate getEndDate() {
+		return endDate;
+	}
+
+
+	public void setEndDate(LocalDate endDate) {
+		this.endDate = endDate;
+	}
+
+
+	public LocalTime getMorningStart() {
+		return morningStart;
+	}
+
+
+	public void setMorningStart(LocalTime morningStart) {
+		this.morningStart = morningStart;
+	}
+
+
+	public LocalTime getMorningEnd() {
+		return morningEnd;
+	}
+
+
+	public void setMorningEnd(LocalTime morningEnd) {
+		this.morningEnd = morningEnd;
+	}
+
+
+	public LocalTime getAfternoonStart() {
+		return afternoonStart;
+	}
+
+
+	public void setAfternoonStartTime(LocalTime afternoonStart) {
+		this.afternoonStart = afternoonStart;
+	}
+
+
+	public LocalTime getAfternoonEnd() {
+		return afternoonEnd;
+	}
+
+
+	public void setAfternoonEndTime(LocalTime afternoonEnd) {
+		this.afternoonEnd = afternoonEnd;
+	}
+
+
 	public String getReason() {
 		return reason;
 	}
 
+
 	public void setReason(String reason) {
 		this.reason = reason;
 	}
-    
+
+	
     
 }

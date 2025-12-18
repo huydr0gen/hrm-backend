@@ -24,6 +24,7 @@ import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.entities.SpecialSchedule;
 import com.tlu.hrm.enums.DecisionAction;
 import com.tlu.hrm.enums.SpecialScheduleStatus;
+import com.tlu.hrm.enums.SpecialScheduleType;
 import com.tlu.hrm.repository.EmployeeRepository;
 import com.tlu.hrm.repository.SpecialScheduleRepository;
 import com.tlu.hrm.security.CustomUserDetails;
@@ -53,12 +54,10 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         Employee actor = getCurrentEmployee();
         Set<String> roles = getCurrentRoles();
 
-        // EMPLOYEE: chỉ xem của chính mình
         if (roles.contains("ROLE_EMPLOYEE")) {
             filter.setEmployeeId(actor.getId());
         }
 
-        // MANAGER: chỉ xem trong phòng ban
         if (roles.contains("ROLE_MANAGER") && !isHRorAdmin(roles)) {
             List<Long> empIds = employeeRepository
                     .findByDepartment(actor.getDepartment())
@@ -90,9 +89,22 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
 
         SpecialSchedule ss = new SpecialSchedule();
         ss.setEmployee(emp);
-        ss.setDate(dto.getDate());
+        ss.setStartDate(dto.getStartDate());
+        ss.setType(dto.getType());
         ss.setReason(dto.getReason());
         ss.setStatus(SpecialScheduleStatus.PENDING);
+
+        // ===== Type-specific logic =====
+        switch (dto.getType()) {
+            case MATERNITY -> {
+                ss.setEndDate(dto.getStartDate().plusMonths(6));
+                // no time for maternity
+            }
+            case ON_SITE, OTHER -> {
+                ss.setEndDate(dto.getEndDate());
+                applyWorkingTime(ss, dto);
+            }
+        }
 
         return toDTO(repository.save(ss));
     }
@@ -111,15 +123,30 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
             throw new IllegalStateException("Only PENDING schedule can be updated");
         }
 
-        ss.setDate(dto.getDate());
+        // MATERNITY: chỉ cho sửa reason
+        if (ss.getType() == SpecialScheduleType.MATERNITY) {
+            ss.setReason(dto.getReason());
+            ss.setUpdatedAt(LocalDateTime.now());
+            return toDTO(repository.save(ss));
+        }
+
+        // OTHER / ON_SITE
+        ss.setStartDate(dto.getStartDate());
+        ss.setEndDate(dto.getEndDate());
         ss.setReason(dto.getReason());
+
+        ss.setMorningStart(dto.getMorningStart());
+        ss.setMorningEnd(dto.getMorningEnd());
+        ss.setAfternoonStart(dto.getAfternoonStart());
+        ss.setAfternoonEnd(dto.getAfternoonEnd());
+
         ss.setUpdatedAt(LocalDateTime.now());
 
         return toDTO(repository.save(ss));
     }
 
     // ======================================================
-    // DECIDE – HR / MANAGER
+    // DECIDE
     // ======================================================
     @Override
     public SpecialScheduleResponseDTO decide(Long id, DecisionAction action) {
@@ -133,15 +160,12 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
             throw new IllegalStateException("Already processed");
         }
 
-        // MANAGER chỉ được quyết trong phòng ban
         if (roles.contains("ROLE_MANAGER") && !isHRorAdmin(roles)) {
             if (!actor.getDepartment()
                     .equals(ss.getEmployee().getDepartment())) {
                 throw new AccessDeniedException("Out of department");
             }
         }
-
-        // HR / ADMIN thì ok
 
         ss.setStatus(
                 action == DecisionAction.APPROVE
@@ -215,8 +239,7 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
     }
 
     private void requireHRorAdmin() {
-        Set<String> roles = getCurrentRoles();
-        if (!isHRorAdmin(roles)) {
+        if (!isHRorAdmin(getCurrentRoles())) {
             throw new AccessDeniedException("Only HR/Admin allowed");
         }
     }
@@ -225,15 +248,33 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         return roles.contains("ROLE_HR") || roles.contains("ROLE_ADMIN");
     }
 
+    private void applyWorkingTime(SpecialSchedule ss, SpecialScheduleCreateDTO dto) {
+        ss.setMorningStart(dto.getMorningStart());
+        ss.setMorningEnd(dto.getMorningEnd());
+        ss.setAfternoonStart(dto.getAfternoonStart());
+        ss.setAfternoonEnd(dto.getAfternoonEnd());
+    }
+
     private SpecialScheduleResponseDTO toDTO(SpecialSchedule e) {
         SpecialScheduleResponseDTO dto = new SpecialScheduleResponseDTO();
 
         dto.setId(e.getId());
         dto.setEmployeeId(e.getEmployee().getId());
+        dto.setEmployeeCode(e.getEmployee().getCode());
         dto.setEmployeeName(e.getEmployee().getFullName());
         dto.setDepartment(e.getEmployee().getDepartment());
-        dto.setDate(e.getDate());
+
+        dto.setStartDate(e.getStartDate());
+        dto.setEndDate(e.getEndDate());
+
+        dto.setMorningStart(e.getMorningStart());
+        dto.setMorningEnd(e.getMorningEnd());
+        dto.setAfternoonStart(e.getAfternoonStart());
+        dto.setAfternoonEnd(e.getAfternoonEnd());
+
+        dto.setType(e.getType());
         dto.setReason(e.getReason());
+
         dto.setStatus(e.getStatus());
         dto.setDecidedBy(e.getDecidedBy());
         dto.setDecidedAt(e.getDecidedAt());
