@@ -20,4 +20,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 	Optional<Employee> findByUserId(Long userId);
 	
 	List<Employee> findByDepartment(String department);
+	
+	Page<Employee> findByDepartment(String department, Pageable pageable);
 }

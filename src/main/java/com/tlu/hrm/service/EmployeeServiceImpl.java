@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.tlu.hrm.dto.EmployeeCreateDTO;
@@ -14,6 +15,7 @@ import com.tlu.hrm.dto.EmployeeDTO;
 import com.tlu.hrm.dto.EmployeeUpdateDTO;
 import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.repository.EmployeeRepository;
+import com.tlu.hrm.security.CustomUserDetails;
 
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
@@ -108,6 +110,35 @@ public class EmployeeServiceImpl implements EmployeeService {
             throw new RuntimeException("Employee not found");
         }
         employeeRepository.deleteById(id);
+    }
+    
+    @Override
+    public Page<EmployeeDTO> getEmployeesOfMyDepartment(int page, int size) {
+
+        Object principal = SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+
+        if (!(principal instanceof CustomUserDetails userDetails)) {
+            throw new RuntimeException("Unauthenticated");
+        }
+
+        if (userDetails.getEmployeeId() == null) {
+            throw new RuntimeException("Manager has no employee profile");
+        }
+
+        Employee manager = employeeRepository.findById(userDetails.getEmployeeId())
+                .orElseThrow(() -> new RuntimeException("Manager employee not found"));
+
+        String department = manager.getDepartment();
+
+        PageRequest pageable = PageRequest.of(page, size);
+
+        Page<Employee> employees =
+                employeeRepository.findByDepartment(department, pageable);
+
+        return employees.map(this::mapToDTO);
     }
 
     private EmployeeDTO mapToDTO(Employee emp) {

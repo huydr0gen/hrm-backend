@@ -19,5 +19,8 @@ public interface EmployeeService {
     EmployeeDTO updateEmployee(Long id, EmployeeUpdateDTO dto);
 
     void deleteEmployee(Long id);
+    
+    Page<EmployeeDTO> getEmployeesOfMyDepartment(int page, int size);
+
 
 }

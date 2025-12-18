@@ -121,12 +121,10 @@ public class EmployeeController {
             Màn hình: Chi tiết nhân viên
             
             Role:
-            - ADMIN
             - HR
-            - MANAGER
             """
     )
-    @PreAuthorize("hasAnyRole('ADMIN','HR','MANAGER')")
+    @PreAuthorize("hasRole('HR')")
     @GetMapping("/{id}")
     public ResponseEntity<EmployeeDTO> getById(@PathVariable Long id) {
         return ResponseEntity.ok(employeeService.getEmployeeById(id));
@@ -170,5 +168,30 @@ public class EmployeeController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         employeeService.deleteEmployee(id);
         return ResponseEntity.noContent().build();
+    }
+    
+    @Operation(
+    	    summary = "Danh sách nhân viên phòng ban của Manager",
+    	    description = """
+    	        Màn hình: Nhân viên phòng ban
+    	        
+    	        Role:
+    	        - MANAGER
+    	        
+    	        Luồng nghiệp vụ:
+    	        - Manager đăng nhập
+    	        - Hệ thống tự xác định phòng ban từ hồ sơ manager
+    	        - Trả về danh sách nhân viên cùng phòng ban
+    	        
+    	        Ghi chú:
+    	        - Manager không được xem nhân viên phòng ban khác
+    	        """
+    	)
+    @PreAuthorize("hasRole('MANAGER')")
+    @GetMapping("/my-department")
+    public ResponseEntity<Page<EmployeeDTO>> getMyDepartmentEmployees(
+    		@RequestParam(defaultValue = "0") int page,
+    		@RequestParam(defaultValue = "10") int size) {
+    	return ResponseEntity.ok(employeeService.getEmployeesOfMyDepartment(page, size));
     }
 }
