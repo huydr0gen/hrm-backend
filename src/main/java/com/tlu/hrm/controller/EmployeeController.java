@@ -188,7 +188,7 @@ public class EmployeeController {
     	        """
     	)
     @PreAuthorize("hasRole('MANAGER')")
-    @GetMapping("/my-department")
+    @GetMapping("/department/my")
     public ResponseEntity<Page<EmployeeDTO>> getMyDepartmentEmployees(
     		@RequestParam(defaultValue = "0") int page,
     		@RequestParam(defaultValue = "10") int size) {
