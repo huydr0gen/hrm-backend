@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import com.tlu.hrm.dto.PersonalApprovalCreateDTO;
 import com.tlu.hrm.dto.PersonalApprovalDecisionDTO;
 import com.tlu.hrm.dto.PersonalApprovalResponseDTO;
+import com.tlu.hrm.dto.PersonalApprovalUpdateDTO;
 import com.tlu.hrm.service.PersonalApprovalService;
 
 @RestController
@@ -61,6 +62,17 @@ public class PersonalApprovalController {
             @RequestBody PersonalApprovalDecisionDTO dto) {
 
         return ResponseEntity.ok(service.decide(id, dto));
+    }
+    
+    // =====================================================
+    // UPDATE PERSONAL APPROVAL
+    // =====================================================
+    @PutMapping("/{id}")
+    public ResponseEntity<PersonalApprovalResponseDTO> update(
+            @PathVariable Long id,
+            @RequestBody PersonalApprovalUpdateDTO dto) {
+
+        return ResponseEntity.ok(service.update(id, dto));
     }
 
     // =====================================================

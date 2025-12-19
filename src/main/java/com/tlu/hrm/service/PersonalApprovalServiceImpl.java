@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.tlu.hrm.dto.PersonalApprovalCreateDTO;
 import com.tlu.hrm.dto.PersonalApprovalDecisionDTO;
 import com.tlu.hrm.dto.PersonalApprovalResponseDTO;
+import com.tlu.hrm.dto.PersonalApprovalUpdateDTO;
 import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.entities.PersonalApprovalRequest;
 import com.tlu.hrm.entities.User;
@@ -142,6 +143,37 @@ public class PersonalApprovalServiceImpl implements PersonalApprovalService {
         request.setDecidedAt(LocalDateTime.now());
 
         return mapToResponse(request);
+    }
+    
+	 // =====================================================
+	 // UPDATE (ONLY CREATOR & PENDING)
+	 // =====================================================
+    @Override
+    public PersonalApprovalResponseDTO update(Long id, PersonalApprovalUpdateDTO dto) {
+    	PersonalApprovalRequest request = repository.findById(id)
+    			.orElseThrow(() -> new RuntimeException("Approval request not found"));
+
+    	User currentUser = getCurrentUser();
+    	Employee employee = currentUser.getEmployee();
+
+    	if (employee == null) {
+    		throw new RuntimeException("User is not linked to any employee");
+    	}
+
+    	// Chỉ người tạo mới được sửa
+    	if (!request.getEmployee().getId().equals(employee.getId())) {
+    		throw new RuntimeException("You can only update your own request");
+    	}
+
+    	// Chỉ sửa khi PENDING
+    	if (request.getStatus() != ApprovalStatus.PENDING) {
+    		throw new RuntimeException("Only pending requests can be updated");
+    	}
+
+    	request.setReason(dto.getReason());
+    	// updatedAt sẽ tự động set bởi @PreUpdate
+
+    	return mapToResponse(request);
     }
 
     // =====================================================
