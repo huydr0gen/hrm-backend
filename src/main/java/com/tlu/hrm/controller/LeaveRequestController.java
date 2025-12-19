@@ -231,7 +231,7 @@ public class LeaveRequestController {
     // HR / ADMIN – DELETE
     // =====================================================
     @Operation(
-            summary = "HR / Admin xóa đơn nghỉ",
+            summary = "HR xóa đơn nghỉ",
             description = """
                 Màn hình: Quản lý đơn nghỉ
                 
@@ -244,8 +244,8 @@ public class LeaveRequestController {
         @ApiResponse(responseCode = "403", description = "Không có quyền HR / ADMIN"),
         @ApiResponse(responseCode = "404", description = "Không tìm thấy đơn nghỉ")
     })
-    @PreAuthorize("hasAnyRole('HR','ADMIN')")
-    @DeleteMapping("/admin/{id}")
+    @PreAuthorize("hasRole('HR')")
+    @DeleteMapping("/hr/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
@@ -264,8 +264,8 @@ public class LeaveRequestController {
     	@ApiResponse(responseCode = "204", description = "Xóa nhiều đơn nghỉ thành công"),
         @ApiResponse(responseCode = "403", description = "Không có quyền HR / ADMIN")
     })
-    @PreAuthorize("hasAnyRole('HR','ADMIN')")
-    @DeleteMapping("/admin/batch")
+    @PreAuthorize("hasRole('HR')")
+    @DeleteMapping("/hr/batch")
     public ResponseEntity<Void> deleteMany(@RequestBody List<Long> ids) {
         service.deleteMany(ids);
         return ResponseEntity.noContent().build();
