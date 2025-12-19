@@ -198,33 +198,35 @@ public class LeaveRequestController {
         return ResponseEntity.ok(service.getById(id));
     }
 
+	
     // =====================================================
-    // HR / ADMIN – UPDATE
+    // EMPLOYEE – UPDATE (PENDING ONLY)
     // =====================================================
     @Operation(
-            summary = "HR / Admin chỉnh sửa đơn nghỉ",
-            description = """
-                Màn hình: Chỉnh sửa đơn nghỉ
-                
-                Ghi chú:
-                - Chỉ HR / Admin được phép
-                """
-        )
+    		summary = "Nhân viên chỉnh sửa đơn nghỉ (chỉ khi PENDING)",
+    		description = """
+    				Màn hình: Chỉnh sửa đơn nghỉ
+    				
+    				Rule:
+    				- Chỉ EMPLOYEE
+    				- Chỉ sửa đơn của chính mình
+    				- Chỉ khi trạng thái = PENDING
+    				""")
     @ApiResponses({
-    	@ApiResponse(responseCode = "200", description = "Cập nhật đơn nghỉ thành công"),
-        @ApiResponse(responseCode = "403", description = "Không có quyền HR / ADMIN"),
+    	@ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
+    	@ApiResponse(responseCode = "400", description = "Đơn không còn ở trạng thái PENDING"),
+        @ApiResponse(responseCode = "403", description = "Không có quyền EMPLOYEE"),
         @ApiResponse(responseCode = "404", description = "Không tìm thấy đơn nghỉ")
     })
-    @PreAuthorize("hasAnyRole('HR','ADMIN')")
-    @PutMapping("/admin/{id}")
-    public ResponseEntity<LeaveRequestDTO> adminUpdate(
-            @PathVariable Long id,
-            @RequestBody LeaveRequestUpdateDTO dto) {
-
-        Long actorId = getCurrentUserId();
-        return ResponseEntity.ok(service.adminUpdate(id, dto, actorId));
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PutMapping("/{id}")
+    public ResponseEntity<LeaveRequestDTO> employeeUpdate (
+    		@PathVariable Long id, 
+    		@RequestBody LeaveRequestUpdateDTO dto) {
+    	Long userId = getCurrentUserId();
+    	return ResponseEntity.ok(service.employeeUpdate(id, dto, userId));
     }
-
+    
     // =====================================================
     // HR / ADMIN – DELETE
     // =====================================================

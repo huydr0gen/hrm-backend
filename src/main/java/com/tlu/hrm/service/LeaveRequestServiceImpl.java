@@ -95,15 +95,30 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 
         return toDTO(saved);
     }
+    
+    // ----------------------------
+    // update (employee)
+    // ----------------------------
 
-    // ----------------------------
-    // ADMIN UPDATE (HR / ADMIN)
-    // ----------------------------
     @Override
     @Transactional
-    public LeaveRequestDTO adminUpdate(Long id, LeaveRequestUpdateDTO dto, Long actorId) {
+    public LeaveRequestDTO employeeUpdate(Long id, LeaveRequestUpdateDTO dto, Long userId) {
+
         LeaveRequest req = leaveRequestRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Leave request not found"));
+
+        // 1️⃣ Check trạng thái
+        if (req.getStatus() != LeaveStatus.PENDING) {
+            throw new IllegalStateException("Only PENDING request can be updated");
+        }
+
+        // 2️⃣ Check ownership
+        Employee emp = employeeRepo.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+        if (!req.getEmployee().getId().equals(emp.getId())) {
+            throw new SecurityException("You can only update your own leave request");
+        }
 
         boolean changed = false;
 
@@ -111,32 +126,30 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             req.setType(dto.getType());
             changed = true;
         }
+
         if (dto.getStartDate() != null && !dto.getStartDate().equals(req.getStartDate())) {
             req.setStartDate(dto.getStartDate());
             changed = true;
         }
+
         if (dto.getEndDate() != null && !dto.getEndDate().equals(req.getEndDate())) {
             req.setEndDate(dto.getEndDate());
             changed = true;
         }
+
         if (dto.getReason() != null && !dto.getReason().equals(req.getReason())) {
             req.setReason(dto.getReason());
             changed = true;
         }
-        if (dto.getManagerNote() != null && !dto.getManagerNote().equals(req.getManagerNote())) {
-            req.setManagerNote(dto.getManagerNote());
-            changed = true;
-        }
 
         if (!changed) {
-            // nothing changed
             return toDTO(req);
         }
 
         req.setUpdatedAt(LocalDateTime.now());
         LeaveRequest saved = leaveRequestRepository.save(req);
 
-        audit.log(actorId, "LEAVE_ADMIN_UPDATE", "Admin updated leave request id=" + id);
+        audit.log(userId, "LEAVE_EMPLOYEE_UPDATE", "Employee updated leave request id=" + id);
 
         return toDTO(saved);
     }

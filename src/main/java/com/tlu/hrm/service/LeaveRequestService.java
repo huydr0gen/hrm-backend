@@ -11,8 +11,8 @@ public interface LeaveRequestService {
 
 	LeaveRequestDTO createRequest(LeaveRequestCreateDTO dto);
 
-    // HR / ADMIN: update (admin edit)
-    LeaveRequestDTO adminUpdate(Long id, LeaveRequestUpdateDTO dto, Long actorId);
+    //EMPLOYEE: update
+	LeaveRequestDTO employeeUpdate(Long id, LeaveRequestUpdateDTO dto, Long userId);
 
     // HR / ADMIN: delete operations
     void delete(Long id);                  // HR / ADMIN delete any request
