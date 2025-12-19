@@ -48,34 +48,43 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
 	// ======================================================
     // LIST
     // ======================================================
-    @Override
-    public Page<SpecialScheduleResponseDTO> list(SpecialScheduleFilterDTO filter) {
+	@Override
+	public Page<SpecialScheduleResponseDTO> list(SpecialScheduleFilterDTO filter) {
 
-        Employee actor = getCurrentEmployee();
-        Set<String> roles = getCurrentRoles();
+	    Employee actor = getCurrentEmployee();
+	    Set<String> roles = getCurrentRoles();
 
-        if (roles.contains("ROLE_EMPLOYEE")) {
-            filter.setEmployeeId(actor.getId());
-        }
+	    if (roles.contains("ROLE_ADMIN")) {
+	        throw new AccessDeniedException("Admin is not allowed");
+	    }
 
-        if (roles.contains("ROLE_MANAGER") && !isHRorAdmin(roles)) {
-            List<Long> empIds = employeeRepository
-                    .findByDepartment(actor.getDepartment())
-                    .stream()
-                    .map(Employee::getId)
-                    .toList();
+	    if (roles.contains("ROLE_EMPLOYEE")) {
+	        filter.setEmployeeId(actor.getId());
+	    }
 
-            filter.setEmployeeIds(empIds);
-        }
+	    if (roles.contains("ROLE_MANAGER")) {
+	        List<Long> empIds = employeeRepository
+	                .findByDepartment(actor.getDepartment())
+	                .stream()
+	                .map(Employee::getId)
+	                .toList();
 
-        Specification<SpecialSchedule> spec =
-                SpecialScheduleSpecification.build(filter);
+	        filter.setEmployeeIds(empIds);
+	    }
 
-        Pageable pageable = PageRequest.of(filter.getPage(), filter.getSize());
+	    // HR: xem toàn bộ
 
-        return repository.findAll(spec, pageable)
-                .map(this::toDTO);
-    }
+	    Specification<SpecialSchedule> spec =
+	            SpecialScheduleSpecification.build(filter);
+
+	    Pageable pageable = PageRequest.of(
+	            filter.getPage(),
+	            filter.getSize()
+	    );
+
+	    return repository.findAll(spec, pageable)
+	            .map(this::toDTO);
+	}
 
     // ======================================================
     // CREATE – EMPLOYEE
@@ -94,11 +103,9 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         ss.setReason(dto.getReason());
         ss.setStatus(SpecialScheduleStatus.PENDING);
 
-        // ===== Type-specific logic =====
         switch (dto.getType()) {
             case MATERNITY -> {
                 ss.setEndDate(dto.getStartDate().plusMonths(6));
-                // no time for maternity
             }
             case ON_SITE, OTHER -> {
                 ss.setEndDate(dto.getEndDate());
@@ -110,14 +117,20 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
     }
 
     // ======================================================
-    // UPDATE – HR / ADMIN (PENDING ONLY)
+    // UPDATE – EMPLOYEE ONLY (OWN + PENDING)
     // ======================================================
     @Override
     public SpecialScheduleResponseDTO update(Long id, SpecialScheduleUpdateDTO dto) {
 
-        requireHRorAdmin();
+        requireRole("ROLE_EMPLOYEE");
 
+        Employee actor = getCurrentEmployee();
         SpecialSchedule ss = getById(id);
+
+        // chỉ được sửa đơn của chính mình
+        if (!ss.getEmployee().getId().equals(actor.getId())) {
+            throw new AccessDeniedException("Can only update your own schedule");
+        }
 
         if (ss.getStatus() != SpecialScheduleStatus.PENDING) {
             throw new IllegalStateException("Only PENDING schedule can be updated");
@@ -130,7 +143,6 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
             return toDTO(repository.save(ss));
         }
 
-        // OTHER / ON_SITE
         ss.setStartDate(dto.getStartDate());
         ss.setEndDate(dto.getEndDate());
         ss.setReason(dto.getReason());
@@ -146,26 +158,33 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
     }
 
     // ======================================================
-    // DECIDE
+    // DECIDE – HR / MANAGER
     // ======================================================
     @Override
     public SpecialScheduleResponseDTO decide(Long id, DecisionAction action) {
 
         Employee actor = getCurrentEmployee();
         Set<String> roles = getCurrentRoles();
-
         SpecialSchedule ss = getById(id);
 
         if (ss.getStatus() != SpecialScheduleStatus.PENDING) {
             throw new IllegalStateException("Already processed");
         }
 
-        if (roles.contains("ROLE_MANAGER") && !isHRorAdmin(roles)) {
+        // ADMIN không được làm gì
+        if (roles.contains("ROLE_ADMIN")) {
+            throw new AccessDeniedException("Admin is not allowed");
+        }
+
+        // MANAGER: chỉ trong phòng ban
+        if (roles.contains("ROLE_MANAGER")) {
             if (!actor.getDepartment()
                     .equals(ss.getEmployee().getDepartment())) {
                 throw new AccessDeniedException("Out of department");
             }
         }
+
+        // HR: không cần check thêm
 
         ss.setStatus(
                 action == DecisionAction.APPROVE
@@ -180,7 +199,7 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
     }
 
     // ======================================================
-    // BULK DECIDE
+    // BULK DECIDE – HR / MANAGER
     // ======================================================
     @Override
     public BulkDecisionResultDTO decideMany(List<Long> ids, DecisionAction action) {
@@ -236,16 +255,6 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         if (!getCurrentRoles().contains(role)) {
             throw new AccessDeniedException("Forbidden");
         }
-    }
-
-    private void requireHRorAdmin() {
-        if (!isHRorAdmin(getCurrentRoles())) {
-            throw new AccessDeniedException("Only HR/Admin allowed");
-        }
-    }
-
-    private boolean isHRorAdmin(Set<String> roles) {
-        return roles.contains("ROLE_HR") || roles.contains("ROLE_ADMIN");
     }
 
     private void applyWorkingTime(SpecialSchedule ss, SpecialScheduleCreateDTO dto) {

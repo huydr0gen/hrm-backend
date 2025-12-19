@@ -34,22 +34,20 @@ public class SpecialScheduleController {
 	}
 	
 	// =====================================================
-    // LIST (EMPLOYEE / MANAGER / HR / ADMIN)
+    // LIST (EMPLOYEE / MANAGER / HR)
     // =====================================================
 	@Operation(
 	        summary = "Tìm kiếm danh sách lịch đặc thù",
 	        description = """
-	            Màn hình: Danh sách lịch đặc thù
-	            
 	            Role:
-	            - EMPLOYEE
-	            - MANAGER
-	            - HR
-	            - ADMIN
+	            - EMPLOYEE: chỉ xem lịch của mình
+	            - MANAGER: xem lịch nhân viên trong phòng ban
+	            - HR: xem toàn bộ lịch
 	            
 	            Ghi chú:
 	            - Dùng POST để filter linh hoạt
 	            - Có thể lọc theo thời gian, trạng thái, phòng ban
+	            - ADMIN không được truy cập nghiệp vụ này
 	            """
 	    )
 	@ApiResponses({
@@ -64,13 +62,19 @@ public class SpecialScheduleController {
         );
     }
 
-    // =====================================================
-    // DETAIL
+	// =====================================================
+    // DETAIL (EMPLOYEE / MANAGER / HR)
     // =====================================================
 	@Operation(
 	        summary = "Xem chi tiết lịch đặc thù",
 	        description = """
 	            Màn hình: Chi tiết lịch đặc thù
+	            Role:
+	            - EMPLOYEE: xem lịch của mình
+	            - MANAGER: xem lịch trong phòng ban
+	            - HR: xem toàn bộ
+	            
+	            ADMIN không được truy cập
 	            
 	            Ghi chú:
 	            - Dùng để xem thông tin chi tiết 1 lịch
@@ -85,7 +89,7 @@ public class SpecialScheduleController {
         );
     }
 
-    // =====================================================
+	// =====================================================
     // CREATE – EMPLOYEE
     // =====================================================
 	@Operation(
@@ -114,14 +118,20 @@ public class SpecialScheduleController {
         );
     }
 
-    // =====================================================
-    // UPDATE – HR / ADMIN
+	// =====================================================
+    // UPDATE – EMPLOYEE (OWN + PENDING)
     // =====================================================
 	@Operation(
-	        summary = "HR / Admin chỉnh sửa lịch đặc thù",
+	        summary = "Nhân viên chỉnh sửa lịch đặc thù",
 	        description = """
 	            Màn hình: Chỉnh sửa lịch đặc thù
-	            
+	            Role:
+            - EMPLOYEE
+
+            Điều kiện:
+            - Chỉ chỉnh sửa lịch của chính mình
+            - Chỉ khi trạng thái là PENDING
+            
 	            Ghi chú:
 	            - Dùng khi cần điều chỉnh thông tin
 	            - Không phải hành động duyệt
@@ -145,6 +155,12 @@ public class SpecialScheduleController {
 	        description = """
 	            Màn hình: Duyệt lịch đặc thù (HR / Manager)
 	            
+	            Role:
+	            - HR: duyệt tất cả
+	            - MANAGER: chỉ duyệt lịch của nhân viên trong phòng ban
+	            
+	            ADMIN và EMPLOYEE không được phép
+	            
 	            Action:
 	            - APPROVE
 	            - REJECT
@@ -167,6 +183,10 @@ public class SpecialScheduleController {
 	        summary = "Duyệt / từ chối nhiều lịch đặc thù",
 	        description = """
 	            Màn hình: Duyệt lịch đặc thù hàng loạt
+	            
+	            Role:
+	            - HR
+	            - MANAGER (chỉ trong phòng ban)
 	            
 	            Ghi chú:
 	            - Áp dụng cùng một action cho nhiều bản ghi
