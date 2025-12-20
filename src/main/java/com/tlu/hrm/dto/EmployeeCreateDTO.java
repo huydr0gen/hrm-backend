@@ -35,7 +35,7 @@ public class EmployeeCreateDTO {
 	        description = "Phòng ban",
 	        example = "Kế toán"
 	    )
-    private String department;
+	private Long departmentId;
 	
 	@Schema(
 	        description = "Email liên hệ",
@@ -73,11 +73,11 @@ public class EmployeeCreateDTO {
 	public void setPosition(String position) {
 		this.position = position;
 	}
-	public String getDepartment() {
-		return department;
+	public Long getDepartmentId() {
+		return departmentId;
 	}
-	public void setDepartment(String department) {
-		this.department = department;
+	public void setDepartmentId(Long departmentId) {
+		this.departmentId = departmentId;
 	}
 	public String getEmail() {
 		return email;

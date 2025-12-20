@@ -16,44 +16,49 @@ public class TimekeepingExplanationSpecification {
 
 	public static Specification<TimekeepingExplanation> build(
             TimekeepingExplanationFilterDTO filter,
-            String forcedDepartment,
+            Long forcedDepartmentId,
             Long forcedEmployeeId
     ) {
         return (root, query, cb) -> {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            // join employee
             Join<TimekeepingExplanation, Employee> employeeJoin =
                     root.join("employee");
 
             // =====================
-            // Filter theo employeeCode
+            // Filter theo employee code
             // =====================
             if (filter.getEmployeeCode() != null && !filter.getEmployeeCode().isBlank()) {
                 predicates.add(
-                    cb.like(
-                        cb.lower(employeeJoin.get("code")),
-                        "%" + filter.getEmployeeCode().toLowerCase() + "%"
-                    )
+                        cb.like(
+                                cb.lower(employeeJoin.get("code")),
+                                "%" + filter.getEmployeeCode().toLowerCase() + "%"
+                        )
                 );
             }
 
             // =====================
-            // Filter theo department (HR truyền)
+            // Filter theo department (HR)
             // =====================
-            if (filter.getDepartment() != null && !filter.getDepartment().isBlank()) {
+            if (filter.getDepartmentId() != null) {
                 predicates.add(
-                    cb.equal(employeeJoin.get("department"), filter.getDepartment())
+                        cb.equal(
+                                employeeJoin.get("department").get("id"),
+                                filter.getDepartmentId()
+                        )
                 );
             }
 
             // =====================
             // Ép department cho MANAGER
             // =====================
-            if (forcedDepartment != null) {
+            if (forcedDepartmentId != null) {
                 predicates.add(
-                    cb.equal(employeeJoin.get("department"), forcedDepartment)
+                        cb.equal(
+                                employeeJoin.get("department").get("id"),
+                                forcedDepartmentId
+                        )
                 );
             }
 
@@ -62,7 +67,10 @@ public class TimekeepingExplanationSpecification {
             // =====================
             if (forcedEmployeeId != null) {
                 predicates.add(
-                    cb.equal(employeeJoin.get("id"), forcedEmployeeId)
+                        cb.equal(
+                                employeeJoin.get("id"),
+                                forcedEmployeeId
+                        )
                 );
             }
 
@@ -71,19 +79,19 @@ public class TimekeepingExplanationSpecification {
             // =====================
             if (filter.getFromDate() != null) {
                 predicates.add(
-                    cb.greaterThanOrEqualTo(
-                        root.get("workDate"),
-                        filter.getFromDate()
-                    )
+                        cb.greaterThanOrEqualTo(
+                                root.get("workDate"),
+                                filter.getFromDate()
+                        )
                 );
             }
 
             if (filter.getToDate() != null) {
                 predicates.add(
-                    cb.lessThanOrEqualTo(
-                        root.get("workDate"),
-                        filter.getToDate()
-                    )
+                        cb.lessThanOrEqualTo(
+                                root.get("workDate"),
+                                filter.getToDate()
+                        )
                 );
             }
 
@@ -92,7 +100,10 @@ public class TimekeepingExplanationSpecification {
             // =====================
             if (filter.getStatus() != null) {
                 predicates.add(
-                    cb.equal(root.get("status"), filter.getStatus())
+                        cb.equal(
+                                root.get("status"),
+                                filter.getStatus()
+                        )
                 );
             }
 

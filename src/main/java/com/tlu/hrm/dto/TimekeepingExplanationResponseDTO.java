@@ -16,7 +16,9 @@ public class TimekeepingExplanationResponseDTO {
     private Long employeeId;
     private String employeeCode;
     private String employeeName;
-    private String department;
+
+    private Long departmentId;
+    private String departmentName;
 
     // =====================
     // Work info
@@ -34,7 +36,12 @@ public class TimekeepingExplanationResponseDTO {
     private TimekeepingExplanationStatus status;
 
     // =====================
-    // Decision info
+    // Approval
+    // =====================
+    private Long approverId;
+
+    // =====================
+    // Decision
     // =====================
     private Long decidedBy;
     private LocalDateTime decidedAt;
@@ -78,12 +85,20 @@ public class TimekeepingExplanationResponseDTO {
 		this.employeeName = employeeName;
 	}
 
-	public String getDepartment() {
-		return department;
+	public Long getDepartmentId() {
+		return departmentId;
 	}
 
-	public void setDepartment(String department) {
-		this.department = department;
+	public void setDepartmentId(Long departmentId) {
+		this.departmentId = departmentId;
+	}
+
+	public String getDepartmentName() {
+		return departmentName;
+	}
+
+	public void setDepartmentName(String departmentName) {
+		this.departmentName = departmentName;
 	}
 
 	public LocalDate getWorkDate() {
@@ -142,6 +157,14 @@ public class TimekeepingExplanationResponseDTO {
 		this.status = status;
 	}
 
+	public Long getApproverId() {
+		return approverId;
+	}
+
+	public void setApproverId(Long approverId) {
+		this.approverId = approverId;
+	}
+
 	public Long getDecidedBy() {
 		return decidedBy;
 	}
@@ -173,6 +196,7 @@ public class TimekeepingExplanationResponseDTO {
 	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
 	}
+    
     
     
 }

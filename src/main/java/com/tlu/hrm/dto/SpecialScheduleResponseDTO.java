@@ -13,9 +13,11 @@ public class SpecialScheduleResponseDTO {
 
     // ===== Employee info =====
     private Long employeeId;
-    private String employeeCode;     // ✅ NEW
+    private String employeeCode;
     private String employeeName;
-    private String department;
+
+    private Long departmentId;
+    private String departmentName;
 
     // ===== Date range =====
     private LocalDate startDate;
@@ -34,6 +36,7 @@ public class SpecialScheduleResponseDTO {
 
     // ===== Approval =====
     private SpecialScheduleStatus status;
+    private Long approverId;
     private Long decidedBy;
     private LocalDateTime decidedAt;
 
@@ -45,15 +48,17 @@ public class SpecialScheduleResponseDTO {
 	}
 
 	public SpecialScheduleResponseDTO(Long id, Long employeeId, String employeeCode, String employeeName,
-			String department, LocalDate startDate, LocalDate endDate, LocalTime morningStart, LocalTime morningEnd,
-			LocalTime afternoonStart, LocalTime afternoonEnd, SpecialScheduleType type, String reason,
-			SpecialScheduleStatus status, Long decidedBy, LocalDateTime decidedAt, LocalDateTime createdAt) {
+			Long departmentId, String departmentName, LocalDate startDate, LocalDate endDate, LocalTime morningStart,
+			LocalTime morningEnd, LocalTime afternoonStart, LocalTime afternoonEnd, SpecialScheduleType type,
+			String reason, SpecialScheduleStatus status, Long approverId, Long decidedBy, LocalDateTime decidedAt,
+			LocalDateTime createdAt) {
 		super();
 		this.id = id;
 		this.employeeId = employeeId;
 		this.employeeCode = employeeCode;
 		this.employeeName = employeeName;
-		this.department = department;
+		this.departmentId = departmentId;
+		this.departmentName = departmentName;
 		this.startDate = startDate;
 		this.endDate = endDate;
 		this.morningStart = morningStart;
@@ -63,6 +68,7 @@ public class SpecialScheduleResponseDTO {
 		this.type = type;
 		this.reason = reason;
 		this.status = status;
+		this.approverId = approverId;
 		this.decidedBy = decidedBy;
 		this.decidedAt = decidedAt;
 		this.createdAt = createdAt;
@@ -100,12 +106,20 @@ public class SpecialScheduleResponseDTO {
 		this.employeeName = employeeName;
 	}
 
-	public String getDepartment() {
-		return department;
+	public Long getDepartmentId() {
+		return departmentId;
 	}
 
-	public void setDepartment(String department) {
-		this.department = department;
+	public void setDepartmentId(Long departmentId) {
+		this.departmentId = departmentId;
+	}
+
+	public String getDepartmentName() {
+		return departmentName;
+	}
+
+	public void setDepartmentName(String departmentName) {
+		this.departmentName = departmentName;
 	}
 
 	public LocalDate getStartDate() {
@@ -180,6 +194,14 @@ public class SpecialScheduleResponseDTO {
 		this.status = status;
 	}
 
+	public Long getApproverId() {
+		return approverId;
+	}
+
+	public void setApproverId(Long approverId) {
+		this.approverId = approverId;
+	}
+
 	public Long getDecidedBy() {
 		return decidedBy;
 	}
@@ -203,6 +225,7 @@ public class SpecialScheduleResponseDTO {
 	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
 	}
+    
     
     
 }

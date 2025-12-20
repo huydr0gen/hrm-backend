@@ -52,6 +52,12 @@ public class TimekeepingExplanation {
     private TimekeepingExplanationStatus status = TimekeepingExplanationStatus.PENDING;
 
     // ========================
+    // Approval
+    // ========================
+    @Column(name = "approver_id", nullable = false)
+    private Long approverId;
+    
+    // ========================
     // Decision
     // ========================
     @Column(name = "decided_by")
@@ -88,7 +94,7 @@ public class TimekeepingExplanation {
 
 	public TimekeepingExplanation(Long id, Employee employee, LocalDate workDate, LocalTime originalCheckIn,
 			LocalTime originalCheckOut, LocalTime proposedCheckIn, LocalTime proposedCheckOut, String reason,
-			TimekeepingExplanationStatus status, Long decidedBy, LocalDateTime decidedAt, String managerNote,
+			TimekeepingExplanationStatus status, Long approverId, Long decidedBy, LocalDateTime decidedAt, String managerNote,
 			LocalDateTime createdAt, LocalDateTime updatedAt) {
 		super();
 		this.id = id;
@@ -100,6 +106,7 @@ public class TimekeepingExplanation {
 		this.proposedCheckOut = proposedCheckOut;
 		this.reason = reason;
 		this.status = status;
+		this.approverId = approverId;
 		this.decidedBy = decidedBy;
 		this.decidedAt = decidedAt;
 		this.managerNote = managerNote;
@@ -177,6 +184,14 @@ public class TimekeepingExplanation {
 
 	public void setStatus(TimekeepingExplanationStatus status) {
 		this.status = status;
+	}
+
+	public Long getApproverId() {
+		return approverId;
+	}
+
+	public void setApproverId(Long approverId) {
+		this.approverId = approverId;
 	}
 
 	public Long getDecidedBy() {

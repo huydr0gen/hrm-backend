@@ -20,6 +20,7 @@ import com.tlu.hrm.dto.SpecialScheduleCreateDTO;
 import com.tlu.hrm.dto.SpecialScheduleFilterDTO;
 import com.tlu.hrm.dto.SpecialScheduleResponseDTO;
 import com.tlu.hrm.dto.SpecialScheduleUpdateDTO;
+import com.tlu.hrm.entities.Department;
 import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.entities.SpecialSchedule;
 import com.tlu.hrm.enums.DecisionAction;
@@ -38,53 +39,53 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
 
 	private final SpecialScheduleRepository repository;
     private final EmployeeRepository employeeRepository;
+    private final ApprovalResolverService approvalResolverService;
 
-	public SpecialScheduleServiceImpl(SpecialScheduleRepository repository, EmployeeRepository employeeRepository) {
+	public SpecialScheduleServiceImpl(SpecialScheduleRepository repository, EmployeeRepository employeeRepository,
+			ApprovalResolverService approvalResolverService) {
 		super();
 		this.repository = repository;
 		this.employeeRepository = employeeRepository;
+		this.approvalResolverService = approvalResolverService;
 	}
 
 	// ======================================================
     // LIST
     // ======================================================
-	@Override
-	public Page<SpecialScheduleResponseDTO> list(SpecialScheduleFilterDTO filter) {
+    @Override
+    public Page<SpecialScheduleResponseDTO> list(SpecialScheduleFilterDTO filter) {
 
-	    Employee actor = getCurrentEmployee();
-	    Set<String> roles = getCurrentRoles();
+        Employee actor = getCurrentEmployee();
+        Set<String> roles = getCurrentRoles();
 
-	    if (roles.contains("ROLE_ADMIN")) {
-	        throw new AccessDeniedException("Admin is not allowed");
-	    }
+        if (roles.contains("ROLE_EMPLOYEE")) {
+            filter.setEmployeeId(actor.getId());
+        }
 
-	    if (roles.contains("ROLE_EMPLOYEE")) {
-	        filter.setEmployeeId(actor.getId());
-	    }
+        if (roles.contains("ROLE_MANAGER")) {
+            List<Long> empIds = employeeRepository
+                    .findByDepartment(actor.getDepartment())
+                    .stream()
+                    .map(Employee::getId)
+                    .toList();
+            filter.setEmployeeIds(empIds);
+        }
 
-	    if (roles.contains("ROLE_MANAGER")) {
-	        List<Long> empIds = employeeRepository
-	                .findByDepartment(actor.getDepartment())
-	                .stream()
-	                .map(Employee::getId)
-	                .toList();
+        if (roles.contains("ROLE_ADMIN")) {
+            throw new AccessDeniedException("Admin is not allowed");
+        }
 
-	        filter.setEmployeeIds(empIds);
-	    }
+        Specification<SpecialSchedule> spec =
+                SpecialScheduleSpecification.build(filter);
 
-	    // HR: xem toàn bộ
+        Pageable pageable = PageRequest.of(
+                filter.getPage(),
+                filter.getSize()
+        );
 
-	    Specification<SpecialSchedule> spec =
-	            SpecialScheduleSpecification.build(filter);
-
-	    Pageable pageable = PageRequest.of(
-	            filter.getPage(),
-	            filter.getSize()
-	    );
-
-	    return repository.findAll(spec, pageable)
-	            .map(this::toDTO);
-	}
+        return repository.findAll(spec, pageable)
+                .map(this::toDTO);
+    }
 
     // ======================================================
     // CREATE – EMPLOYEE
@@ -96,17 +97,22 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
 
         Employee emp = getCurrentEmployee();
 
+        // 🔑 resolve approver
+        Long approverId = approvalResolverService.resolveApproverId(
+                emp.getId(),
+                emp.getDepartment().getId()
+        );
+
         SpecialSchedule ss = new SpecialSchedule();
         ss.setEmployee(emp);
         ss.setStartDate(dto.getStartDate());
         ss.setType(dto.getType());
         ss.setReason(dto.getReason());
         ss.setStatus(SpecialScheduleStatus.PENDING);
+        ss.setApproverId(approverId);
 
         switch (dto.getType()) {
-            case MATERNITY -> {
-                ss.setEndDate(dto.getStartDate().plusMonths(6));
-            }
+            case MATERNITY -> ss.setEndDate(dto.getStartDate().plusMonths(6));
             case ON_SITE, OTHER -> {
                 ss.setEndDate(dto.getEndDate());
                 applyWorkingTime(ss, dto);
@@ -117,7 +123,7 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
     }
 
     // ======================================================
-    // UPDATE – EMPLOYEE ONLY (OWN + PENDING)
+    // UPDATE – EMPLOYEE
     // ======================================================
     @Override
     public SpecialScheduleResponseDTO update(Long id, SpecialScheduleUpdateDTO dto) {
@@ -127,7 +133,6 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         Employee actor = getCurrentEmployee();
         SpecialSchedule ss = getById(id);
 
-        // chỉ được sửa đơn của chính mình
         if (!ss.getEmployee().getId().equals(actor.getId())) {
             throw new AccessDeniedException("Can only update your own schedule");
         }
@@ -136,55 +141,40 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
             throw new IllegalStateException("Only PENDING schedule can be updated");
         }
 
-        // MATERNITY: chỉ cho sửa reason
         if (ss.getType() == SpecialScheduleType.MATERNITY) {
             ss.setReason(dto.getReason());
-            ss.setUpdatedAt(LocalDateTime.now());
-            return toDTO(repository.save(ss));
+        } else {
+            ss.setStartDate(dto.getStartDate());
+            ss.setEndDate(dto.getEndDate());
+            ss.setReason(dto.getReason());
+            ss.setMorningStart(dto.getMorningStart());
+            ss.setMorningEnd(dto.getMorningEnd());
+            ss.setAfternoonStart(dto.getAfternoonStart());
+            ss.setAfternoonEnd(dto.getAfternoonEnd());
         }
 
-        ss.setStartDate(dto.getStartDate());
-        ss.setEndDate(dto.getEndDate());
-        ss.setReason(dto.getReason());
-
-        ss.setMorningStart(dto.getMorningStart());
-        ss.setMorningEnd(dto.getMorningEnd());
-        ss.setAfternoonStart(dto.getAfternoonStart());
-        ss.setAfternoonEnd(dto.getAfternoonEnd());
-
         ss.setUpdatedAt(LocalDateTime.now());
-
         return toDTO(repository.save(ss));
     }
 
     // ======================================================
-    // DECIDE – HR / MANAGER
+    // DECIDE – ONLY APPROVER
     // ======================================================
     @Override
     public SpecialScheduleResponseDTO decide(Long id, DecisionAction action) {
 
-        Employee actor = getCurrentEmployee();
-        Set<String> roles = getCurrentRoles();
         SpecialSchedule ss = getById(id);
+
+        Employee actor = getCurrentEmployee();
+        Long actorUserId = actor.getUser().getId();
+
+        if (!actorUserId.equals(ss.getApproverId())) {
+            throw new AccessDeniedException("You are not the approver");
+        }
 
         if (ss.getStatus() != SpecialScheduleStatus.PENDING) {
             throw new IllegalStateException("Already processed");
         }
-
-        // ADMIN không được làm gì
-        if (roles.contains("ROLE_ADMIN")) {
-            throw new AccessDeniedException("Admin is not allowed");
-        }
-
-        // MANAGER: chỉ trong phòng ban
-        if (roles.contains("ROLE_MANAGER")) {
-            if (!actor.getDepartment()
-                    .equals(ss.getEmployee().getDepartment())) {
-                throw new AccessDeniedException("Out of department");
-            }
-        }
-
-        // HR: không cần check thêm
 
         ss.setStatus(
                 action == DecisionAction.APPROVE
@@ -192,14 +182,14 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
                         : SpecialScheduleStatus.REJECTED
         );
 
-        ss.setDecidedBy(actor.getUser().getId());
+        ss.setDecidedBy(actorUserId);
         ss.setDecidedAt(LocalDateTime.now());
 
         return toDTO(repository.save(ss));
     }
 
     // ======================================================
-    // BULK DECIDE – HR / MANAGER
+    // BULK DECIDE
     // ======================================================
     @Override
     public BulkDecisionResultDTO decideMany(List<Long> ids, DecisionAction action) {
@@ -265,13 +255,17 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
     }
 
     private SpecialScheduleResponseDTO toDTO(SpecialSchedule e) {
+
         SpecialScheduleResponseDTO dto = new SpecialScheduleResponseDTO();
 
         dto.setId(e.getId());
         dto.setEmployeeId(e.getEmployee().getId());
         dto.setEmployeeCode(e.getEmployee().getCode());
         dto.setEmployeeName(e.getEmployee().getFullName());
-        dto.setDepartment(e.getEmployee().getDepartment());
+
+        Department dept = e.getEmployee().getDepartment();
+        dto.setDepartmentId(dept.getId());
+        dto.setDepartmentName(dept.getName());
 
         dto.setStartDate(e.getStartDate());
         dto.setEndDate(e.getEndDate());
@@ -285,6 +279,7 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         dto.setReason(e.getReason());
 
         dto.setStatus(e.getStatus());
+        dto.setApproverId(e.getApproverId());
         dto.setDecidedBy(e.getDecidedBy());
         dto.setDecidedAt(e.getDecidedAt());
         dto.setCreatedAt(e.getCreatedAt());

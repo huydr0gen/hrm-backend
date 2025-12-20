@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import com.tlu.hrm.dto.*;
+import com.tlu.hrm.entities.Department;
 import com.tlu.hrm.security.CustomUserDetails;
 import com.tlu.hrm.service.LeaveRequestService;
 
@@ -164,14 +165,14 @@ public class LeaveRequestController {
     @GetMapping
     public ResponseEntity<Page<LeaveRequestDTO>> filter(
             @RequestParam(required = false) String employeeName,
-            @RequestParam(required = false) String department,
+            @RequestParam(required = false) Long departmentId,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String type,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         return ResponseEntity.ok(
-                service.getAllFiltered(employeeName, department, status, type, page, size)
+                service.getAllFiltered(employeeName, departmentId, status, type, page, size)
         );
     }
 

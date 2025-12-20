@@ -13,7 +13,9 @@ import org.springframework.stereotype.Service;
 import com.tlu.hrm.dto.EmployeeCreateDTO;
 import com.tlu.hrm.dto.EmployeeDTO;
 import com.tlu.hrm.dto.EmployeeUpdateDTO;
+import com.tlu.hrm.entities.Department;
 import com.tlu.hrm.entities.Employee;
+import com.tlu.hrm.repository.DepartmentRepository;
 import com.tlu.hrm.repository.EmployeeRepository;
 import com.tlu.hrm.security.CustomUserDetails;
 
@@ -21,12 +23,17 @@ import com.tlu.hrm.security.CustomUserDetails;
 public class EmployeeServiceImpl implements EmployeeService {
 
 	private EmployeeRepository employeeRepository;
+	private final DepartmentRepository departmentRepository;
 	
-	public EmployeeServiceImpl(EmployeeRepository employeeRepository) {
+	public EmployeeServiceImpl(EmployeeRepository employeeRepository, 
+			DepartmentRepository departmentRepository) {
 		super();
 		this.employeeRepository = employeeRepository;
+		this.departmentRepository = departmentRepository;
 	}
-
+	
+	// create 
+	
 	@Override
     public EmployeeDTO createEmployee(EmployeeCreateDTO dto) {
 
@@ -34,25 +41,28 @@ public class EmployeeServiceImpl implements EmployeeService {
             throw new RuntimeException("Employee code already exists");
         }
 
+        Department department = departmentRepository.findById(dto.getDepartmentId())
+                .orElseThrow(() -> new RuntimeException("Department not found"));
+
         Employee emp = new Employee();
         emp.setCode(dto.getCode());
         emp.setFullName(dto.getFullName());
         emp.setDateOfBirth(dto.getDateOfBirth());
         emp.setPosition(dto.getPosition());
-        emp.setDepartment(dto.getDepartment());
-
-        emp.setEmail(dto.getEmail() == null || dto.getEmail().isBlank() ? null : dto.getEmail());
-
+        emp.setDepartment(department);
+        emp.setEmail(dto.getEmail());
         emp.setPhoneNumber(dto.getPhoneNumber());
 
         Employee saved = employeeRepository.save(emp);
         return mapToDTO(saved);
     }
 
+    // ================= GET ALL =================
+
     @Override
     public Page<EmployeeDTO> getAllEmployees(int page, int size) {
-        PageRequest pageable = PageRequest.of(page, size);
 
+        Pageable pageable = PageRequest.of(page, size);
         Page<Employee> employees = employeeRepository.findAll(pageable);
 
         List<EmployeeDTO> dtos = employees.getContent()
@@ -63,26 +73,29 @@ public class EmployeeServiceImpl implements EmployeeService {
         return new PageImpl<>(dtos, pageable, employees.getTotalElements());
     }
 
+    // ================= GET BY ID =================
+
     @Override
     public EmployeeDTO getEmployeeById(Long id) {
+
         Employee emp = employeeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
+
         return mapToDTO(emp);
     }
 
+    // ================= WITHOUT USER =================
+
     @Override
     public Page<EmployeeDTO> getEmployeesWithoutUser(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
 
+        Pageable pageable = PageRequest.of(page, size);
         Page<Employee> employees = employeeRepository.findByUserIsNull(pageable);
 
-        List<EmployeeDTO> dtos = employees.getContent()
-                .stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
-
-        return new PageImpl<>(dtos, pageable, employees.getTotalElements());
+        return employees.map(this::mapToDTO);
     }
+
+    // ================= UPDATE =================
 
     @Override
     public EmployeeDTO updateEmployee(Long id, EmployeeUpdateDTO dto) {
@@ -93,30 +106,41 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (dto.getFullName() != null) emp.setFullName(dto.getFullName());
         if (dto.getDateOfBirth() != null) emp.setDateOfBirth(dto.getDateOfBirth());
         if (dto.getPosition() != null) emp.setPosition(dto.getPosition());
-        if (dto.getDepartment() != null) emp.setDepartment(dto.getDepartment());
+
+        if (dto.getDepartmentId() != null) {
+            Department department = departmentRepository.findById(dto.getDepartmentId())
+                    .orElseThrow(() -> new RuntimeException("Department not found"));
+            emp.setDepartment(department);
+        }
 
         if (dto.getEmail() != null)
-            emp.setEmail(dto.getEmail().isBlank() ? null : dto.getEmail());
+            emp.setEmail(dto.getEmail());
 
-        if (dto.getPhoneNumber() != null) emp.setPhoneNumber(dto.getPhoneNumber());
+        if (dto.getPhoneNumber() != null)
+            emp.setPhoneNumber(dto.getPhoneNumber());
 
         Employee updated = employeeRepository.save(emp);
         return mapToDTO(updated);
     }
 
+    // ================= DELETE =================
+
     @Override
     public void deleteEmployee(Long id) {
+
         if (!employeeRepository.existsById(id)) {
             throw new RuntimeException("Employee not found");
         }
+
         employeeRepository.deleteById(id);
     }
-    
+
+    // ================= MY DEPARTMENT =================
+
     @Override
     public Page<EmployeeDTO> getEmployeesOfMyDepartment(int page, int size) {
 
-        Object principal = SecurityContextHolder
-                .getContext()
+        Object principal = SecurityContextHolder.getContext()
                 .getAuthentication()
                 .getPrincipal();
 
@@ -131,24 +155,27 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee manager = employeeRepository.findById(userDetails.getEmployeeId())
                 .orElseThrow(() -> new RuntimeException("Manager employee not found"));
 
-        String department = manager.getDepartment();
+        Department department = manager.getDepartment();
 
-        PageRequest pageable = PageRequest.of(page, size);
-
+        Pageable pageable = PageRequest.of(page, size);
         Page<Employee> employees =
                 employeeRepository.findByDepartment(department, pageable);
 
         return employees.map(this::mapToDTO);
     }
 
+    // ================= MAP DTO =================
+
     private EmployeeDTO mapToDTO(Employee emp) {
+
         EmployeeDTO dto = new EmployeeDTO();
         dto.setId(emp.getId());
         dto.setCode(emp.getCode());
         dto.setFullName(emp.getFullName());
         dto.setDateOfBirth(emp.getDateOfBirth());
         dto.setPosition(emp.getPosition());
-        dto.setDepartment(emp.getDepartment());
+        dto.setDepartmentId(emp.getDepartment().getId());
+        dto.setDepartmentName(emp.getDepartment().getName());
         dto.setEmail(emp.getEmail());
         dto.setPhoneNumber(emp.getPhoneNumber());
 
@@ -158,5 +185,4 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         return dto;
     }
-
 }

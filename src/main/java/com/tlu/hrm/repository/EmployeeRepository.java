@@ -7,19 +7,20 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import com.tlu.hrm.entities.Department;
 import com.tlu.hrm.entities.Employee;
 
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 	
 	boolean existsByCode(String code);
-	
-	List<Employee> findByUserIsNull();
 
-	Page<Employee> findByUserIsNull(Pageable pageable);
-	
-	Optional<Employee> findByUserId(Long userId);
-	
-	List<Employee> findByDepartment(String department);
-	
-	Page<Employee> findByDepartment(String department, Pageable pageable);
+    List<Employee> findByUserIsNull();
+
+    Page<Employee> findByUserIsNull(Pageable pageable);
+
+    Optional<Employee> findByUserId(Long userId);
+
+    List<Employee> findByDepartment(Department department);
+
+    Page<Employee> findByDepartment(Department department, Pageable pageable);
 }

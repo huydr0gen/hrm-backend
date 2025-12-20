@@ -32,7 +32,11 @@ public class LeaveRequest {
     @Enumerated(EnumType.STRING)
     private LeaveStatus status = LeaveStatus.PENDING;
 
-    // Manager/HR ghi chú khi quyết định
+    // 🔑 NGƯỜI DUYỆT ĐƯỢC RESOLVE KHI CREATE
+    @Column(name = "approver_id", nullable = false)
+    private Long approverId;
+
+    // Ghi chú khi quyết định
     private String managerNote;
 
     @Column(name = "decided_by")
@@ -101,6 +105,14 @@ public class LeaveRequest {
 		this.status = status;
 	}
 
+	public Long getApproverId() {
+		return approverId;
+	}
+
+	public void setApproverId(Long approverId) {
+		this.approverId = approverId;
+	}
+
 	public String getManagerNote() {
 		return managerNote;
 	}
@@ -140,6 +152,7 @@ public class LeaveRequest {
 	public void setUpdatedAt(LocalDateTime updatedAt) {
 		this.updatedAt = updatedAt;
 	}
+    
     
     
 }

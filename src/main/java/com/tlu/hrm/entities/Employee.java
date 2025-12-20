@@ -9,6 +9,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
@@ -31,8 +33,9 @@ public class Employee {
     @Column(nullable = false)
     private String position;
 
-    @Column(nullable = false)
-    private String department;
+    @ManyToOne
+    @JoinColumn(name = "department_id", nullable = false)
+    private Department department;
 
     @Column(length = 150)
     private String email;
@@ -46,50 +49,94 @@ public class Employee {
 
     public Employee() {}
 
-    public Employee(Long id, String code, String fullName, LocalDate dateOfBirth,
-                    String position, String department, String email,
-                    String phoneNumber, User user) {
+	public Employee(Long id, String code, String fullName, LocalDate dateOfBirth, String position,
+			Department department, String email, String phoneNumber, User user) {
+		super();
+		this.id = id;
+		this.code = code;
+		this.fullName = fullName;
+		this.dateOfBirth = dateOfBirth;
+		this.position = position;
+		this.department = department;
+		this.email = email;
+		this.phoneNumber = phoneNumber;
+		this.user = user;
+	}
 
-        this.id = id;
-        this.code = code;
-        this.fullName = fullName;
-        this.dateOfBirth = dateOfBirth;
-        this.position = position;
-        this.department = department;
-        this.email = email;
-        this.phoneNumber = phoneNumber;
-        this.user = user;
-    }
+	public Long getId() {
+		return id;
+	}
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public String getCode() { return code; }
-    public void setCode(String code) { this.code = code; }
+	public String getCode() {
+		return code;
+	}
 
-    public String getFullName() { return fullName; }
-    public void setFullName(String fullName) { this.fullName = fullName; }
+	public void setCode(String code) {
+		this.code = code;
+	}
 
-    public LocalDate getDateOfBirth() { return dateOfBirth; }
-    public void setDateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+	public String getFullName() {
+		return fullName;
+	}
 
-    public String getPosition() { return position; }
-    public void setPosition(String position) { this.position = position; }
+	public void setFullName(String fullName) {
+		this.fullName = fullName;
+	}
 
-    public String getDepartment() { return department; }
-    public void setDepartment(String department) { this.department = department; }
+	public LocalDate getDateOfBirth() {
+		return dateOfBirth;
+	}
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) {
-        this.email = (email == null || email.isBlank()) ? null : email;
-    }
+	public void setDateOfBirth(LocalDate dateOfBirth) {
+		this.dateOfBirth = dateOfBirth;
+	}
 
-    public String getPhoneNumber() { return phoneNumber; }
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = (phoneNumber == null || phoneNumber.isBlank()) ? null : phoneNumber;
-    }
+	public String getPosition() {
+		return position;
+	}
 
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
+	public void setPosition(String position) {
+		this.position = position;
+	}
+
+	public Department getDepartment() {
+		return department;
+	}
+
+	public void setDepartment(Department department) {
+		this.department = department;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public String getPhoneNumber() {
+		return phoneNumber;
+	}
+
+	public void setPhoneNumber(String phoneNumber) {
+		this.phoneNumber = phoneNumber;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+
+    
+
+    
 	
 }

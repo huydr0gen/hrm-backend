@@ -33,7 +33,7 @@ public class EmployeeUpdateDTO {
 	        example = "Kinh doanh",
 	        nullable = true
 	    )
-    private String department;
+	private Long departmentId;
 	
 	@Schema(
 	        description = "Email liên hệ",
@@ -67,12 +67,12 @@ public class EmployeeUpdateDTO {
 	public void setPosition(String position) {
 		this.position = position;
 	}
-	public String getDepartment() {
-		return department;
+	public Long getDepartmentId() {
+		return departmentId;
 	}
-	public void setDepartment(String department) {
-        this.department = (department == null || department.isBlank()) ? null : department;
-    }
+	public void setDepartmentId(Long departmentId) {
+		this.departmentId = departmentId;
+	}
 	public String getEmail() {
 		return email;
 	}

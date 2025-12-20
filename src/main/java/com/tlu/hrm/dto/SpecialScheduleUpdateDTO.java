@@ -67,7 +67,7 @@ public class SpecialScheduleUpdateDTO {
 	}
 
 
-	public void setAfternoonStartTime(LocalTime afternoonStart) {
+	public void setAfternoonStart(LocalTime afternoonStart) {
 		this.afternoonStart = afternoonStart;
 	}
 
@@ -77,7 +77,7 @@ public class SpecialScheduleUpdateDTO {
 	}
 
 
-	public void setAfternoonEndTime(LocalTime afternoonEnd) {
+	public void setAfternoonEnd(LocalTime afternoonEnd) {
 		this.afternoonEnd = afternoonEnd;
 	}
 

@@ -7,7 +7,7 @@ import com.tlu.hrm.enums.TimekeepingExplanationStatus;
 public class TimekeepingExplanationFilterDTO {
 
 	private String employeeCode;
-    private String department;
+    private Long departmentId;
 
     private LocalDate fromDate;
     private LocalDate toDate;
@@ -26,12 +26,12 @@ public class TimekeepingExplanationFilterDTO {
 		this.employeeCode = employeeCode;
 	}
 
-	public String getDepartment() {
-		return department;
+	public Long getDepartmentId() {
+		return departmentId;
 	}
 
-	public void setDepartment(String department) {
-		this.department = department;
+	public void setDepartmentId(Long departmentId) {
+		this.departmentId = departmentId;
 	}
 
 	public LocalDate getFromDate() {
@@ -57,6 +57,7 @@ public class TimekeepingExplanationFilterDTO {
 	public void setStatus(TimekeepingExplanationStatus status) {
 		this.status = status;
 	}
-    
+
+	
     
 }

@@ -54,6 +54,9 @@ public class SpecialSchedule {
     @Enumerated(EnumType.STRING)
     private SpecialScheduleStatus status = SpecialScheduleStatus.PENDING;
 
+    @Column(name = "approver_id", nullable = false)
+    private Long approverId;
+    
     private Long decidedBy;
     private LocalDateTime decidedAt;
 
@@ -69,7 +72,7 @@ public class SpecialSchedule {
 
 	public SpecialSchedule(Long id, Employee employee, LocalDate startDate, LocalDate endDate, LocalTime morningStart,
 			LocalTime morningEnd, LocalTime afternoonStart, LocalTime afternoonEnd, SpecialScheduleType type,
-			String reason, SpecialScheduleStatus status, Long decidedBy, LocalDateTime decidedAt,
+			String reason, SpecialScheduleStatus status, Long approverId, Long decidedBy, LocalDateTime decidedAt,
 			LocalDateTime createdAt, LocalDateTime updatedAt) {
 		super();
 		this.id = id;
@@ -83,6 +86,7 @@ public class SpecialSchedule {
 		this.type = type;
 		this.reason = reason;
 		this.status = status;
+		this.approverId = approverId;
 		this.decidedBy = decidedBy;
 		this.decidedAt = decidedAt;
 		this.createdAt = createdAt;
@@ -175,6 +179,14 @@ public class SpecialSchedule {
 
 	public void setStatus(SpecialScheduleStatus status) {
 		this.status = status;
+	}
+	
+	public Long getApproverId() {
+		return approverId;
+	}
+
+	public void setApproverId(Long approverId) {
+		this.approverId = approverId;
 	}
 
 	public Long getDecidedBy() {

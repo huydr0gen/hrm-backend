@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 
 import com.tlu.hrm.dto.*;
+import com.tlu.hrm.entities.Department;
 import com.tlu.hrm.enums.DecisionAction;
 
 public interface LeaveRequestService {
@@ -26,12 +27,13 @@ public interface LeaveRequestService {
     Page<LeaveRequestDTO> getDepartmentRequests(Long managerId, int page, int size);
 
     Page<LeaveRequestDTO> getAllFiltered(
-            String employeeName,
-            String department,
-            String status,
-            String type,
-            int page,
-            int size);
+    	    String employeeName,
+    	    Long departmentId,
+    	    String status,
+    	    String type,
+    	    int page,
+    	    int size
+    );
 
     // Unified decision API (approve/reject via enum)
     LeaveRequestDTO decide(Long id, DecisionAction action, String comment, Long actorId);

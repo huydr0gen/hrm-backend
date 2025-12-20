@@ -1,12 +1,17 @@
 package com.tlu.hrm.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -18,6 +23,7 @@ import com.tlu.hrm.dto.TimekeepingExplanationCreateDTO;
 import com.tlu.hrm.dto.TimekeepingExplanationDecisionDTO;
 import com.tlu.hrm.dto.TimekeepingExplanationFilterDTO;
 import com.tlu.hrm.dto.TimekeepingExplanationResponseDTO;
+import com.tlu.hrm.entities.Department;
 import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.entities.TimekeepingExplanation;
 import com.tlu.hrm.enums.DecisionAction;
@@ -32,42 +38,33 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
 
 	private final TimekeepingExplanationRepository repository;
     private final EmployeeRepository employeeRepository;
+    private final ApprovalResolverService approvalResolverService;
     
 	public TimekeepingExplanationServiceImpl(TimekeepingExplanationRepository repository,
-			EmployeeRepository employeeRepository) {
+			EmployeeRepository employeeRepository, ApprovalResolverService approvalResolverService) {
 		super();
 		this.repository = repository;
 		this.employeeRepository = employeeRepository;
+		this.approvalResolverService = approvalResolverService;
 	}
-    
+
 	// =====================================================
-    // Helper: current user
+    // Helpers
     // =====================================================
-    private CustomUserDetails getCurrentUser() {
-        Authentication auth = SecurityContextHolder
-                .getContext()
-                .getAuthentication();
-
-        if (auth == null || !auth.isAuthenticated()) {
-            throw new RuntimeException("Unauthenticated");
-        }
-
-        return (CustomUserDetails) auth.getPrincipal();
-    }
-
-    private boolean hasRole(String role) {
-        return getCurrentUser().getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_" + role));
-    }
-
     private Employee getCurrentEmployee() {
-        Long employeeId = getCurrentUser().getEmployeeId();
-        if (employeeId == null) {
-            return null;
-        }
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails ud = (CustomUserDetails) auth.getPrincipal();
 
-        return employeeRepository.findById(employeeId)
+        return employeeRepository.findByUserId(ud.getId())
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
+    }
+
+    private Set<String> getRoles() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth.getAuthorities()
+                .stream()
+                .map(a -> a.getAuthority())
+                .collect(Collectors.toSet());
     }
 
     // =====================================================
@@ -76,72 +73,64 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
     @Override
     @Transactional
     public TimekeepingExplanationResponseDTO create(
-            TimekeepingExplanationCreateDTO dto
-    ) {
-        Employee employee = getCurrentEmployee();
-        if (employee == null) {
-            throw new RuntimeException("Employee not found");
-        }
+            TimekeepingExplanationCreateDTO dto) {
 
-        TimekeepingExplanation entity = new TimekeepingExplanation();
-        entity.setEmployee(employee);
-        entity.setWorkDate(dto.getWorkDate());
-        entity.setProposedCheckIn(dto.getProposedCheckIn());
-        entity.setProposedCheckOut(dto.getProposedCheckOut());
-        entity.setReason(dto.getReason());
-        entity.setStatus(TimekeepingExplanationStatus.PENDING);
+        Employee emp = getCurrentEmployee();
 
-        repository.save(entity);
+        Long approverId = approvalResolverService.resolveApproverId(
+                emp.getId(),
+                emp.getDepartment().getId()
+        );
 
-        return mapToResponse(entity);
+        TimekeepingExplanation e = new TimekeepingExplanation();
+        e.setEmployee(emp);
+        e.setWorkDate(dto.getWorkDate());
+        e.setProposedCheckIn(dto.getProposedCheckIn());
+        e.setProposedCheckOut(dto.getProposedCheckOut());
+        e.setReason(dto.getReason());
+        e.setStatus(TimekeepingExplanationStatus.PENDING);
+        e.setApproverId(approverId);
+
+        repository.save(e);
+        return toDTO(e);
     }
 
     // =====================================================
-    // LIST + FILTER + PAGING
+    // LIST
     // =====================================================
     @Override
     public Page<TimekeepingExplanationResponseDTO> getList(
             TimekeepingExplanationFilterDTO filter,
             int page,
-            int size
-    ) {
-       // CustomUserDetails currentUser = getCurrentUser();
-        Employee currentEmployee = getCurrentEmployee();
+            int size) {
 
-        String forcedDepartment = null;
+        Employee actor = getCurrentEmployee();
+        Set<String> roles = getRoles();
+
+        Long forcedDepartmentId = null;
         Long forcedEmployeeId = null;
 
-        // MANAGER: chỉ xem phòng ban mình
-        if (hasRole("MANAGER")) {
-            if (currentEmployee == null) {
-                throw new RuntimeException("Manager has no employee info");
-            }
-            forcedDepartment = currentEmployee.getDepartment();
+        if (roles.contains("ROLE_EMPLOYEE")) {
+            forcedEmployeeId = actor.getId();
         }
 
-        // EMPLOYEE: chỉ xem của mình
-        if (hasRole("EMPLOYEE")) {
-            if (currentEmployee == null) {
-                throw new RuntimeException("Employee not found");
-            }
-            forcedEmployeeId = currentEmployee.getId();
+        if (roles.contains("ROLE_MANAGER")) {
+            forcedDepartmentId = actor.getDepartment().getId();
         }
 
         Pageable pageable = PageRequest.of(
-                page,
-                size,
-                Sort.by(Sort.Direction.DESC, "createdAt")
+                page, size, Sort.by("createdAt").descending()
         );
 
         Specification<TimekeepingExplanation> spec =
                 TimekeepingExplanationSpecification.build(
                         filter,
-                        forcedDepartment,
+                        forcedDepartmentId,
                         forcedEmployeeId
                 );
 
         return repository.findAll(spec, pageable)
-                .map(this::mapToResponse);
+                .map(this::toDTO);
     }
 
     // =====================================================
@@ -149,141 +138,92 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
     // =====================================================
     @Override
     public TimekeepingExplanationResponseDTO getById(Long id) {
-        TimekeepingExplanation entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Explanation not found"));
-
-        checkViewPermission(entity.getEmployee());
-
-        return mapToResponse(entity);
+        return toDTO(
+                repository.findById(id)
+                        .orElseThrow(() -> new RuntimeException("Not found"))
+        );
     }
 
     // =====================================================
-    // DECIDE ONE
+    // DECIDE ONE (ONLY APPROVER)
     // =====================================================
     @Override
     @Transactional
     public TimekeepingExplanationResponseDTO decide(
             Long id,
-            TimekeepingExplanationDecisionDTO dto
-    ) {
-        TimekeepingExplanation entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Explanation not found"));
+            TimekeepingExplanationDecisionDTO dto) {
 
-        if (entity.getStatus() != TimekeepingExplanationStatus.PENDING) {
-            throw new RuntimeException("Request already decided");
+        TimekeepingExplanation e = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Not found"));
+
+        if (e.getStatus() != TimekeepingExplanationStatus.PENDING) {
+            throw new IllegalStateException("Already processed");
         }
 
-        checkApprovePermission(entity.getEmployee());
+        Employee actor = getCurrentEmployee();
+        Long actorUserId = actor.getUser().getId();
 
-        if (dto.getAction() == DecisionAction.APPROVE) {
-            entity.setStatus(TimekeepingExplanationStatus.APPROVED);
-        } else {
-            entity.setStatus(TimekeepingExplanationStatus.REJECTED);
+        if (!actorUserId.equals(e.getApproverId())) {
+            throw new AccessDeniedException("Not approver");
         }
 
-        entity.setDecidedBy(getCurrentUser().getId());
-        entity.setDecidedAt(LocalDateTime.now());
-        entity.setManagerNote(dto.getManagerNote());
+        e.setStatus(
+                dto.getAction() == DecisionAction.APPROVE
+                        ? TimekeepingExplanationStatus.APPROVED
+                        : TimekeepingExplanationStatus.REJECTED
+        );
 
-        return mapToResponse(entity);
+        e.setDecidedBy(actorUserId);
+        e.setDecidedAt(LocalDateTime.now());
+        e.setManagerNote(dto.getManagerNote());
+
+        return toDTO(e);
     }
 
     // =====================================================
-    // DECIDE MANY (NO ERROR DETAIL)
+    // DECIDE MANY
     // =====================================================
     @Override
     @Transactional
     public BulkDecisionResultDTO decideMany(BulkDecisionDTO dto) {
 
-        BulkDecisionResultDTO result = new BulkDecisionResultDTO();
-        result.setSuccess(new java.util.ArrayList<>());
-        result.setFailed(new java.util.ArrayList<>());
+        List<Long> success = new ArrayList<>();
+        List<Long> failed = new ArrayList<>();
 
         for (Long id : dto.getIds()) {
             try {
-                TimekeepingExplanationDecisionDTO decision =
-                        new TimekeepingExplanationDecisionDTO();
-                decision.setAction(dto.getAction());
-                decision.setManagerNote(dto.getManagerNote());
-
-                decide(id, decision);
-                result.getSuccess().add(id);
-
+                decide(id,
+                        new TimekeepingExplanationDecisionDTO() {{
+                            setAction(dto.getAction());
+                            setManagerNote(dto.getManagerNote());
+                        }});
+                success.add(id);
             } catch (Exception e) {
-                result.getFailed().add(id);
+                failed.add(id);
             }
         }
 
-        return result;
-    }
-
-    // =====================================================
-    // Permission checks
-    // =====================================================
-    private void checkApprovePermission(Employee employee) {
-
-        if (hasRole("HR")) return;
-
-        if (hasRole("MANAGER")) {
-            Employee currentEmployee = getCurrentEmployee();
-            if (currentEmployee == null) {
-                throw new RuntimeException("Employee not found");
-            }
-
-            if (!employee.getDepartment()
-                    .equals(currentEmployee.getDepartment())) {
-                throw new RuntimeException("Not allowed to approve this request");
-            }
-            return;
-        }
-
-        throw new RuntimeException("No permission");
-    }
-
-    private void checkViewPermission(Employee employee) {
-
-        if (hasRole("HR")) return;
-
-        Employee currentEmployee = getCurrentEmployee();
-        if (currentEmployee == null) {
-            throw new RuntimeException("Employee not found");
-        }
-
-        if (hasRole("MANAGER")) {
-            if (!employee.getDepartment()
-                    .equals(currentEmployee.getDepartment())) {
-                throw new RuntimeException("Not allowed");
-            }
-            return;
-        }
-
-        if (hasRole("EMPLOYEE")) {
-            if (!employee.getId()
-                    .equals(currentEmployee.getId())) {
-                throw new RuntimeException("Not allowed");
-            }
-            return;
-        }
-
-        throw new RuntimeException("No permission");
+        return new BulkDecisionResultDTO(success, failed);
     }
 
     // =====================================================
     // Mapper
     // =====================================================
-    private TimekeepingExplanationResponseDTO mapToResponse(
-            TimekeepingExplanation e
-    ) {
+    private TimekeepingExplanationResponseDTO toDTO(TimekeepingExplanation e) {
+
         TimekeepingExplanationResponseDTO dto =
                 new TimekeepingExplanationResponseDTO();
 
-        dto.setId(e.getId());
-
         Employee emp = e.getEmployee();
+        Department dept = emp.getDepartment();
+
+        dto.setId(e.getId());
         dto.setEmployeeId(emp.getId());
         dto.setEmployeeCode(emp.getCode());
         dto.setEmployeeName(emp.getFullName());
-        dto.setDepartment(emp.getDepartment());
+
+        dto.setDepartmentId(dept.getId());
+        dto.setDepartmentName(dept.getName());
 
         dto.setWorkDate(e.getWorkDate());
         dto.setOriginalCheckIn(e.getOriginalCheckIn());
@@ -294,10 +234,10 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
         dto.setReason(e.getReason());
         dto.setStatus(e.getStatus());
 
+        dto.setApproverId(e.getApproverId());
         dto.setDecidedBy(e.getDecidedBy());
         dto.setDecidedAt(e.getDecidedAt());
         dto.setManagerNote(e.getManagerNote());
-
         dto.setCreatedAt(e.getCreatedAt());
 
         return dto;
