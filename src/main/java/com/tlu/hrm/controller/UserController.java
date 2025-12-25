@@ -131,19 +131,27 @@ public class UserController {
     // =====================================================
 
     @Operation(
-        summary = "Lấy danh sách user (phân trang)",
-        description = """
-            Màn hình: Danh sách người dùng
+	    summary = "Lấy danh sách user (phân trang)",
+	    description = """
+	        Màn hình: Quản lý người dùng (Admin)
 
-            Role:
-            - ADMIN
-            - HR
+	        Role:
+	        - ADMIN
 
-            Ghi chú:
-            - HR chỉ có quyền xem
-            """
-    )
-    @PreAuthorize("hasAnyRole('ADMIN','HR')")
+	        Luồng nghiệp vụ:
+	        - ADMIN xem danh sách toàn bộ tài khoản trong hệ thống
+	        - Bao gồm user hệ thống và user gắn với employee
+
+	        Bảo mật:
+	        - HR KHÔNG có quyền xem danh sách user
+	        - Nhân viên chỉ xem được thông tin tài khoản của chính mình qua /api/users/me
+	        """
+	)
+	@ApiResponses({
+	    @ApiResponse(responseCode = "200", description = "Lấy danh sách user thành công"),
+	    @ApiResponse(responseCode = "403", description = "Không có quyền ADMIN")
+	})
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<Page<UserDTO>> getUsers(
             @RequestParam(defaultValue = "0") int page,
@@ -160,18 +168,28 @@ public class UserController {
     // =====================================================
 
     @Operation(
-        summary = "Lấy thông tin user theo ID",
-        description = """
-            Màn hình: Chi tiết người dùng
+	    summary = "Lấy thông tin user theo ID",
+	    description = """
+	        Màn hình: Quản lý người dùng (Admin)
 
-            Role:
-            - ADMIN
-            - HR
-            - MANAGER
-            - EMPLOYEE
-            """
-    )
-    @PreAuthorize("hasAnyRole('ADMIN','HR','MANAGER','EMPLOYEE')")
+	        Role:
+	        - ADMIN
+
+	        Luồng nghiệp vụ:
+	        - ADMIN xem chi tiết tài khoản bất kỳ trong hệ thống
+	        - Dùng cho mục đích quản trị, kiểm tra, phân quyền
+
+	        Bảo mật:
+	        - User thường (EMPLOYEE / MANAGER / HR) KHÔNG được phép truy cập API này
+	        - User chỉ được xem thông tin của chính mình qua API /api/users/me
+	        """
+	)
+	@ApiResponses({
+	    @ApiResponse(responseCode = "200", description = "Lấy thông tin user thành công"),
+	    @ApiResponse(responseCode = "403", description = "Không có quyền ADMIN"),
+	    @ApiResponse(responseCode = "404", description = "User không tồn tại")
+	})
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
         User user = userService.getUserById(id);

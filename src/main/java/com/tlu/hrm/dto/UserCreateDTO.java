@@ -21,7 +21,7 @@ public class UserCreateDTO {
 	
 	@Schema(
 	        description = "Danh sách role gán cho user",
-	        example = "[\"EMPLOYEE\"]"
+	        example = "[\"ADMIN\"]"
 	    )
 	private Set<String> roleNames;
 	
