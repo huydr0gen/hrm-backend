@@ -190,7 +190,7 @@ public class UserController {
 	    @ApiResponse(responseCode = "404", description = "User không tồn tại")
 	})
     @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
         User user = userService.getUserById(id);
         return ResponseEntity.ok(mapToDto(user));
