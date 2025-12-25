@@ -33,24 +33,24 @@ public class EmployeeServiceImpl implements EmployeeService {
 	}
 	
 	// ================= CREATE =================
-	@Override
+    @Override
     public EmployeeDTO createEmployee(EmployeeCreateDTO dto) {
-
-        // =====================================================
-        // 🔹 AUTO GENERATE EMPLOYEE CODE (EMP001, EMP002, ...)
-        // =====================================================
-        String generatedCode = generateEmployeeCode();
 
         Department department = departmentRepository.findById(dto.getDepartmentId())
                 .orElseThrow(() -> new RuntimeException("Department not found"));
 
         Employee emp = new Employee();
-        emp.setCode(generatedCode); // AUTO GENERATED CODE
+
+        // =====================================================
+        // 🔹 AUTO GENERATE EMPLOYEE CODE (SAFE, DB-BASED)
+        // =====================================================
+        emp.setCode(generateEmployeeCode());
+
         emp.setFullName(dto.getFullName());
         emp.setDateOfBirth(dto.getDateOfBirth());
         emp.setPosition(dto.getPosition());
         emp.setDepartment(department);
-        emp.setEmail(dto.getEmail()); // vẫn cho phép null
+        emp.setEmail(null); // email tạo sau khi có user
         emp.setPhoneNumber(dto.getPhoneNumber());
 
         Employee saved = employeeRepository.save(emp);
@@ -61,18 +61,28 @@ public class EmployeeServiceImpl implements EmployeeService {
     // 🔹 SUPPORT METHOD: GENERATE EMPLOYEE CODE
     // =====================================================
     private String generateEmployeeCode() {
-        int index = 1;
-        String code;
 
-        do {
-            code = String.format("EMP%03d", index++);
-        } while (employeeRepository.existsByCode(code));
+        String maxCode = employeeRepository.findMaxEmployeeCode();
 
-        return code;
+        // DB chưa có EMP nào
+        if (maxCode == null) {
+            return "EMP001";
+        }
+
+        // Bỏ prefix EMP, parse số
+        int nextNumber;
+        try {
+            nextNumber = Integer.parseInt(maxCode.replace("EMP", "")) + 1;
+        } catch (NumberFormatException e) {
+            // Fallback an toàn (không nên xảy ra)
+            nextNumber = 1;
+        }
+
+        // Không giới hạn 3 chữ số → hỗ trợ EMP1000+
+        return "EMP" + nextNumber;
     }
 
     // ================= GET ALL =================
-
     @Override
     public Page<EmployeeDTO> getAllEmployees(int page, int size) {
 
@@ -88,7 +98,6 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     // ================= GET BY ID =================
-
     @Override
     public EmployeeDTO getEmployeeById(Long id) {
 
@@ -99,7 +108,6 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     // ================= WITHOUT USER =================
-
     @Override
     public Page<EmployeeDTO> getEmployeesWithoutUser(int page, int size) {
 
@@ -110,7 +118,6 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     // ================= UPDATE =================
-
     @Override
     public EmployeeDTO updateEmployee(Long id, EmployeeUpdateDTO dto) {
 
@@ -135,7 +142,6 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     // ================= DELETE =================
-
     @Override
     public void deleteEmployee(Long id) {
 
@@ -147,7 +153,6 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     // ================= MY DEPARTMENT =================
-
     @Override
     public Page<EmployeeDTO> getEmployeesOfMyDepartment(int page, int size) {
 
@@ -176,7 +181,6 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     // ================= MAP DTO =================
-
     private EmployeeDTO mapToDTO(Employee emp) {
 
         EmployeeDTO dto = new EmployeeDTO();
