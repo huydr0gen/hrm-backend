@@ -271,7 +271,8 @@ public class UserServiceImpl implements UserService {
     // Generate username helpers
     private String generateBaseUsername(String fullName) {
         fullName = Normalizer.normalize(fullName.trim().toLowerCase(), Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "");
+                .replaceAll("\\p{M}", "")
+                .replace("đ", "d");;
 
         String[] parts = fullName.split("\\s+");
         String last = parts[parts.length - 1];
