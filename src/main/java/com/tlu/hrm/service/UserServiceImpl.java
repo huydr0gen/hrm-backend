@@ -7,6 +7,8 @@ import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +22,7 @@ import com.tlu.hrm.enums.UserStatus;
 import com.tlu.hrm.repository.EmployeeRepository;
 import com.tlu.hrm.repository.RoleRepository;
 import com.tlu.hrm.repository.UserRepository;
+import com.tlu.hrm.security.CustomUserDetails;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -158,17 +161,30 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void deleteUser(Long id) {
+    public void deleteUser(Long userIdToDelete) {
 
-        // ⭐ LOG TRƯỚC
+        // Lấy user đang đăng nhập (actor)
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new RuntimeException("Unauthenticated");
+        }
+
+        Object principal = auth.getPrincipal();
+        if (!(principal instanceof CustomUserDetails userDetails)) {
+            throw new RuntimeException("Invalid authentication principal");
+        }
+
+        Long actorUserId = userDetails.getId();
+
+        // ⭐ LOG: ghi người THỰC HIỆN hành động
         auditLogService.log(
-                id,
+                actorUserId,
                 "DELETE_USER",
-                "User deleted"
+                "Deleted user with id = " + userIdToDelete
         );
 
-        // ⭐ SAU ĐÓ MỚI XÓA
-        userRepository.deleteById(id);
+        // ⭐ SAU ĐÓ mới xóa user
+        userRepository.deleteById(userIdToDelete);
     }
 
     @Override
