@@ -159,14 +159,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(Long id) {
-        userRepository.deleteById(id);
 
-        // ⭐ LOG
+        // ⭐ LOG TRƯỚC
         auditLogService.log(
                 id,
                 "DELETE_USER",
                 "User deleted"
         );
+
+        // ⭐ SAU ĐÓ MỚI XÓA
+        userRepository.deleteById(id);
     }
 
     @Override
