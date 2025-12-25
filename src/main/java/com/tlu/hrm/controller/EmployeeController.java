@@ -104,7 +104,7 @@ public class EmployeeController {
             - Dùng cho chức năng 'Tạo tài khoản cho nhân viên'
             """
     )
-    @PreAuthorize("hasRole('HR')")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/no-user")
     public ResponseEntity<Page<EmployeeDTO>> getWithoutUser(
             @RequestParam(defaultValue = "0") int page,
