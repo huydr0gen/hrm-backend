@@ -1,5 +1,6 @@
 package com.tlu.hrm.controller;
 
+import com.tlu.hrm.dto.ChangePasswordDTO;
 import com.tlu.hrm.dto.UserCreateDTO;
 import com.tlu.hrm.dto.UserDTO;
 import com.tlu.hrm.dto.UserUpdateDTO;
@@ -221,6 +222,34 @@ public class UserController {
         User updatedUser = userService.updateUser(id, dto);
         return ResponseEntity.ok(mapToDto(updatedUser));
     }
+    
+	 // =====================================================
+	 // CHANGE MY PASSWORD
+	 // =====================================================
+	
+	 @Operation(
+	     summary = "Đổi mật khẩu cá nhân",
+	 description = """
+	 Màn hình: Hồ sơ cá nhân
+	
+	 Role:
+	 - EMPLOYEE
+	 - MANAGER
+	 - HR
+	 - ADMIN
+	
+	 Luồng:
+	 - User đang đăng nhập đổi mật khẩu của chính mình
+	 """
+	 )
+	 @PreAuthorize("isAuthenticated()")
+	 @PutMapping("/me/password")
+	 public ResponseEntity<Void> changeMyPassword(
+	         @RequestBody ChangePasswordDTO dto) {
+	
+	     userService.changeMyPassword(dto);
+	     return ResponseEntity.noContent().build();
+	 }
 
     // =====================================================
     // DELETE USER

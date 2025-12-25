@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.tlu.hrm.config.CompanyConfig;
+import com.tlu.hrm.dto.ChangePasswordDTO;
 import com.tlu.hrm.dto.UserCreateDTO;
 import com.tlu.hrm.dto.UserUpdateDTO;
 import com.tlu.hrm.entities.Employee;
@@ -158,6 +159,29 @@ public class UserServiceImpl implements UserService {
         );
 
         return saved;
+    }
+
+    @Override
+    public void changeMyPassword(ChangePasswordDTO dto) {
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+
+        User user = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!passwordEncoder.matches(dto.getOldPassword(), user.getPassword())) {
+            throw new RuntimeException("Old password is incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        userRepository.save(user);
+
+        auditLogService.log(
+                user.getId(),
+                "CHANGE_PASSWORD",
+                "User changed own password"
+        );
     }
 
     @Override

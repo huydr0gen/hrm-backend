@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.springframework.data.domain.Page;
 
+import com.tlu.hrm.dto.ChangePasswordDTO;
 import com.tlu.hrm.dto.UserCreateDTO;
 import com.tlu.hrm.dto.UserUpdateDTO;
 import com.tlu.hrm.entities.User;
@@ -16,6 +17,8 @@ public interface UserService {
     User createUser(UserCreateDTO dto);
 
     User updateUser(Long id, UserUpdateDTO dto);
+    
+    void changeMyPassword(ChangePasswordDTO dto);
 
     void deleteUser(Long id);
 
