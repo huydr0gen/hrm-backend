@@ -26,9 +26,9 @@ public class EmployeeCreateDTO {
     private LocalDate dateOfBirth;
 	
 	@Schema(
-	        description = "Chức vụ",
-	        example = "Kế toán"
-	    )
+		    description = "Cấp bậc / vai trò trong tổ chức (level)",
+		    example = "STAFF"
+		)
     private String position;
 	
 	@Schema(

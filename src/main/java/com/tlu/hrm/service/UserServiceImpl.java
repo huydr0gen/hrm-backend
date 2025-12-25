@@ -49,34 +49,49 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
-    public User createUserFromEmployee(Long employeeId) {
-        Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
+	public User createUserFromEmployee(Long employeeId) {
 
-        String base = generateBaseUsername(employee.getFullName());
-        String username = generateUniqueUsername(base);
+	    Employee employee = employeeRepository.findById(employeeId)
+	            .orElseThrow(() -> new RuntimeException("Employee not found"));
 
-        String email = username + "@" + companyConfig.getEmailDomain();
-        employee.setEmail(email);
-        employeeRepository.save(employee);
+	    // ❗ Prevent creating multiple users for one employee
+	    if (employee.getUser() != null) {
+	        throw new RuntimeException("Employee already has a user account");
+	    }
 
-        User user = new User();
-        user.setUsername(username);
-        user.setPassword(passwordEncoder.encode("1"));
-        user.setStatus(UserStatus.ACTIVE);
-        user.setEmployee(employee);
+	    String base = generateBaseUsername(employee.getFullName());
+	    String username = generateUniqueUsername(base);
 
-        User saved = userRepository.save(user);
+	    String email = username + "@" + companyConfig.getEmailDomain();
 
-        // ⭐ LOG
-        auditLogService.log(
-                saved.getId(),
-                "CREATE_USER_FROM_EMPLOYEE",
-                "User auto-created for employee ID " + employeeId
-        );
+	    // Email generated when user account is created
+	    employee.setEmail(email);
 
-        return saved;
-    }
+	    User user = new User();
+	    user.setUsername(username);
+	    user.setPassword(passwordEncoder.encode("1"));
+	    user.setStatus(UserStatus.ACTIVE);
+	    user.setEmployee(employee);
+
+	    // 🔁 Set both sides of relation
+	    employee.setUser(user);
+
+	    // 🔐 Default role
+	    Role employeeRole = roleRepository.findByName("EMPLOYEE")
+	            .orElseThrow(() -> new RuntimeException("Role EMPLOYEE not found"));
+	    user.setRoles(Set.of(employeeRole));
+
+	    User saved = userRepository.save(user);
+	    employeeRepository.save(employee);
+
+	    auditLogService.log(
+	            saved.getId(),
+	            "CREATE_USER_FROM_EMPLOYEE",
+	            "User auto-created for employee ID " + employeeId
+	    );
+
+	    return saved;
+	}
 
     @Override
     public User createUser(UserCreateDTO dto) {

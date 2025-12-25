@@ -9,43 +9,32 @@ public class EmployeeUpdateDTO {
 
 	@Schema(
 	        description = "Họ và tên nhân viên",
-	        example = "Nguyễn Văn A",
-	        nullable = true
+	        example = "Trần Thị B"
 	    )
-	private String fullName;
+    private String fullName;
 	
 	@Schema(
 	        description = "Ngày sinh",
-	        example = "1998-05-20",
-	        nullable = true
+	        example = "2000-10-15"
 	    )
     private LocalDate dateOfBirth;
 	
 	@Schema(
-	        description = "Chức vụ",
-	        example = "Trưởng phòng kinh doanh",
-	        nullable = true
-	    )
+		    description = "Cấp bậc / vai trò trong tổ chức (level)",
+		    example = "Quản lý",
+		    nullable = true
+		)
     private String position;
 	
 	@Schema(
-	        description = "Phòng ban",
-	        example = "Kinh doanh",
-	        nullable = true
+	        description = "ID phòng ban",
+	        example = "3"
 	    )
 	private Long departmentId;
 	
 	@Schema(
-	        description = "Email liên hệ",
-	        example = "a.nguyen@company.com",
-	        nullable = true
-	    )
-    private String email;
-	
-	@Schema(
 	        description = "Số điện thoại",
-	        example = "0987654321",
-	        nullable = true
+	        example = "0912345678"
 	    )
     private String phoneNumber;
 	
@@ -73,12 +62,6 @@ public class EmployeeUpdateDTO {
 	public void setDepartmentId(Long departmentId) {
 		this.departmentId = departmentId;
 	}
-	public String getEmail() {
-		return email;
-	}
-	public void setEmail(String email) {
-        this.email = (email == null || email.isBlank()) ? null : email;
-    }
 	public String getPhoneNumber() {
 		return phoneNumber;
 	}

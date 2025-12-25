@@ -58,7 +58,7 @@ public class EmployeeController {
         @ApiResponse(responseCode = "200", description = "Tạo nhân viên thành công"),
         @ApiResponse(responseCode = "403", description = "Không có quyền HR / ADMIN")
     })
-	@PreAuthorize("hasAnyRole('ADMIN','HR')")
+    @PreAuthorize("hasRole('HR')")
     @PostMapping
     public ResponseEntity<EmployeeDTO> create(@RequestBody EmployeeCreateDTO dto) {
         return ResponseEntity.ok(employeeService.createEmployee(dto));
@@ -80,7 +80,7 @@ public class EmployeeController {
             - Dùng để hiển thị bảng nhân sự
             """
     )
-    @PreAuthorize("hasAnyRole('ADMIN','HR')")
+    @PreAuthorize("hasRole('HR')")
     @GetMapping
     public ResponseEntity<Page<EmployeeDTO>> getAll(
             @RequestParam(defaultValue = "0") int page,
@@ -104,7 +104,7 @@ public class EmployeeController {
             - Dùng cho chức năng 'Tạo tài khoản cho nhân viên'
             """
     )
-    @PreAuthorize("hasAnyRole('ADMIN','HR')")
+    @PreAuthorize("hasRole('HR')")
     @GetMapping("/no-user")
     public ResponseEntity<Page<EmployeeDTO>> getWithoutUser(
             @RequestParam(defaultValue = "0") int page,
@@ -142,7 +142,7 @@ public class EmployeeController {
             - HR
             """
     )
-    @PreAuthorize("hasAnyRole('ADMIN','HR')")
+    @PreAuthorize("hasRole('HR')")
     @PutMapping("/{id}")
     public ResponseEntity<EmployeeDTO> update(
             @PathVariable Long id,
@@ -163,7 +163,7 @@ public class EmployeeController {
             - Thường dùng khi nhập sai dữ liệu
             """
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         employeeService.deleteEmployee(id);

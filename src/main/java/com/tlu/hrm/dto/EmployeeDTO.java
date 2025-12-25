@@ -32,9 +32,9 @@ public class EmployeeDTO {
 	    private LocalDate dateOfBirth;
 
 	    @Schema(
-	        description = "Chức vụ",
-	        example = "Nhân viên kinh doanh"
-	    )
+	    	    description = "Cấp bậc / vai trò trong tổ chức (level)",
+	    	    example = "MANAGER"
+	    	)
 	    private String position;
 
 	    @Schema(

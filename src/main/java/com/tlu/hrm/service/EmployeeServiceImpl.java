@@ -32,29 +32,43 @@ public class EmployeeServiceImpl implements EmployeeService {
 		this.departmentRepository = departmentRepository;
 	}
 	
-	// create 
-	
+	// ================= CREATE =================
 	@Override
     public EmployeeDTO createEmployee(EmployeeCreateDTO dto) {
 
-        if (employeeRepository.existsByCode(dto.getCode())) {
-            throw new RuntimeException("Employee code already exists");
-        }
+        // =====================================================
+        // 🔹 AUTO GENERATE EMPLOYEE CODE (EMP001, EMP002, ...)
+        // =====================================================
+        String generatedCode = generateEmployeeCode();
 
         Department department = departmentRepository.findById(dto.getDepartmentId())
                 .orElseThrow(() -> new RuntimeException("Department not found"));
 
         Employee emp = new Employee();
-        emp.setCode(dto.getCode());
+        emp.setCode(generatedCode); // AUTO GENERATED CODE
         emp.setFullName(dto.getFullName());
         emp.setDateOfBirth(dto.getDateOfBirth());
         emp.setPosition(dto.getPosition());
         emp.setDepartment(department);
-        emp.setEmail(dto.getEmail());
+        emp.setEmail(dto.getEmail()); // vẫn cho phép null
         emp.setPhoneNumber(dto.getPhoneNumber());
 
         Employee saved = employeeRepository.save(emp);
         return mapToDTO(saved);
+    }
+
+    // =====================================================
+    // 🔹 SUPPORT METHOD: GENERATE EMPLOYEE CODE
+    // =====================================================
+    private String generateEmployeeCode() {
+        int index = 1;
+        String code;
+
+        do {
+            code = String.format("EMP%03d", index++);
+        } while (employeeRepository.existsByCode(code));
+
+        return code;
     }
 
     // ================= GET ALL =================
@@ -112,9 +126,6 @@ public class EmployeeServiceImpl implements EmployeeService {
                     .orElseThrow(() -> new RuntimeException("Department not found"));
             emp.setDepartment(department);
         }
-
-        if (dto.getEmail() != null)
-            emp.setEmail(dto.getEmail());
 
         if (dto.getPhoneNumber() != null)
             emp.setPhoneNumber(dto.getPhoneNumber());
