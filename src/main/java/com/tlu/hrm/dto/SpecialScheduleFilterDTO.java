@@ -5,6 +5,11 @@ import java.util.List;
 
 import com.tlu.hrm.enums.SpecialScheduleStatus;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(
+    description = "DTO dùng để tìm kiếm / lọc danh sách lịch làm việc đặc thù"
+)
 public class SpecialScheduleFilterDTO {
 
 	// =========================

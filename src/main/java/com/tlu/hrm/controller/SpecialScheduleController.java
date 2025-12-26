@@ -19,9 +19,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @Tag(
-	    name = "Special Schedule",
-	    description = "Quản lý lịch làm việc đặc thù (ngày lễ, làm bù, ca đặc biệt)"
-	)
+    name = "Special Schedule",
+    description = "Quản lý lịch làm việc đặc thù (thai sản, on-site, con nhỏ, lịch đặc biệt)"
+)
 @RestController
 @RequestMapping("/api/special-schedules")
 public class SpecialScheduleController {
@@ -37,22 +37,23 @@ public class SpecialScheduleController {
     // LIST (EMPLOYEE / MANAGER / HR)
     // =====================================================
 	@Operation(
-	        summary = "Tìm kiếm danh sách lịch đặc thù",
-	        description = """
-	            Role:
-	            - EMPLOYEE: chỉ xem lịch của mình
-	            - MANAGER: xem lịch nhân viên trong phòng ban
-	            - HR: xem toàn bộ lịch
-	            
-	            Ghi chú:
-	            - Dùng POST để filter linh hoạt
-	            - Có thể lọc theo thời gian, trạng thái, phòng ban
-	            - ADMIN không được truy cập nghiệp vụ này
-	            """
-	    )
-	@ApiResponses({
-	        @ApiResponse(responseCode = "200", description = "Lấy danh sách thành công")
-	    })
+        summary = "Tìm kiếm danh sách lịch đặc thù",
+        description = """
+            Role:
+            - EMPLOYEE: chỉ xem lịch của chính mình
+            - MANAGER: xem lịch của nhân viên trong phòng ban
+            - ADMIN: KHÔNG được truy cập nghiệp vụ này
+
+            Ghi chú nghiệp vụ:
+            - API dùng POST để hỗ trợ filter linh hoạt
+            - Có thể lọc theo: khoảng thời gian, trạng thái, phòng ban
+            - Phân quyền được xử lý ở Service
+            """
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Lấy danh sách thành công"),
+        @ApiResponse(responseCode = "403", description = "Không có quyền truy cập")
+    })
     @PostMapping("/search")
     public ResponseEntity<Page<SpecialScheduleResponseDTO>> list(
             @RequestBody SpecialScheduleFilterDTO filter) {
@@ -66,20 +67,23 @@ public class SpecialScheduleController {
     // DETAIL (EMPLOYEE / MANAGER / HR)
     // =====================================================
 	@Operation(
-	        summary = "Xem chi tiết lịch đặc thù",
-	        description = """
-	            Màn hình: Chi tiết lịch đặc thù
-	            Role:
-	            - EMPLOYEE: xem lịch của mình
-	            - MANAGER: xem lịch trong phòng ban
-	            - HR: xem toàn bộ
-	            
-	            ADMIN không được truy cập
-	            
-	            Ghi chú:
-	            - Dùng để xem thông tin chi tiết 1 lịch
-	            """
-	    )
+        summary = "Xem chi tiết một lịch đặc thù",
+        description = """
+            Role:
+            - EMPLOYEE: chỉ xem lịch của chính mình
+            - MANAGER: xem lịch của nhân viên trong phòng ban
+            - ADMIN: KHÔNG được truy cập
+
+            Ghi chú:
+            - Dùng cho màn hình xem chi tiết
+            - Phân quyền kiểm soát ở Service
+            """
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Lấy chi tiết thành công"),
+        @ApiResponse(responseCode = "403", description = "Không có quyền truy cập"),
+        @ApiResponse(responseCode = "404", description = "Không tìm thấy lịch")
+    })
     @GetMapping("/{id}")
     public ResponseEntity<SpecialScheduleResponseDTO> detail(
             @PathVariable Long id) {
@@ -93,22 +97,22 @@ public class SpecialScheduleController {
     // CREATE – EMPLOYEE
     // =====================================================
 	@Operation(
-	        summary = "Nhân viên tạo lịch làm việc đặc thù",
-	        description = """
-	            Màn hình: Đăng ký lịch đặc thù
-	            
-	            Ví dụ:
-	            - Làm bù ngày lễ
-	            - Đăng ký ca đặc biệt
-	            
-	            Luồng:
-	            - Nhân viên gửi yêu cầu
-	            - Lịch ở trạng thái chờ duyệt
-	            """
-	    )
-	    @ApiResponses({
-	        @ApiResponse(responseCode = "200", description = "Tạo lịch đặc thù thành công")
-	    })
+        summary = "Nhân viên tạo lịch làm việc đặc thù",
+        description = """
+            Role:
+            - EMPLOYEE
+
+            Nghiệp vụ:
+            - Nhân viên tạo yêu cầu lịch đặc thù (thai sản, on-site, con nhỏ, khác)
+            - Lịch sau khi tạo có trạng thái PENDING
+            - Người duyệt được xác định theo cấu hình duyệt (cá nhân hoặc phòng ban)
+            """
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Tạo lịch đặc thù thành công"),
+        @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ / bị trùng lịch"),
+        @ApiResponse(responseCode = "403", description = "Không có quyền tạo")
+    })
     @PostMapping
     public ResponseEntity<SpecialScheduleResponseDTO> create(
             @RequestBody SpecialScheduleCreateDTO dto) {
@@ -122,21 +126,25 @@ public class SpecialScheduleController {
     // UPDATE – EMPLOYEE (OWN + PENDING)
     // =====================================================
 	@Operation(
-	        summary = "Nhân viên chỉnh sửa lịch đặc thù",
-	        description = """
-	            Màn hình: Chỉnh sửa lịch đặc thù
-	            Role:
+        summary = "Nhân viên chỉnh sửa lịch đặc thù",
+        description = """
+            Role:
             - EMPLOYEE
 
-            Điều kiện:
-            - Chỉ chỉnh sửa lịch của chính mình
-            - Chỉ khi trạng thái là PENDING
-            
-	            Ghi chú:
-	            - Dùng khi cần điều chỉnh thông tin
-	            - Không phải hành động duyệt
-	            """
-	    )
+            Điều kiện nghiệp vụ:
+            - Chỉ được chỉnh sửa lịch của chính mình
+            - Chỉ chỉnh sửa khi trạng thái là PENDING
+            - Không áp dụng cho lịch đã được duyệt hoặc từ chối
+
+            Ghi chú:
+            - Đây không phải hành động duyệt
+            """
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Cập nhật lịch thành công"),
+        @ApiResponse(responseCode = "400", description = "Lịch không còn ở trạng thái PENDING"),
+        @ApiResponse(responseCode = "403", description = "Không có quyền chỉnh sửa")
+    })
     @PutMapping("/{id}")
     public ResponseEntity<SpecialScheduleResponseDTO> update(
             @PathVariable Long id,
@@ -151,21 +159,25 @@ public class SpecialScheduleController {
     // DECIDE – HR / MANAGER
     // =====================================================
 	@Operation(
-	        summary = "Duyệt hoặc từ chối lịch đặc thù",
-	        description = """
-	            Màn hình: Duyệt lịch đặc thù (HR / Manager)
-	            
-	            Role:
-	            - HR: duyệt tất cả
-	            - MANAGER: chỉ duyệt lịch của nhân viên trong phòng ban
-	            
-	            ADMIN và EMPLOYEE không được phép
-	            
-	            Action:
-	            - APPROVE
-	            - REJECT
-	            """
-	    )
+        summary = "Duyệt hoặc từ chối lịch đặc thù",
+        description = """
+            Role:
+            - Người được thiết lập là approver của lịch (MANAGER hoặc HR tuỳ cấu hình)
+
+            Nghiệp vụ:
+            - Chỉ người có approverId trùng với user hiện tại mới được duyệt
+            - Chỉ duyệt khi lịch đang ở trạng thái PENDING
+
+            Action:
+            - APPROVE: duyệt
+            - REJECT: từ chối
+            """
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Xử lý duyệt thành công"),
+        @ApiResponse(responseCode = "403", description = "Không phải người duyệt"),
+        @ApiResponse(responseCode = "400", description = "Lịch đã được xử lý trước đó")
+    })
     @PostMapping("/{id}/decision")
     public ResponseEntity<SpecialScheduleResponseDTO> decide(
             @PathVariable Long id,
@@ -180,18 +192,20 @@ public class SpecialScheduleController {
     // BULK DECIDE – HR / MANAGER
     // =====================================================
 	@Operation(
-	        summary = "Duyệt / từ chối nhiều lịch đặc thù",
-	        description = """
-	            Màn hình: Duyệt lịch đặc thù hàng loạt
-	            
-	            Role:
-	            - HR
-	            - MANAGER (chỉ trong phòng ban)
-	            
-	            Ghi chú:
-	            - Áp dụng cùng một action cho nhiều bản ghi
-	            """
-	    )
+        summary = "Duyệt / từ chối nhiều lịch đặc thù",
+        description = """
+            Role:
+            - Người được thiết lập là approver của từng lịch
+
+            Nghiệp vụ:
+            - Áp dụng cùng một action cho nhiều lịch
+            - Mỗi lịch được kiểm tra quyền độc lập
+            - Kết quả trả về gồm danh sách thành công và thất bại
+            """
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Xử lý hàng loạt hoàn tất")
+    })
     @PostMapping("/decision/bulk")
     public ResponseEntity<BulkDecisionResultDTO> decideMany(
             @RequestBody BulkDecisionDTO dto) {
