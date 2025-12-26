@@ -1,7 +1,5 @@
 package com.tlu.hrm.controller;
 
-import java.util.List;
-
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,7 +8,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import com.tlu.hrm.dto.*;
-import com.tlu.hrm.entities.Department;
 import com.tlu.hrm.security.CustomUserDetails;
 import com.tlu.hrm.service.LeaveRequestService;
 

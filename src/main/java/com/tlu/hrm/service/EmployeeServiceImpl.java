@@ -197,7 +197,8 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (emp.getUser() != null) {
             dto.setUserId(emp.getUser().getId());
         }
-
+        dto.setCreatedAt(emp.getCreatedAt());
+        
         return dto;
     }
 }

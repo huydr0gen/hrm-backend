@@ -1,6 +1,7 @@
 package com.tlu.hrm.dto;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -67,6 +68,13 @@ public class EmployeeDTO {
 	        nullable = true
 	    )
 	    private Long userId;
+	    
+	    @Schema(
+            description = "Thời điểm tạo nhân viên",
+            example = "2025-12-26T10:15:30"
+        )
+        private LocalDateTime createdAt;
+
 
 		public Long getId() {
 			return id;
@@ -146,6 +154,14 @@ public class EmployeeDTO {
 
 		public void setUserId(Long userId) {
 			this.userId = userId;
+		}
+
+		public LocalDateTime getCreatedAt() {
+			return createdAt;
+		}
+
+		public void setCreatedAt(LocalDateTime createdAt) {
+			this.createdAt = createdAt;
 		}
 
 	    

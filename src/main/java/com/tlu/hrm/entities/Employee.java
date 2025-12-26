@@ -1,6 +1,7 @@
 package com.tlu.hrm.entities;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
@@ -46,11 +47,14 @@ public class Employee {
     @OneToOne(mappedBy = "employee")
     @JsonBackReference
     private User user;
+    
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
     public Employee() {}
 
 	public Employee(Long id, String code, String fullName, LocalDate dateOfBirth, String position,
-			Department department, String email, String phoneNumber, User user) {
+			Department department, String email, String phoneNumber, User user, LocalDateTime createdAt) {
 		super();
 		this.id = id;
 		this.code = code;
@@ -61,6 +65,7 @@ public class Employee {
 		this.email = email;
 		this.phoneNumber = phoneNumber;
 		this.user = user;
+		this.createdAt = createdAt;
 	}
 
 	public Long getId() {
@@ -133,6 +138,14 @@ public class Employee {
 
 	public void setUser(User user) {
 		this.user = user;
+	}
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
 	}
 
     

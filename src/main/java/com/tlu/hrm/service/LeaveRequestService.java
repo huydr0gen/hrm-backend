@@ -5,7 +5,6 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 
 import com.tlu.hrm.dto.*;
-import com.tlu.hrm.entities.Department;
 import com.tlu.hrm.enums.DecisionAction;
 
 public interface LeaveRequestService {
