@@ -38,6 +38,10 @@ public class SpecialSchedule {
 
     private LocalTime afternoonStart;
     private LocalTime afternoonEnd;
+    
+    // Số giờ làm việc/ngày (dùng cho import công)
+    @Column(name = "working_hours")
+    private Integer workingHours;
 
     // =========================
     // Type & Reason
@@ -54,7 +58,7 @@ public class SpecialSchedule {
     @Enumerated(EnumType.STRING)
     private SpecialScheduleStatus status = SpecialScheduleStatus.PENDING;
 
-    @Column(name = "approver_id", nullable = false)
+    @Column(name = "approver_id")
     private Long approverId;
     
     private Long decidedBy;
@@ -66,14 +70,24 @@ public class SpecialSchedule {
     private LocalDateTime createdAt = LocalDateTime.now();
     private LocalDateTime updatedAt;
     
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+    
 	public SpecialSchedule() {
 		super();
 	}
 
 	public SpecialSchedule(Long id, Employee employee, LocalDate startDate, LocalDate endDate, LocalTime morningStart,
-			LocalTime morningEnd, LocalTime afternoonStart, LocalTime afternoonEnd, SpecialScheduleType type,
-			String reason, SpecialScheduleStatus status, Long approverId, Long decidedBy, LocalDateTime decidedAt,
-			LocalDateTime createdAt, LocalDateTime updatedAt) {
+			LocalTime morningEnd, LocalTime afternoonStart, LocalTime afternoonEnd, Integer workingHours,
+			SpecialScheduleType type, String reason, SpecialScheduleStatus status, Long approverId, Long decidedBy,
+			LocalDateTime decidedAt, LocalDateTime createdAt, LocalDateTime updatedAt) {
 		super();
 		this.id = id;
 		this.employee = employee;
@@ -83,6 +97,7 @@ public class SpecialSchedule {
 		this.morningEnd = morningEnd;
 		this.afternoonStart = afternoonStart;
 		this.afternoonEnd = afternoonEnd;
+		this.workingHours = workingHours;
 		this.type = type;
 		this.reason = reason;
 		this.status = status;
@@ -157,6 +172,14 @@ public class SpecialSchedule {
 		this.afternoonEnd = afternoonEnd;
 	}
 
+	public Integer getWorkingHours() {
+		return workingHours;
+	}
+
+	public void setWorkingHours(Integer workingHours) {
+		this.workingHours = workingHours;
+	}
+
 	public SpecialScheduleType getType() {
 		return type;
 	}
@@ -180,7 +203,7 @@ public class SpecialSchedule {
 	public void setStatus(SpecialScheduleStatus status) {
 		this.status = status;
 	}
-	
+
 	public Long getApproverId() {
 		return approverId;
 	}
@@ -220,7 +243,7 @@ public class SpecialSchedule {
 	public void setUpdatedAt(LocalDateTime updatedAt) {
 		this.updatedAt = updatedAt;
 	}
+
 	
-    
 	
 }

@@ -39,11 +39,24 @@ public class SpecialScheduleSpecification {
                 );
             }
 
+            // =========================
+            // Date overlap filter
+            // startDate <= dateTo AND (endDate IS NULL OR endDate >= dateFrom)
+            // =========================
             if (f.getDateFrom() != null && f.getDateTo() != null) {
                 predicates.add(
                         cb.and(
-                                cb.lessThanOrEqualTo(root.get("startDate"), f.getDateTo()),
-                                cb.greaterThanOrEqualTo(root.get("endDate"), f.getDateFrom())
+                                cb.lessThanOrEqualTo(
+                                        root.get("startDate"),
+                                        f.getDateTo()
+                                ),
+                                cb.or(
+                                        cb.isNull(root.get("endDate")),
+                                        cb.greaterThanOrEqualTo(
+                                                root.get("endDate"),
+                                                f.getDateFrom()
+                                        )
+                                )
                         )
                 );
             }

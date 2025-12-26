@@ -23,7 +23,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 	    description = "Quản lý lịch làm việc đặc thù (ngày lễ, làm bù, ca đặc biệt)"
 	)
 @RestController
-@RequestMapping("/special-schedules")
+@RequestMapping("/api/special-schedules")
 public class SpecialScheduleController {
 
 	private final SpecialScheduleService specialScheduleService;

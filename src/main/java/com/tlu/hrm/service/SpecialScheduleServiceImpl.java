@@ -63,16 +63,9 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         }
 
         if (roles.contains("ROLE_MANAGER")) {
-            List<Long> empIds = employeeRepository
-                    .findByDepartment(actor.getDepartment())
-                    .stream()
-                    .map(Employee::getId)
-                    .toList();
-            filter.setEmployeeIds(empIds);
-        }
-
-        if (roles.contains("ROLE_ADMIN")) {
-            throw new AccessDeniedException("Admin is not allowed");
+            if (filter.getDepartmentId() == null) {
+                filter.setDepartmentId(actor.getDepartment().getId());
+            }
         }
 
         Specification<SpecialSchedule> spec =
@@ -88,7 +81,7 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
     }
 
     // ======================================================
-    // CREATE – EMPLOYEE
+    // CREATE
     // ======================================================
     @Override
     public SpecialScheduleResponseDTO create(SpecialScheduleCreateDTO dto) {
@@ -97,7 +90,6 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
 
         Employee emp = getCurrentEmployee();
 
-        // 🔑 resolve approver
         Long approverId = approvalResolverService.resolveApproverId(
                 emp.getId(),
                 emp.getDepartment().getId()
@@ -112,18 +104,43 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         ss.setApproverId(approverId);
 
         switch (dto.getType()) {
-            case MATERNITY -> ss.setEndDate(dto.getStartDate().plusMonths(6));
+
+            case MATERNITY -> {
+                ss.setEndDate(dto.getStartDate().plusMonths(6));
+            }
+
+            case CHILD_CARE -> {
+                ss.setEndDate(dto.getStartDate().plusMonths(7));
+                ss.setWorkingHours(7); // rule nội bộ
+                applyWorkingTime(ss, dto);
+            }
+
             case ON_SITE, OTHER -> {
                 ss.setEndDate(dto.getEndDate());
                 applyWorkingTime(ss, dto);
             }
         }
 
+        boolean overlap = repository.existsOverlappingSchedule(
+                emp,
+                ss.getType(),
+                List.of(
+                        SpecialScheduleStatus.PENDING,
+                        SpecialScheduleStatus.APPROVED
+                ),
+                ss.getStartDate(),
+                ss.getEndDate()
+        );
+
+        if (overlap) {
+            throw new IllegalStateException("Overlapping schedule of same type exists");
+        }
+
         return toDTO(repository.save(ss));
     }
 
     // ======================================================
-    // UPDATE – EMPLOYEE
+    // UPDATE
     // ======================================================
     @Override
     public SpecialScheduleResponseDTO update(Long id, SpecialScheduleUpdateDTO dto) {
@@ -141,24 +158,34 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
             throw new IllegalStateException("Only PENDING schedule can be updated");
         }
 
-        if (ss.getType() == SpecialScheduleType.MATERNITY) {
-            ss.setReason(dto.getReason());
-        } else {
+        if (ss.getType() != SpecialScheduleType.MATERNITY) {
             ss.setStartDate(dto.getStartDate());
             ss.setEndDate(dto.getEndDate());
-            ss.setReason(dto.getReason());
-            ss.setMorningStart(dto.getMorningStart());
-            ss.setMorningEnd(dto.getMorningEnd());
-            ss.setAfternoonStart(dto.getAfternoonStart());
-            ss.setAfternoonEnd(dto.getAfternoonEnd());
+            applyWorkingTime(ss, dto);
         }
 
-        ss.setUpdatedAt(LocalDateTime.now());
+        ss.setReason(dto.getReason());
+
+        boolean overlap = repository.existsOverlappingSchedule(
+                actor,
+                ss.getType(),
+                List.of(
+                        SpecialScheduleStatus.PENDING,
+                        SpecialScheduleStatus.APPROVED
+                ),
+                ss.getStartDate(),
+                ss.getEndDate()
+        );
+
+        if (overlap && !ss.getId().equals(id)) {
+            throw new IllegalStateException("Overlapping schedule of same type exists");
+        }
+
         return toDTO(repository.save(ss));
     }
 
     // ======================================================
-    // DECIDE – ONLY APPROVER
+    // DECIDE
     // ======================================================
     @Override
     public SpecialScheduleResponseDTO decide(Long id, DecisionAction action) {
@@ -209,12 +236,26 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         return new BulkDecisionResultDTO(success, failed);
     }
 
-    // ======================================================
-    // DETAIL
-    // ======================================================
     @Override
     public SpecialScheduleResponseDTO detail(Long id) {
         return toDTO(getById(id));
+    }
+
+    // ======================================================
+    // WORKING TIME (OVERLOAD – QUAN TRỌNG)
+    // ======================================================
+    private void applyWorkingTime(SpecialSchedule ss, SpecialScheduleCreateDTO dto) {
+        ss.setMorningStart(dto.getMorningStart());
+        ss.setMorningEnd(dto.getMorningEnd());
+        ss.setAfternoonStart(dto.getAfternoonStart());
+        ss.setAfternoonEnd(dto.getAfternoonEnd());
+    }
+
+    private void applyWorkingTime(SpecialSchedule ss, SpecialScheduleUpdateDTO dto) {
+        ss.setMorningStart(dto.getMorningStart());
+        ss.setMorningEnd(dto.getMorningEnd());
+        ss.setAfternoonStart(dto.getAfternoonStart());
+        ss.setAfternoonEnd(dto.getAfternoonEnd());
     }
 
     // ======================================================
@@ -247,13 +288,6 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         }
     }
 
-    private void applyWorkingTime(SpecialSchedule ss, SpecialScheduleCreateDTO dto) {
-        ss.setMorningStart(dto.getMorningStart());
-        ss.setMorningEnd(dto.getMorningEnd());
-        ss.setAfternoonStart(dto.getAfternoonStart());
-        ss.setAfternoonEnd(dto.getAfternoonEnd());
-    }
-
     private SpecialScheduleResponseDTO toDTO(SpecialSchedule e) {
 
         SpecialScheduleResponseDTO dto = new SpecialScheduleResponseDTO();
@@ -264,8 +298,10 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         dto.setEmployeeName(e.getEmployee().getFullName());
 
         Department dept = e.getEmployee().getDepartment();
-        dto.setDepartmentId(dept.getId());
-        dto.setDepartmentName(dept.getName());
+        if (dept != null) {
+            dto.setDepartmentId(dept.getId());
+            dto.setDepartmentName(dept.getName());
+        }
 
         dto.setStartDate(e.getStartDate());
         dto.setEndDate(e.getEndDate());
