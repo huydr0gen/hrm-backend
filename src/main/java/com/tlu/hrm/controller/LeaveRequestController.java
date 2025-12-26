@@ -35,7 +35,7 @@ public class LeaveRequestController {
 	}
 	
 	// =====================================================
-    // Helper: get current user id
+    // Helper: get current user id (SAFE)
     // =====================================================
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -48,61 +48,51 @@ public class LeaveRequestController {
             return ud.getId();
         }
 
-        if (principal instanceof String username) {
-            try {
-                return Long.parseLong(username);
-            } catch (NumberFormatException e) {
-                throw new RuntimeException("Cannot resolve user id");
-            }
-        }
-
         throw new RuntimeException("Cannot resolve user id");
     }
 
     // =====================================================
     // CREATE – EMPLOYEE
     // =====================================================
-    
     @Operation(
-            summary = "Nhân viên tạo đơn xin nghỉ phép",
-            description = """
-                Màn hình: Tạo đơn nghỉ phép (Employee)
-                
-                Luồng:
-                - Nhân viên gửi thông tin nghỉ
-                - Đơn ở trạng thái PENDING
-                - Chờ Manager / HR duyệt
-                """
-        )
-        @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Tạo đơn thành công"),
-            @ApiResponse(responseCode = "400", description = "Dữ liệu đầu vào không hợp lệ"),
-            @ApiResponse(responseCode = "401", description = "Chưa đăng nhập"),
-            @ApiResponse(responseCode = "403", description = "Không có quyền EMPLOYEE")
-        })
+        summary = "Nhân viên tạo đơn xin nghỉ phép",
+        description = """
+            Màn hình: Tạo đơn nghỉ phép (Employee)
+
+            Luồng:
+            - Nhân viên gửi thông tin nghỉ
+            - Đơn ở trạng thái PENDING
+            - Chờ Manager / HR duyệt
+            """
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Tạo đơn thành công"),
+        @ApiResponse(responseCode = "400", description = "Dữ liệu đầu vào không hợp lệ"),
+        @ApiResponse(responseCode = "401", description = "Chưa đăng nhập"),
+        @ApiResponse(responseCode = "403", description = "Không có quyền EMPLOYEE")
+    })
     @PreAuthorize("hasRole('EMPLOYEE')")
     @PostMapping
     public ResponseEntity<LeaveRequestDTO> create(
             @RequestBody LeaveRequestCreateDTO dto) {
 
-        LeaveRequestDTO created = service.createRequest(dto);
-        return ResponseEntity.ok(created);
+        return ResponseEntity.ok(service.createRequest(dto));
     }
 
     // =====================================================
     // EMPLOYEE – MY REQUESTS
     // =====================================================
     @Operation(
-            summary = "Nhân viên xem các đơn nghỉ của mình",
-            description = """
-                Màn hình: Danh sách đơn nghỉ của tôi
-                
-                Ghi chú:
-                - Chỉ lấy đơn của user đang đăng nhập
-                """
-        )
+        summary = "Nhân viên xem các đơn nghỉ của mình",
+        description = """
+            Màn hình: Danh sách đơn nghỉ của tôi
+
+            Ghi chú:
+            - Chỉ lấy đơn của user đang đăng nhập
+            """
+    )
     @ApiResponses({
-    	@ApiResponse(responseCode = "200", description = "Lấy danh sách đơn nghỉ thành công"),
+        @ApiResponse(responseCode = "200", description = "Lấy danh sách đơn nghỉ thành công"),
         @ApiResponse(responseCode = "401", description = "Chưa đăng nhập"),
         @ApiResponse(responseCode = "403", description = "Không có quyền EMPLOYEE")
     })
@@ -120,16 +110,16 @@ public class LeaveRequestController {
     // MANAGER – DEPARTMENT REQUESTS
     // =====================================================
     @Operation(
-            summary = "Quản lý xem đơn nghỉ của phòng ban",
-            description = """
-                Màn hình: Duyệt đơn nghỉ (Manager)
-                
-                Ghi chú:
-                - Chỉ hiển thị đơn của nhân viên trong phòng ban
-                """
-        )
+        summary = "Quản lý xem đơn nghỉ của phòng ban",
+        description = """
+            Màn hình: Duyệt đơn nghỉ (Manager)
+
+            Ghi chú:
+            - Chỉ hiển thị đơn của nhân viên trong phòng ban
+            """
+    )
     @ApiResponses({
-    	@ApiResponse(responseCode = "200", description = "Lấy danh sách đơn nghỉ phòng ban thành công"),
+        @ApiResponse(responseCode = "200", description = "Lấy danh sách đơn nghỉ phòng ban thành công"),
         @ApiResponse(responseCode = "403", description = "Không có quyền MANAGER")
     })
     @PreAuthorize("hasRole('MANAGER')")
@@ -143,22 +133,22 @@ public class LeaveRequestController {
     }
 
     // =====================================================
-    // HR / ADMIN – FILTER LIST
+    // HR / ADMIN – FILTER LIST (READ ONLY)
     // =====================================================
     @Operation(
-            summary = "HR / Admin tìm kiếm và lọc đơn nghỉ",
-            description = """
-                Màn hình: Danh sách đơn nghỉ (HR / Admin)
-                
-                Có thể lọc theo:
-                - Tên nhân viên
-                - Phòng ban
-                - Trạng thái đơn
-                - Loại nghỉ
-                """
-        )
+        summary = "HR / Admin tìm kiếm và lọc đơn nghỉ",
+        description = """
+            Màn hình: Danh sách đơn nghỉ (HR / Admin)
+
+            Có thể lọc theo:
+            - Tên nhân viên
+            - Phòng ban
+            - Trạng thái đơn
+            - Loại nghỉ
+            """
+    )
     @ApiResponses({
-    	@ApiResponse(responseCode = "200", description = "Lấy danh sách đơn nghỉ thành công"),
+        @ApiResponse(responseCode = "200", description = "Lấy danh sách đơn nghỉ thành công"),
         @ApiResponse(responseCode = "403", description = "Không có quyền HR / ADMIN")
     })
     @PreAuthorize("hasAnyRole('HR','ADMIN')")
@@ -180,113 +170,71 @@ public class LeaveRequestController {
     // GET BY ID
     // =====================================================
     @Operation(
-            summary = "Xem chi tiết đơn nghỉ phép",
-            description = """
-                Màn hình: Chi tiết đơn nghỉ
-                
-                Role:
-                - EMPLOYEE (đơn của mình)
-                - MANAGER / HR / ADMIN
-                """
-        )
+        summary = "Xem chi tiết đơn nghỉ phép",
+        description = """
+            Màn hình: Chi tiết đơn nghỉ
+
+            Role:
+            - EMPLOYEE (đơn của mình)
+            - MANAGER / HR / ADMIN
+            """
+    )
     @ApiResponses({
-    	@ApiResponse(responseCode = "200", description = "Lấy chi tiết đơn nghỉ thành công"),
+        @ApiResponse(responseCode = "200", description = "Lấy chi tiết đơn nghỉ thành công"),
         @ApiResponse(responseCode = "403", description = "Không có quyền truy cập"),
         @ApiResponse(responseCode = "404", description = "Không tìm thấy đơn nghỉ")
     })
+    @PreAuthorize("hasAnyRole('EMPLOYEE','MANAGER','HR','ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<LeaveRequestDTO> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
     }
 
-	
     // =====================================================
     // EMPLOYEE – UPDATE (PENDING ONLY)
     // =====================================================
     @Operation(
-    		summary = "Nhân viên chỉnh sửa đơn nghỉ (chỉ khi PENDING)",
-    		description = """
-    				Màn hình: Chỉnh sửa đơn nghỉ
-    				
-    				Rule:
-    				- Chỉ EMPLOYEE
-    				- Chỉ sửa đơn của chính mình
-    				- Chỉ khi trạng thái = PENDING
-    				""")
+        summary = "Nhân viên chỉnh sửa đơn nghỉ (chỉ khi PENDING)",
+        description = """
+            Màn hình: Chỉnh sửa đơn nghỉ
+
+            Rule:
+            - Chỉ EMPLOYEE
+            - Chỉ sửa đơn của chính mình
+            - Chỉ khi trạng thái = PENDING
+            """
+    )
     @ApiResponses({
-    	@ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
-    	@ApiResponse(responseCode = "400", description = "Đơn không còn ở trạng thái PENDING"),
+        @ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
+        @ApiResponse(responseCode = "400", description = "Đơn không còn ở trạng thái PENDING"),
         @ApiResponse(responseCode = "403", description = "Không có quyền EMPLOYEE"),
         @ApiResponse(responseCode = "404", description = "Không tìm thấy đơn nghỉ")
     })
     @PreAuthorize("hasRole('EMPLOYEE')")
     @PutMapping("/{id}")
-    public ResponseEntity<LeaveRequestDTO> employeeUpdate (
-    		@PathVariable Long id, 
-    		@RequestBody LeaveRequestUpdateDTO dto) {
-    	Long userId = getCurrentUserId();
-    	return ResponseEntity.ok(service.employeeUpdate(id, dto, userId));
-    }
-    
-    // =====================================================
-    // HR / ADMIN – DELETE
-    // =====================================================
-    @Operation(
-            summary = "HR xóa đơn nghỉ",
-            description = """
-                Màn hình: Quản lý đơn nghỉ
-                
-                Ghi chú:
-                - Xóa một đơn theo ID
-                """
-        )
-    @ApiResponses({
-    	@ApiResponse(responseCode = "204", description = "Xóa đơn nghỉ thành công"),
-        @ApiResponse(responseCode = "403", description = "Không có quyền HR / ADMIN"),
-        @ApiResponse(responseCode = "404", description = "Không tìm thấy đơn nghỉ")
-    })
-    @PreAuthorize("hasRole('HR')")
-    @DeleteMapping("/hr/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        service.delete(id);
-        return ResponseEntity.noContent().build();
-    }
+    public ResponseEntity<LeaveRequestDTO> employeeUpdate(
+            @PathVariable Long id,
+            @RequestBody LeaveRequestUpdateDTO dto) {
 
-    @Operation(
-            summary = "HR / Admin xóa nhiều đơn nghỉ",
-            description = """
-                Màn hình: Quản lý đơn nghỉ
-                
-                Ghi chú:
-                - Xóa hàng loạt theo danh sách ID
-                """
-        )
-    @ApiResponses({
-    	@ApiResponse(responseCode = "204", description = "Xóa nhiều đơn nghỉ thành công"),
-        @ApiResponse(responseCode = "403", description = "Không có quyền HR / ADMIN")
-    })
-    @PreAuthorize("hasRole('HR')")
-    @DeleteMapping("/hr/batch")
-    public ResponseEntity<Void> deleteMany(@RequestBody List<Long> ids) {
-        service.deleteMany(ids);
-        return ResponseEntity.noContent().build();
+        Long userId = getCurrentUserId();
+        return ResponseEntity.ok(service.employeeUpdate(id, dto, userId));
     }
 
     // =====================================================
     // DECIDE – MANAGER / HR
     // =====================================================
     @Operation(
-            summary = "Duyệt hoặc từ chối đơn nghỉ",
-            description = """
-                Màn hình: Duyệt đơn nghỉ (Manager / HR)
-                
-                Action:
-                - APPROVE
-                - REJECT
-                """
-        )
+        summary = "Duyệt hoặc từ chối đơn nghỉ",
+        description = """
+            Màn hình: Duyệt đơn nghỉ (Manager / HR)
+
+            Action:
+            - APPROVE
+            - REJECT
+            """
+    )
     @ApiResponses({
-    	@ApiResponse(responseCode = "200", description = "Xử lý đơn nghỉ thành công"),
+        @ApiResponse(responseCode = "200", description = "Xử lý đơn nghỉ thành công"),
         @ApiResponse(responseCode = "400", description = "Đơn đã được xử lý hoặc action không hợp lệ"),
         @ApiResponse(responseCode = "403", description = "Không có quyền MANAGER / HR")
     })
@@ -306,16 +254,16 @@ public class LeaveRequestController {
     // BULK DECIDE – MANAGER / HR
     // =====================================================
     @Operation(
-            summary = "Duyệt / từ chối nhiều đơn nghỉ cùng lúc",
-            description = """
-                Màn hình: Duyệt hàng loạt
-                
-                Ghi chú:
-                - Áp dụng cùng một action cho nhiều đơn
-                """
-        )
+        summary = "Duyệt / từ chối nhiều đơn nghỉ cùng lúc",
+        description = """
+            Màn hình: Duyệt hàng loạt
+
+            Ghi chú:
+            - Áp dụng cùng một action cho nhiều đơn
+            """
+    )
     @ApiResponses({
-    	@ApiResponse(responseCode = "200", description = "Xử lý hàng loạt thành công"),
+        @ApiResponse(responseCode = "200", description = "Xử lý hàng loạt thành công"),
         @ApiResponse(responseCode = "403", description = "Không có quyền MANAGER / HR")
     })
     @PreAuthorize("hasAnyRole('MANAGER','HR')")
@@ -325,7 +273,12 @@ public class LeaveRequestController {
 
         Long actorId = getCurrentUserId();
         return ResponseEntity.ok(
-                service.decideMany(dto.getIds(), dto.getAction(), dto.getManagerNote(), actorId)
+                service.decideMany(
+                        dto.getIds(),
+                        dto.getAction(),
+                        dto.getManagerNote(),
+                        actorId
+                )
         );
     }
 }

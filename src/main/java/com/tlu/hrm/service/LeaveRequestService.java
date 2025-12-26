@@ -12,12 +12,8 @@ public interface LeaveRequestService {
 
 	LeaveRequestDTO createRequest(LeaveRequestCreateDTO dto);
 
-    //EMPLOYEE: update
-	LeaveRequestDTO employeeUpdate(Long id, LeaveRequestUpdateDTO dto, Long userId);
-
-    // HR / ADMIN: delete operations
-    void delete(Long id);                  // HR / ADMIN delete any request
-    void deleteMany(List<Long> ids);       // HR / ADMIN delete multiple requests
+    // EMPLOYEE
+    LeaveRequestDTO employeeUpdate(Long id, LeaveRequestUpdateDTO dto, Long userId);
 
     // Read
     LeaveRequestDTO getById(Long id);
@@ -27,16 +23,21 @@ public interface LeaveRequestService {
     Page<LeaveRequestDTO> getDepartmentRequests(Long managerId, int page, int size);
 
     Page<LeaveRequestDTO> getAllFiltered(
-    	    String employeeName,
-    	    Long departmentId,
-    	    String status,
-    	    String type,
-    	    int page,
-    	    int size
+        String employeeName,
+        Long departmentId,
+        String status,
+        String type,
+        int page,
+        int size
     );
 
-    // Unified decision API (approve/reject via enum)
+    // Decision
     LeaveRequestDTO decide(Long id, DecisionAction action, String comment, Long actorId);
 
-    BulkDecisionResultDTO decideMany(List<Long> ids, DecisionAction action, String comment, Long actorId);
+    BulkDecisionResultDTO decideMany(
+        List<Long> ids,
+        DecisionAction action,
+        String comment,
+        Long actorId
+    );
 }
