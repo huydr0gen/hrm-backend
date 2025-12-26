@@ -20,6 +20,12 @@ public class ApprovalConfigServiceImpl implements ApprovalConfigService {
 	@Override
     public ApprovalConfigDTO createOrUpdate(ApprovalConfigCreateDTO dto) {
 
+		if (dto.getTargetType() == null
+				|| dto.getTargetId() == null
+			    || dto.getApproverId() == null) {
+		    throw new RuntimeException("Thiếu dữ liệu thiết lập người duyệt");
+		}
+		
         ApprovalConfig config = repository
             .findByTargetTypeAndTargetIdAndActiveTrue(
                 dto.getTargetType(),
