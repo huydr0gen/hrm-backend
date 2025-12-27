@@ -34,56 +34,102 @@ public class SpecialScheduleController {
 	}
 	
 	// =====================================================
-    // LIST (EMPLOYEE / MANAGER / HR)
+    // VIEW MY SCHEDULES – EMPLOYEE
     // =====================================================
-	@Operation(
-        summary = "Tìm kiếm danh sách lịch đặc thù",
+    @Operation(
+        summary = "Nhân viên xem toàn bộ lịch đặc thù của mình",
         description = """
             Role:
-            - EMPLOYEE: chỉ xem lịch của chính mình
-            - MANAGER: xem lịch của nhân viên trong phòng ban
-            - ADMIN: KHÔNG được truy cập nghiệp vụ này
+            - EMPLOYEE
 
-            Ghi chú nghiệp vụ:
-            - API dùng POST để hỗ trợ filter linh hoạt
-            - Có thể lọc theo: khoảng thời gian, trạng thái, phòng ban
-            - Phân quyền được xử lý ở Service
+            Nghiệp vụ:
+            - Trả về toàn bộ lịch do nhân viên tạo
+            - Bao gồm mọi trạng thái
             """
     )
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Lấy danh sách thành công"),
         @ApiResponse(responseCode = "403", description = "Không có quyền truy cập")
     })
-    @PostMapping("/search")
-    public ResponseEntity<Page<SpecialScheduleResponseDTO>> list(
-            @RequestBody SpecialScheduleFilterDTO filter) {
+    @GetMapping("/my")
+    public ResponseEntity<Page<SpecialScheduleResponseDTO>> getMySchedules(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
 
         return ResponseEntity.ok(
-                specialScheduleService.list(filter)
+                specialScheduleService.getMySchedules(page, size)
         );
     }
 
-	// =====================================================
-    // DETAIL (EMPLOYEE / MANAGER / HR)
     // =====================================================
-	@Operation(
-        summary = "Xem chi tiết một lịch đặc thù",
+    // VIEW DEPARTMENT – MANAGER
+    // =====================================================
+    @Operation(
+        summary = "Quản lý xem lịch đặc thù của nhân viên trong phòng ban",
         description = """
             Role:
-            - EMPLOYEE: chỉ xem lịch của chính mình
-            - MANAGER: xem lịch của nhân viên trong phòng ban
-            - ADMIN: KHÔNG được truy cập
+            - MANAGER
 
-            Ghi chú:
-            - Dùng cho màn hình xem chi tiết
-            - Phân quyền kiểm soát ở Service
+            Nghiệp vụ:
+            - Chỉ xem lịch của nhân viên thuộc phòng ban mình quản lý
             """
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lấy chi tiết thành công"),
-        @ApiResponse(responseCode = "403", description = "Không có quyền truy cập"),
-        @ApiResponse(responseCode = "404", description = "Không tìm thấy lịch")
+        @ApiResponse(responseCode = "200", description = "Lấy danh sách thành công"),
+        @ApiResponse(responseCode = "403", description = "Không có quyền truy cập")
     })
+    @GetMapping("/department")
+    public ResponseEntity<Page<SpecialScheduleResponseDTO>> getDepartmentSchedules(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(
+                specialScheduleService.getDepartmentSchedules(page, size)
+        );
+    }
+
+    // =====================================================
+    // VIEW MY APPROVALS – APPROVER
+    // =====================================================
+    @Operation(
+        summary = "Người duyệt xem các lịch đặc thù cần xử lý",
+        description = """
+            Role:
+            - Người được thiết lập là approver
+
+            Nghiệp vụ:
+            - Chỉ trả về lịch có:
+              + approverId = user hiện tại
+              + status = PENDING
+            """
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Lấy danh sách thành công"),
+        @ApiResponse(responseCode = "403", description = "Không có quyền truy cập")
+    })
+    @GetMapping("/my-approvals")
+    public ResponseEntity<Page<SpecialScheduleResponseDTO>> getMyApprovalSchedules(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(
+                specialScheduleService.getMyApprovalSchedules(page, size)
+        );
+    }
+
+    // =====================================================
+    // DETAIL
+    // =====================================================
+    @Operation(
+        summary = "Xem chi tiết một lịch đặc thù",
+        description = """
+            Role:
+            - EMPLOYEE / MANAGER / APPROVER
+
+            Ghi chú:
+            - Phân quyền được kiểm soát ở Service
+            """
+    )
     @GetMapping("/{id}")
     public ResponseEntity<SpecialScheduleResponseDTO> detail(
             @PathVariable Long id) {
@@ -93,26 +139,20 @@ public class SpecialScheduleController {
         );
     }
 
-	// =====================================================
+    // =====================================================
     // CREATE – EMPLOYEE
     // =====================================================
-	@Operation(
+    @Operation(
         summary = "Nhân viên tạo lịch làm việc đặc thù",
         description = """
             Role:
             - EMPLOYEE
 
             Nghiệp vụ:
-            - Nhân viên tạo yêu cầu lịch đặc thù (thai sản, on-site, con nhỏ, khác)
-            - Lịch sau khi tạo có trạng thái PENDING
-            - Người duyệt được xác định theo cấu hình duyệt (cá nhân hoặc phòng ban)
+            - Lịch được tạo ở trạng thái PENDING
+            - Người duyệt được xác định theo cấu hình duyệt
             """
     )
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Tạo lịch đặc thù thành công"),
-        @ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ / bị trùng lịch"),
-        @ApiResponse(responseCode = "403", description = "Không có quyền tạo")
-    })
     @PostMapping
     public ResponseEntity<SpecialScheduleResponseDTO> create(
             @RequestBody SpecialScheduleCreateDTO dto) {
@@ -122,29 +162,20 @@ public class SpecialScheduleController {
         );
     }
 
-	// =====================================================
+    // =====================================================
     // UPDATE – EMPLOYEE (OWN + PENDING)
     // =====================================================
-	@Operation(
+    @Operation(
         summary = "Nhân viên chỉnh sửa lịch đặc thù",
         description = """
             Role:
             - EMPLOYEE
 
-            Điều kiện nghiệp vụ:
-            - Chỉ được chỉnh sửa lịch của chính mình
-            - Chỉ chỉnh sửa khi trạng thái là PENDING
-            - Không áp dụng cho lịch đã được duyệt hoặc từ chối
-
-            Ghi chú:
-            - Đây không phải hành động duyệt
+            Điều kiện:
+            - Chỉ sửa lịch của chính mình
+            - Chỉ khi trạng thái là PENDING
             """
     )
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Cập nhật lịch thành công"),
-        @ApiResponse(responseCode = "400", description = "Lịch không còn ở trạng thái PENDING"),
-        @ApiResponse(responseCode = "403", description = "Không có quyền chỉnh sửa")
-    })
     @PutMapping("/{id}")
     public ResponseEntity<SpecialScheduleResponseDTO> update(
             @PathVariable Long id,
@@ -156,28 +187,40 @@ public class SpecialScheduleController {
     }
 
     // =====================================================
-    // DECIDE – HR / MANAGER
+    // DELETE – EMPLOYEE (OWN + PENDING)
     // =====================================================
-	@Operation(
+    @Operation(
+        summary = "Nhân viên huỷ lịch đặc thù",
+        description = """
+            Role:
+            - EMPLOYEE
+
+            Điều kiện:
+            - Chỉ huỷ lịch của chính mình
+            - Chỉ khi trạng thái là PENDING
+            """
+    )
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+
+        specialScheduleService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // =====================================================
+    // DECIDE – APPROVER
+    // =====================================================
+    @Operation(
         summary = "Duyệt hoặc từ chối lịch đặc thù",
         description = """
             Role:
-            - Người được thiết lập là approver của lịch (MANAGER hoặc HR tuỳ cấu hình)
-
-            Nghiệp vụ:
-            - Chỉ người có approverId trùng với user hiện tại mới được duyệt
-            - Chỉ duyệt khi lịch đang ở trạng thái PENDING
+            - Người được thiết lập là approver
 
             Action:
-            - APPROVE: duyệt
-            - REJECT: từ chối
+            - APPROVE
+            - REJECT
             """
     )
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Xử lý duyệt thành công"),
-        @ApiResponse(responseCode = "403", description = "Không phải người duyệt"),
-        @ApiResponse(responseCode = "400", description = "Lịch đã được xử lý trước đó")
-    })
     @PostMapping("/{id}/decision")
     public ResponseEntity<SpecialScheduleResponseDTO> decide(
             @PathVariable Long id,
@@ -189,23 +232,18 @@ public class SpecialScheduleController {
     }
 
     // =====================================================
-    // BULK DECIDE – HR / MANAGER
+    // BULK DECIDE – APPROVER
     // =====================================================
-	@Operation(
+    @Operation(
         summary = "Duyệt / từ chối nhiều lịch đặc thù",
         description = """
             Role:
-            - Người được thiết lập là approver của từng lịch
+            - Người được thiết lập là approver
 
-            Nghiệp vụ:
-            - Áp dụng cùng một action cho nhiều lịch
+            Ghi chú:
             - Mỗi lịch được kiểm tra quyền độc lập
-            - Kết quả trả về gồm danh sách thành công và thất bại
             """
     )
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Xử lý hàng loạt hoàn tất")
-    })
     @PostMapping("/decision/bulk")
     public ResponseEntity<BulkDecisionResultDTO> decideMany(
             @RequestBody BulkDecisionDTO dto) {

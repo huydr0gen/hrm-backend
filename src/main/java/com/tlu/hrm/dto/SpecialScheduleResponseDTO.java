@@ -11,7 +11,7 @@ public class SpecialScheduleResponseDTO {
 
 	private Long id;
 
-    // ===== Employee info =====
+    // Employee
     private Long employeeId;
     private String employeeCode;
     private String employeeName;
@@ -19,60 +19,29 @@ public class SpecialScheduleResponseDTO {
     private Long departmentId;
     private String departmentName;
 
-    // ===== Date range =====
+    // Date & time
     private LocalDate startDate;
     private LocalDate endDate;
-
-    // ===== On-site time =====
     private LocalTime morningStart;
     private LocalTime morningEnd;
-
     private LocalTime afternoonStart;
     private LocalTime afternoonEnd;
 
-    // ===== Type & Reason =====
+    // ON_SITE project info
+    private String projectCode;
+    private String projectName;
+    private String managerCode;
+    private String managerName;
+
+    // Type & approval
     private SpecialScheduleType type;
     private String reason;
-
-    // ===== Approval =====
     private SpecialScheduleStatus status;
     private Long approverId;
     private Long decidedBy;
     private LocalDateTime decidedAt;
 
-    // ===== Audit =====
     private LocalDateTime createdAt;
-
-	public SpecialScheduleResponseDTO() {
-		super();
-	}
-
-	public SpecialScheduleResponseDTO(Long id, Long employeeId, String employeeCode, String employeeName,
-			Long departmentId, String departmentName, LocalDate startDate, LocalDate endDate, LocalTime morningStart,
-			LocalTime morningEnd, LocalTime afternoonStart, LocalTime afternoonEnd, SpecialScheduleType type,
-			String reason, SpecialScheduleStatus status, Long approverId, Long decidedBy, LocalDateTime decidedAt,
-			LocalDateTime createdAt) {
-		super();
-		this.id = id;
-		this.employeeId = employeeId;
-		this.employeeCode = employeeCode;
-		this.employeeName = employeeName;
-		this.departmentId = departmentId;
-		this.departmentName = departmentName;
-		this.startDate = startDate;
-		this.endDate = endDate;
-		this.morningStart = morningStart;
-		this.morningEnd = morningEnd;
-		this.afternoonStart = afternoonStart;
-		this.afternoonEnd = afternoonEnd;
-		this.type = type;
-		this.reason = reason;
-		this.status = status;
-		this.approverId = approverId;
-		this.decidedBy = decidedBy;
-		this.decidedAt = decidedAt;
-		this.createdAt = createdAt;
-	}
 
 	public Long getId() {
 		return id;
@@ -168,6 +137,38 @@ public class SpecialScheduleResponseDTO {
 
 	public void setAfternoonEnd(LocalTime afternoonEnd) {
 		this.afternoonEnd = afternoonEnd;
+	}
+
+	public String getProjectCode() {
+		return projectCode;
+	}
+
+	public void setProjectCode(String projectCode) {
+		this.projectCode = projectCode;
+	}
+
+	public String getProjectName() {
+		return projectName;
+	}
+
+	public void setProjectName(String projectName) {
+		this.projectName = projectName;
+	}
+
+	public String getManagerCode() {
+		return managerCode;
+	}
+
+	public void setManagerCode(String managerCode) {
+		this.managerCode = managerCode;
+	}
+
+	public String getManagerName() {
+		return managerName;
+	}
+
+	public void setManagerName(String managerName) {
+		this.managerName = managerName;
 	}
 
 	public SpecialScheduleType getType() {

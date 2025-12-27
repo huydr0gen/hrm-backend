@@ -43,4 +43,5 @@ public class ApprovalConfigController {
 
         return ResponseEntity.ok(service.createOrUpdate(dto));
     }
+
 }

@@ -2,6 +2,8 @@ package com.tlu.hrm.repository;
 
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.tlu.hrm.entities.ApprovalConfig;
@@ -14,4 +16,9 @@ public interface ApprovalConfigRepository extends JpaRepository<ApprovalConfig, 
         ApprovalTargetType targetType,
         Long targetId
     );
+	
+	Page<ApprovalConfig> findByTargetTypeAndActiveTrue(
+	    ApprovalTargetType targetType,
+	    Pageable pageable
+	);
 }

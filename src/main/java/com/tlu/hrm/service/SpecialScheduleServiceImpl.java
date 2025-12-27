@@ -1,5 +1,7 @@
 package com.tlu.hrm.service;
 
+import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +52,7 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
 	}
 
 	// ======================================================
-    // LIST
+    // LIST (SEARCH)
     // ======================================================
     @Override
     public Page<SpecialScheduleResponseDTO> list(SpecialScheduleFilterDTO filter) {
@@ -79,6 +81,59 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         return repository.findAll(spec, pageable)
                 .map(this::toDTO);
     }
+    
+    @Override
+    public Page<SpecialScheduleResponseDTO> getMySchedules(int page, int size) {
+
+        requireRole("ROLE_EMPLOYEE");
+
+        Employee emp = getCurrentEmployee();
+        Pageable pageable = PageRequest.of(page, size);
+
+        return repository.findAll(
+                (root, query, cb) ->
+                        cb.equal(root.get("employee").get("id"), emp.getId()),
+                pageable
+        ).map(this::toDTO);
+    }
+    
+    @Override
+    public Page<SpecialScheduleResponseDTO> getDepartmentSchedules(int page, int size) {
+
+        requireRole("ROLE_MANAGER");
+
+        Employee manager = getCurrentEmployee();
+        Long departmentId = manager.getDepartment().getId();
+        Pageable pageable = PageRequest.of(page, size);
+
+        return repository.findAll(
+                (root, query, cb) ->
+                        cb.equal(
+                            root.get("employee")
+                                .get("department")
+                                .get("id"),
+                            departmentId
+                        ),
+                pageable
+        ).map(this::toDTO);
+    }
+    
+    @Override
+    public Page<SpecialScheduleResponseDTO> getMyApprovalSchedules(int page, int size) {
+
+        Employee actor = getCurrentEmployee();
+        Long userId = actor.getUser().getId();
+        Pageable pageable = PageRequest.of(page, size);
+
+        return repository.findAll(
+                (root, query, cb) ->
+                        cb.and(
+                            cb.equal(root.get("approverId"), userId),
+                            cb.equal(root.get("status"), SpecialScheduleStatus.PENDING)
+                        ),
+                pageable
+        ).map(this::toDTO);
+    }
 
     // ======================================================
     // CREATE
@@ -89,6 +144,8 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         requireRole("ROLE_EMPLOYEE");
 
         Employee emp = getCurrentEmployee();
+
+        validateDateRange(dto.getStartDate(), dto.getEndDate());
 
         Long approverId = approvalResolverService.resolveApproverId(
                 emp.getId(),
@@ -111,11 +168,19 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
 
             case CHILD_CARE -> {
                 ss.setEndDate(dto.getStartDate().plusMonths(7));
-                ss.setWorkingHours(7); // rule nội bộ
                 applyWorkingTime(ss, dto);
+                validateChildCareWorkingTime(ss);
+                ss.setWorkingHours(7);
             }
 
-            case ON_SITE, OTHER -> {
+            case ON_SITE -> {
+                validateOnSiteInfo(dto);
+                ss.setEndDate(dto.getEndDate());
+                applyWorkingTime(ss, dto);
+                mapOnSiteInfo(ss, dto);
+            }
+
+            case OTHER -> {
                 ss.setEndDate(dto.getEndDate());
                 applyWorkingTime(ss, dto);
             }
@@ -133,14 +198,15 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         );
 
         if (overlap) {
-            throw new IllegalStateException("Overlapping schedule of same type exists");
+            throw new IllegalStateException(
+                    "Overlapping schedule of same type exists");
         }
 
         return toDTO(repository.save(ss));
     }
 
     // ======================================================
-    // UPDATE
+    // UPDATE (EMPLOYEE + OWN + PENDING)
     // ======================================================
     @Override
     public SpecialScheduleResponseDTO update(Long id, SpecialScheduleUpdateDTO dto) {
@@ -151,17 +217,29 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         SpecialSchedule ss = getById(id);
 
         if (!ss.getEmployee().getId().equals(actor.getId())) {
-            throw new AccessDeniedException("Can only update your own schedule");
+            throw new AccessDeniedException(
+                    "Can only update your own schedule");
         }
 
         if (ss.getStatus() != SpecialScheduleStatus.PENDING) {
-            throw new IllegalStateException("Only PENDING schedule can be updated");
+            throw new IllegalStateException(
+                    "Only PENDING schedule can be updated");
         }
+
+        validateDateRange(dto.getStartDate(), dto.getEndDate());
 
         if (ss.getType() != SpecialScheduleType.MATERNITY) {
             ss.setStartDate(dto.getStartDate());
             ss.setEndDate(dto.getEndDate());
             applyWorkingTime(ss, dto);
+        }
+
+        if (ss.getType() == SpecialScheduleType.CHILD_CARE) {
+            validateChildCareWorkingTime(ss);
+        }
+
+        if (ss.getType() == SpecialScheduleType.ON_SITE) {
+            mapOnSiteInfo(ss, dto);
         }
 
         ss.setReason(dto.getReason());
@@ -178,7 +256,8 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         );
 
         if (overlap && !ss.getId().equals(id)) {
-            throw new IllegalStateException("Overlapping schedule of same type exists");
+            throw new IllegalStateException(
+                    "Overlapping schedule of same type exists");
         }
 
         return toDTO(repository.save(ss));
@@ -219,7 +298,8 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
     // BULK DECIDE
     // ======================================================
     @Override
-    public BulkDecisionResultDTO decideMany(List<Long> ids, DecisionAction action) {
+    public BulkDecisionResultDTO decideMany(
+            List<Long> ids, DecisionAction action) {
 
         List<Long> success = new ArrayList<>();
         List<Long> failed = new ArrayList<>();
@@ -236,26 +316,147 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         return new BulkDecisionResultDTO(success, failed);
     }
 
+    // ======================================================
+    // DETAIL (CHECK PERMISSION)
+    // ======================================================
     @Override
     public SpecialScheduleResponseDTO detail(Long id) {
-        return toDTO(getById(id));
+
+        SpecialSchedule ss = getById(id);
+        Employee actor = getCurrentEmployee();
+        Set<String> roles = getCurrentRoles();
+
+        if (roles.contains("ROLE_EMPLOYEE")
+                && !ss.getEmployee().getId().equals(actor.getId())) {
+            throw new AccessDeniedException("Forbidden");
+        }
+
+        if (roles.contains("ROLE_MANAGER")
+                && !ss.getEmployee().getDepartment().getId()
+                        .equals(actor.getDepartment().getId())) {
+            throw new AccessDeniedException("Forbidden");
+        }
+
+        if (roles.contains("ROLE_ADMIN")) {
+            throw new AccessDeniedException("Admin is not allowed");
+        }
+
+        return toDTO(ss);
     }
 
     // ======================================================
-    // WORKING TIME (OVERLOAD – QUAN TRỌNG)
+    // DELETE (EMPLOYEE + OWN + PENDING)
     // ======================================================
-    private void applyWorkingTime(SpecialSchedule ss, SpecialScheduleCreateDTO dto) {
+    @Override
+    public void delete(Long id) {
+
+        requireRole("ROLE_EMPLOYEE");
+
+        Employee actor = getCurrentEmployee();
+        SpecialSchedule ss = getById(id);
+
+        if (!ss.getEmployee().getId().equals(actor.getId())) {
+            throw new AccessDeniedException(
+                    "Can only delete your own schedule");
+        }
+
+        if (ss.getStatus() != SpecialScheduleStatus.PENDING) {
+            throw new IllegalStateException(
+                    "Only PENDING schedule can be deleted");
+        }
+
+        repository.delete(ss);
+    }
+
+    // ======================================================
+    // WORKING TIME
+    // ======================================================
+    private void applyWorkingTime(
+            SpecialSchedule ss, SpecialScheduleCreateDTO dto) {
+
         ss.setMorningStart(dto.getMorningStart());
         ss.setMorningEnd(dto.getMorningEnd());
         ss.setAfternoonStart(dto.getAfternoonStart());
         ss.setAfternoonEnd(dto.getAfternoonEnd());
     }
 
-    private void applyWorkingTime(SpecialSchedule ss, SpecialScheduleUpdateDTO dto) {
+    private void applyWorkingTime(
+            SpecialSchedule ss, SpecialScheduleUpdateDTO dto) {
+
         ss.setMorningStart(dto.getMorningStart());
         ss.setMorningEnd(dto.getMorningEnd());
         ss.setAfternoonStart(dto.getAfternoonStart());
         ss.setAfternoonEnd(dto.getAfternoonEnd());
+    }
+
+    // ======================================================
+    // VALIDATION
+    // ======================================================
+    private void validateDateRange(
+            LocalDate start, LocalDate end) {
+
+        if (start != null && end != null && end.isBefore(start)) {
+            throw new IllegalArgumentException(
+                    "End date must not be before start date");
+        }
+    }
+
+    private void validateChildCareWorkingTime(
+            SpecialSchedule ss) {
+
+        long minutes = 0;
+
+        if (ss.getMorningStart() != null
+                && ss.getMorningEnd() != null) {
+            minutes += Duration
+                    .between(ss.getMorningStart(),
+                             ss.getMorningEnd())
+                    .toMinutes();
+        }
+
+        if (ss.getAfternoonStart() != null
+                && ss.getAfternoonEnd() != null) {
+            minutes += Duration
+                    .between(ss.getAfternoonStart(),
+                             ss.getAfternoonEnd())
+                    .toMinutes();
+        }
+
+        if (minutes < 7 * 60) {
+            throw new IllegalArgumentException(
+                    "Child care schedule must have at least 7 working hours");
+        }
+    }
+
+    private void validateOnSiteInfo(
+            SpecialScheduleCreateDTO dto) {
+
+        if (dto.getProjectCode() == null
+                || dto.getProjectName() == null
+                || dto.getManagerCode() == null
+                || dto.getManagerName() == null) {
+
+            throw new IllegalArgumentException(
+                    "ON_SITE schedule requires project and manager information");
+        }
+    }
+
+    private void mapOnSiteInfo(
+            SpecialSchedule ss, SpecialScheduleCreateDTO dto) {
+
+        ss.setProjectCode(dto.getProjectCode());
+        ss.setProjectName(dto.getProjectName());
+        ss.setOnsiteManagerCode(dto.getManagerCode());
+        ss.setOnsiteManagerName(dto.getManagerName());
+    }
+
+    private void mapOnSiteInfo(
+            SpecialSchedule ss, SpecialScheduleUpdateDTO dto) {
+
+        ss.setProjectCode(dto.getProjectCode());
+        ss.setProjectName(dto.getProjectName());
+        ss.setOnsiteManagerCode(dto.getManagerCode());
+        ss.setOnsiteManagerName(dto.getManagerName());
     }
 
     // ======================================================
@@ -263,19 +464,30 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
     // ======================================================
     private SpecialSchedule getById(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Special schedule not found"));
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Special schedule not found"));
     }
 
     private Employee getCurrentEmployee() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        CustomUserDetails ud = (CustomUserDetails) auth.getPrincipal();
+        Authentication auth =
+                SecurityContextHolder.getContext()
+                        .getAuthentication();
+        CustomUserDetails ud =
+                (CustomUserDetails) auth.getPrincipal();
 
-        return employeeRepository.findByUserId(ud.getId())
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
+        return employeeRepository
+                .findByUserId(ud.getId())
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Employee not found"));
     }
 
     private Set<String> getCurrentRoles() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Authentication auth =
+                SecurityContextHolder.getContext()
+                        .getAuthentication();
+
         return auth.getAuthorities()
                 .stream()
                 .map(a -> a.getAuthority())
@@ -288,9 +500,11 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         }
     }
 
-    private SpecialScheduleResponseDTO toDTO(SpecialSchedule e) {
+    private SpecialScheduleResponseDTO toDTO(
+            SpecialSchedule e) {
 
-        SpecialScheduleResponseDTO dto = new SpecialScheduleResponseDTO();
+        SpecialScheduleResponseDTO dto =
+                new SpecialScheduleResponseDTO();
 
         dto.setId(e.getId());
         dto.setEmployeeId(e.getEmployee().getId());

@@ -17,6 +17,9 @@ public class SpecialSchedule {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // =========================
+    // Employee
+    // =========================
     @ManyToOne
     @JoinColumn(name = "employee_id", nullable = false)
     private Employee employee;
@@ -31,20 +34,59 @@ public class SpecialSchedule {
     private LocalDate endDate;
 
     // =========================
-    // On-site time range
+    // Working time (ON_SITE / CHILD_CARE)
     // =========================
+    @Column(name = "morning_start")
     private LocalTime morningStart;
+
+    @Column(name = "morning_end")
     private LocalTime morningEnd;
 
+    @Column(name = "afternoon_start")
     private LocalTime afternoonStart;
+
+    @Column(name = "afternoon_end")
     private LocalTime afternoonEnd;
-    
-    // Số giờ làm việc/ngày (dùng cho import công)
+
+    /**
+     * Số giờ làm việc/ngày.
+     * - CHILD_CARE: = 7
+     * - Các loại khác: null
+     * Dùng cho chức năng import & tính công sau này.
+     */
     @Column(name = "working_hours")
     private Integer workingHours;
 
     // =========================
-    // Type & Reason
+    // ON_SITE project info
+    // =========================
+
+    /**
+     * Mã dự án (chỉ áp dụng cho ON_SITE)
+     */
+    @Column(name = "project_code")
+    private String projectCode;
+
+    /**
+     * Tên dự án (chỉ áp dụng cho ON_SITE)
+     */
+    @Column(name = "project_name")
+    private String projectName;
+
+    /**
+     * Mã nhân viên của quản lý dự án (ON_SITE)
+     */
+    @Column(name = "onsite_manager_code")
+    private String onsiteManagerCode;
+
+    /**
+     * Tên quản lý dự án (ON_SITE)
+     */
+    @Column(name = "onsite_manager_name")
+    private String onsiteManagerName;
+
+    // =========================
+    // Type & reason
     // =========================
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -56,20 +98,33 @@ public class SpecialSchedule {
     // Approval
     // =========================
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private SpecialScheduleStatus status = SpecialScheduleStatus.PENDING;
 
+    /**
+     * User ID của người duyệt (được resolve theo cấu hình duyệt)
+     */
     @Column(name = "approver_id")
     private Long approverId;
-    
+
+    /**
+     * User ID của người đã duyệt / từ chối
+     */
+    @Column(name = "decided_by")
     private Long decidedBy;
+
+    @Column(name = "decided_at")
     private LocalDateTime decidedAt;
 
     // =========================
     // Audit
     // =========================
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
@@ -79,33 +134,9 @@ public class SpecialSchedule {
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
-    
+
 	public SpecialSchedule() {
 		super();
-	}
-
-	public SpecialSchedule(Long id, Employee employee, LocalDate startDate, LocalDate endDate, LocalTime morningStart,
-			LocalTime morningEnd, LocalTime afternoonStart, LocalTime afternoonEnd, Integer workingHours,
-			SpecialScheduleType type, String reason, SpecialScheduleStatus status, Long approverId, Long decidedBy,
-			LocalDateTime decidedAt, LocalDateTime createdAt, LocalDateTime updatedAt) {
-		super();
-		this.id = id;
-		this.employee = employee;
-		this.startDate = startDate;
-		this.endDate = endDate;
-		this.morningStart = morningStart;
-		this.morningEnd = morningEnd;
-		this.afternoonStart = afternoonStart;
-		this.afternoonEnd = afternoonEnd;
-		this.workingHours = workingHours;
-		this.type = type;
-		this.reason = reason;
-		this.status = status;
-		this.approverId = approverId;
-		this.decidedBy = decidedBy;
-		this.decidedAt = decidedAt;
-		this.createdAt = createdAt;
-		this.updatedAt = updatedAt;
 	}
 
 	public Long getId() {
@@ -180,6 +211,38 @@ public class SpecialSchedule {
 		this.workingHours = workingHours;
 	}
 
+	public String getProjectCode() {
+		return projectCode;
+	}
+
+	public void setProjectCode(String projectCode) {
+		this.projectCode = projectCode;
+	}
+
+	public String getProjectName() {
+		return projectName;
+	}
+
+	public void setProjectName(String projectName) {
+		this.projectName = projectName;
+	}
+
+	public String getOnsiteManagerCode() {
+		return onsiteManagerCode;
+	}
+
+	public void setOnsiteManagerCode(String onsiteManagerCode) {
+		this.onsiteManagerCode = onsiteManagerCode;
+	}
+
+	public String getOnsiteManagerName() {
+		return onsiteManagerName;
+	}
+
+	public void setOnsiteManagerName(String onsiteManagerName) {
+		this.onsiteManagerName = onsiteManagerName;
+	}
+
 	public SpecialScheduleType getType() {
 		return type;
 	}
@@ -243,7 +306,7 @@ public class SpecialSchedule {
 	public void setUpdatedAt(LocalDateTime updatedAt) {
 		this.updatedAt = updatedAt;
 	}
-
-	
+    
+    
 	
 }

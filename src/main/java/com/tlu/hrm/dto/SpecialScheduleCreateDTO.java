@@ -13,189 +13,178 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public class SpecialScheduleCreateDTO {
 
 	@Schema(
-        description = """
-            ID nhân viên tạo lịch.
-            Không bắt buộc truyền từ client.
-            Hệ thống sẽ tự lấy theo tài khoản đang đăng nhập.
-            """
-    )
-	private Long employeeId;
+	        description = "ID nhân viên tạo lịch. Hệ thống tự lấy theo tài khoản đăng nhập."
+	    )
+	    private Long employeeId;
 
-    // ===== Date range =====
-	@Schema(
-        description = """
-            Ngày bắt đầu áp dụng lịch đặc thù.
+	    // =========================
+	    // Date range
+	    // =========================
+	    @Schema(
+	        description = "Ngày bắt đầu áp dụng lịch đặc thù",
+	        example = "2025-01-10",
+	        required = true
+	    )
+	    private LocalDate startDate;
 
-            Ví dụ:
-            - ON_SITE: ngày bắt đầu đi công tác
-            - MATERNITY: ngày bắt đầu nghỉ thai sản
-            - CHILD_CARE: ngày bắt đầu áp dụng lịch con nhỏ
-            """,
-        example = "2025-01-10"
-    )
-    private LocalDate startDate;
-	
-	@Schema(
-        description = """
-            Ngày kết thúc lịch đặc thù.
+	    @Schema(
+	        description = """
+	            Ngày kết thúc lịch đặc thù.
+	            - Bắt buộc với ON_SITE, OTHER
+	            - MATERNITY, CHILD_CARE hệ thống tự tính
+	            """,
+	        example = "2025-01-15"
+	    )
+	    private LocalDate endDate;
 
-            Lưu ý nghiệp vụ:
-            - Bắt buộc với ON_SITE, OTHER
-            - Không cần truyền với MATERNITY, CHILD_CARE
-            (Hệ thống sẽ tự tính theo quy định)
-            """,
-        example = "2025-01-15"
-    )
-    private LocalDate endDate;
+	    // =========================
+	    // Working time
+	    // =========================
+	    private LocalTime morningStart;
+	    private LocalTime morningEnd;
+	    private LocalTime afternoonStart;
+	    private LocalTime afternoonEnd;
 
-    // ===== On-site time (optional) =====
-	@Schema(
-        description = """
-            Giờ bắt đầu ca sáng.
+	    // =========================
+	    // ON_SITE project info
+	    // =========================
+	    @Schema(description = "Mã dự án (bắt buộc với ON_SITE)", example = "PRJ-001")
+	    private String projectCode;
 
-            Chỉ áp dụng cho:
-            - ON_SITE
-            - CHILD_CARE
-            """,
-        example = "08:00"
-    )
-    private LocalTime morningStart;
-	
-	@Schema(
-        description = """
-            Giờ kết thúc ca sáng.
+	    @Schema(description = "Tên dự án (bắt buộc với ON_SITE)", example = "Dự án ERP")
+	    private String projectName;
 
-            Chỉ áp dụng cho:
-            - ON_SITE
-            - CHILD_CARE
-            """,
-        example = "12:00"
-    )
-    private LocalTime morningEnd;
+	    @Schema(description = "Mã nhân viên của quản lý dự án", example = "EMP005")
+	    private String managerCode;
 
-	@Schema(
-        description = """
-            Giờ bắt đầu ca chiều.
+	    @Schema(description = "Tên quản lý dự án", example = "Nguyễn Văn A")
+	    private String managerName;
 
-            Chỉ áp dụng cho:
-            - ON_SITE
-            - CHILD_CARE
-            """,
-        example = "13:00"
-    )
-    private LocalTime afternoonStart;
-	
-	@Schema(
-        description = """
-            Giờ kết thúc ca chiều.
+	    // =========================
+	    // Type & reason
+	    // =========================
+	    @Schema(
+	        description = """
+	            Loại lịch đặc thù:
+	            - MATERNITY
+	            - ON_SITE
+	            - CHILD_CARE
+	            - OTHER
+	            """,
+	        required = true
+	    )
+	    private SpecialScheduleType type;
 
-            Chỉ áp dụng cho:
-            - ON_SITE
-            - CHILD_CARE
-            """,
-        example = "17:00"
-    )
-    private LocalTime afternoonEnd;
+	    private String reason;
 
-    // ===== Type =====
-	@Schema(
-        description = """
-            Loại lịch đặc thù.
+		public SpecialScheduleCreateDTO() {
+			super();
+		}
 
-            Giá trị:
-            - MATERNITY: nghỉ thai sản
-            - ON_SITE: đi công tác / làm việc ngoài
-            - CHILD_CARE: lịch nuôi con nhỏ (7 tiếng/ngày)
-            - OTHER: loại lịch đặc biệt khác
-            """
-    )
-    private SpecialScheduleType type;
+		public Long getEmployeeId() {
+			return employeeId;
+		}
 
-	@Schema(
-        description = """
-            Lý do đăng ký lịch đặc thù.
-            Nhân viên mô tả ngắn gọn mục đích đăng ký.
-            """,
-        example = "Đi công tác khách hàng"
-    )
-    private String reason;
-    
-	public SpecialScheduleCreateDTO() {
-		super();
-	}
+		public void setEmployeeId(Long employeeId) {
+			this.employeeId = employeeId;
+		}
 
-	public Long getEmployeeId() {
-		return employeeId;
-	}
+		public LocalDate getStartDate() {
+			return startDate;
+		}
 
-	public void setEmployeeId(Long employeeId) {
-		this.employeeId = employeeId;
-	}
+		public void setStartDate(LocalDate startDate) {
+			this.startDate = startDate;
+		}
 
-	public LocalDate getStartDate() {
-		return startDate;
-	}
+		public LocalDate getEndDate() {
+			return endDate;
+		}
 
-	public void setStartDate(LocalDate startDate) {
-		this.startDate = startDate;
-	}
+		public void setEndDate(LocalDate endDate) {
+			this.endDate = endDate;
+		}
 
-	public LocalDate getEndDate() {
-		return endDate;
-	}
+		public LocalTime getMorningStart() {
+			return morningStart;
+		}
 
-	public void setEndDate(LocalDate endDate) {
-		this.endDate = endDate;
-	}
+		public void setMorningStart(LocalTime morningStart) {
+			this.morningStart = morningStart;
+		}
 
-	public LocalTime getMorningStart() {
-		return morningStart;
-	}
+		public LocalTime getMorningEnd() {
+			return morningEnd;
+		}
 
-	public void setMorningStart(LocalTime morningStart) {
-		this.morningStart = morningStart;
-	}
+		public void setMorningEnd(LocalTime morningEnd) {
+			this.morningEnd = morningEnd;
+		}
 
-	public LocalTime getMorningEnd() {
-		return morningEnd;
-	}
+		public LocalTime getAfternoonStart() {
+			return afternoonStart;
+		}
 
-	public void setMorningEnd(LocalTime morningEnd) {
-		this.morningEnd = morningEnd;
-	}
+		public void setAfternoonStart(LocalTime afternoonStart) {
+			this.afternoonStart = afternoonStart;
+		}
 
-	public LocalTime getAfternoonStart() {
-		return afternoonStart;
-	}
+		public LocalTime getAfternoonEnd() {
+			return afternoonEnd;
+		}
 
-	public void setAfternoonStart(LocalTime afternoonStart) {
-		this.afternoonStart = afternoonStart;
-	}
+		public void setAfternoonEnd(LocalTime afternoonEnd) {
+			this.afternoonEnd = afternoonEnd;
+		}
 
-	public LocalTime getAfternoonEnd() {
-		return afternoonEnd;
-	}
+		public String getProjectCode() {
+			return projectCode;
+		}
 
-	public void setAfternoonEnd(LocalTime afternoonEnd) {
-		this.afternoonEnd = afternoonEnd;
-	}
+		public void setProjectCode(String projectCode) {
+			this.projectCode = projectCode;
+		}
 
-	public SpecialScheduleType getType() {
-		return type;
-	}
+		public String getProjectName() {
+			return projectName;
+		}
 
-	public void setType(SpecialScheduleType type) {
-		this.type = type;
-	}
+		public void setProjectName(String projectName) {
+			this.projectName = projectName;
+		}
 
-	public String getReason() {
-		return reason;
-	}
+		public String getManagerCode() {
+			return managerCode;
+		}
 
-	public void setReason(String reason) {
-		this.reason = reason;
-	}
+		public void setManagerCode(String managerCode) {
+			this.managerCode = managerCode;
+		}
 
-	
+		public String getManagerName() {
+			return managerName;
+		}
+
+		public void setManagerName(String managerName) {
+			this.managerName = managerName;
+		}
+
+		public SpecialScheduleType getType() {
+			return type;
+		}
+
+		public void setType(SpecialScheduleType type) {
+			this.type = type;
+		}
+
+		public String getReason() {
+			return reason;
+		}
+
+		public void setReason(String reason) {
+			this.reason = reason;
+		}
+	    
+	    
 	
 }
