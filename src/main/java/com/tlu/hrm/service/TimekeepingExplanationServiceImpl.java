@@ -1,5 +1,6 @@
 package com.tlu.hrm.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -91,6 +92,15 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
         e.setStatus(TimekeepingExplanationStatus.PENDING);
         e.setApproverId(approverId);
 
+        if (dto.getWorkDate().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Không thể giải trình cho ngày tương lai");
+        }
+
+        if (dto.getProposedCheckIn() != null && dto.getProposedCheckOut() != null
+                && !dto.getProposedCheckIn().isBefore(dto.getProposedCheckOut())) {
+            throw new IllegalArgumentException("Giờ vào phải trước giờ ra");
+        }
+        
         repository.save(e);
         return toDTO(e);
     }
@@ -109,13 +119,31 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
 
         Long forcedDepartmentId = null;
         Long forcedEmployeeId = null;
+        Long forcedApproverId = null;
 
+        boolean isHr = roles.contains("ROLE_HR");
+        boolean isManager = roles.contains("ROLE_MANAGER");
+
+        // =======================
+        // EMPLOYEE: chỉ thấy đơn của mình
+        // =======================
         if (roles.contains("ROLE_EMPLOYEE")) {
             forcedEmployeeId = actor.getId();
         }
 
-        if (roles.contains("ROLE_MANAGER")) {
+        // =======================
+        // MANAGER: chỉ thấy đơn phòng ban
+        // =======================
+        if (isManager) {
             forcedDepartmentId = actor.getDepartment().getId();
+        }
+
+        // =======================
+        // NGƯỜI DUYỆT CÁ NHÂN
+        // (không có role riêng cho approver)
+        // =======================
+        if (!isHr && !isManager) {
+            forcedApproverId = actor.getUser().getId();
         }
 
         Pageable pageable = PageRequest.of(
@@ -126,7 +154,8 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
                 TimekeepingExplanationSpecification.build(
                         filter,
                         forcedDepartmentId,
-                        forcedEmployeeId
+                        forcedEmployeeId,
+                        forcedApproverId
                 );
 
         return repository.findAll(spec, pageable)
@@ -138,10 +167,26 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
     // =====================================================
     @Override
     public TimekeepingExplanationResponseDTO getById(Long id) {
-        return toDTO(
-                repository.findById(id)
-                        .orElseThrow(() -> new RuntimeException("Not found"))
-        );
+
+        TimekeepingExplanation e = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Not found"));
+
+        Employee actor = getCurrentEmployee();
+        Set<String> roles = getRoles();
+
+        boolean canView =
+                roles.contains("ROLE_HR")
+                || e.getEmployee().getId().equals(actor.getId())
+                || (roles.contains("ROLE_MANAGER")
+                    && e.getEmployee().getDepartment().getId()
+                       .equals(actor.getDepartment().getId()))
+                || actor.getUser().getId().equals(e.getApproverId());
+
+        if (!canView) {
+            throw new AccessDeniedException("No permission");
+        }
+
+        return toDTO(e);
     }
 
     // =====================================================

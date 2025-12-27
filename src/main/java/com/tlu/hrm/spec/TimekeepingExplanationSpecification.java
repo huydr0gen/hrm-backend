@@ -15,10 +15,11 @@ import jakarta.persistence.criteria.Predicate;
 public class TimekeepingExplanationSpecification {
 
 	public static Specification<TimekeepingExplanation> build(
-            TimekeepingExplanationFilterDTO filter,
-            Long forcedDepartmentId,
-            Long forcedEmployeeId
-    ) {
+	        TimekeepingExplanationFilterDTO filter,
+	        Long forcedDepartmentId,
+	        Long forcedEmployeeId,
+	        Long forcedApproverId
+	) {
         return (root, query, cb) -> {
 
             List<Predicate> predicates = new ArrayList<>();
@@ -71,6 +72,15 @@ public class TimekeepingExplanationSpecification {
                                 employeeJoin.get("id"),
                                 forcedEmployeeId
                         )
+                );
+            }
+            
+            // =====================
+            // Ép approver cho người duyệt cá nhân
+            // =====================
+            if (forcedApproverId != null) {
+                predicates.add(
+                    cb.equal(root.get("approverId"), forcedApproverId)
                 );
             }
 
