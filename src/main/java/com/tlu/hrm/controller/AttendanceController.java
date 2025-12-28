@@ -1,7 +1,6 @@
 package com.tlu.hrm.controller;
 
 import java.time.YearMonth;
-import java.util.List;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -12,7 +11,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.tlu.hrm.dto.AttendanceDayResponseDTO;
 import com.tlu.hrm.dto.AttendanceImportResultDTO;
 import com.tlu.hrm.dto.AttendanceMonthlyResponseDTO;
 import com.tlu.hrm.entities.Employee;

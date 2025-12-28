@@ -21,10 +21,8 @@ import com.tlu.hrm.enums.AttendanceWorkType;
 import com.tlu.hrm.repository.AttendanceRecordRepository;
 import com.tlu.hrm.repository.EmployeeRepository;
 
-import jakarta.transaction.Transactional;
 
 @Service
-@Transactional
 public class AttendanceImportServiceImpl implements AttendanceImportService {
 
 	private final EmployeeRepository employeeRepo;
