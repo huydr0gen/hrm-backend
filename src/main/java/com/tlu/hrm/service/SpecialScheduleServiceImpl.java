@@ -42,13 +42,16 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
 	private final SpecialScheduleRepository repository;
     private final EmployeeRepository employeeRepository;
     private final ApprovalResolverService approvalResolverService;
+    private final AttendanceCalculationService attendanceCalculationService;
 
 	public SpecialScheduleServiceImpl(SpecialScheduleRepository repository, EmployeeRepository employeeRepository,
-			ApprovalResolverService approvalResolverService) {
+			ApprovalResolverService approvalResolverService,
+			AttendanceCalculationService attendanceCalculationService) {
 		super();
 		this.repository = repository;
 		this.employeeRepository = employeeRepository;
 		this.approvalResolverService = approvalResolverService;
+		this.attendanceCalculationService = attendanceCalculationService;
 	}
 
 	// ======================================================
@@ -290,6 +293,19 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
 
         ss.setDecidedBy(actorUserId);
         ss.setDecidedAt(LocalDateTime.now());
+        
+        if (ss.getStatus() == SpecialScheduleStatus.APPROVED) {
+
+            Long employeeId = ss.getEmployee().getId();
+            LocalDate start = ss.getStartDate();
+            LocalDate end = ss.getEndDate();
+
+            LocalDate d = start;
+            while (!d.isAfter(end)) {
+                attendanceCalculationService.recalculateDaily(employeeId, d);
+                d = d.plusDays(1);
+            }
+        }
 
         return toDTO(repository.save(ss));
     }

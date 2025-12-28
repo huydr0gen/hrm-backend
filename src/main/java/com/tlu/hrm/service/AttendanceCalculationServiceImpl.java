@@ -1,0 +1,148 @@
+package com.tlu.hrm.service;
+
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.tlu.hrm.entities.AttendanceRecord;
+import com.tlu.hrm.entities.Employee;
+import com.tlu.hrm.entities.SpecialSchedule;
+import com.tlu.hrm.enums.AttendanceWorkType;
+import com.tlu.hrm.repository.AttendanceRecordRepository;
+import com.tlu.hrm.repository.EmployeeRepository;
+import com.tlu.hrm.repository.LeaveRequestRepository;
+import com.tlu.hrm.repository.SpecialScheduleRepository;
+import com.tlu.hrm.repository.TimekeepingExplanationRepository;
+
+@Service
+@Transactional
+public class AttendanceCalculationServiceImpl implements AttendanceCalculationService {
+
+	private static final int FULL_DAY_MINUTES = 480;
+    private static final int HALF_DAY_MINUTES = 240;
+
+    private final AttendanceRecordRepository attendanceRepo;
+    private final LeaveRequestRepository leaveRepo;
+    private final SpecialScheduleRepository specialScheduleRepo;
+    private final TimekeepingExplanationRepository explanationRepo;
+    private final EmployeeRepository employeeRepo;
+    
+	public AttendanceCalculationServiceImpl(AttendanceRecordRepository attendanceRepo, LeaveRequestRepository leaveRepo,
+			SpecialScheduleRepository specialScheduleRepo, TimekeepingExplanationRepository explanationRepo, EmployeeRepository employeeRepo) {
+		super();
+		this.attendanceRepo = attendanceRepo;
+		this.leaveRepo = leaveRepo;
+		this.specialScheduleRepo = specialScheduleRepo;
+		this.explanationRepo = explanationRepo;
+		this.employeeRepo = employeeRepo;
+	}
+    
+	// =====================================================
+    // TÍNH CÔNG CHO 1 NGÀY
+    // =====================================================
+    @Override
+    public void recalculateDaily(Long employeeId, LocalDate date) {
+
+        AttendanceRecord record = attendanceRepo
+                .findByEmployeeIdAndWorkDate(employeeId, date)
+                .orElse(null);
+
+        // =================================================
+        // 1️⃣ LEAVE APPROVED → override toàn bộ công
+        // =================================================
+        boolean hasApprovedLeave =
+                leaveRepo.existsApprovedOverlap(employeeId, date, date);
+
+        if (hasApprovedLeave) {
+
+            if (record == null) {
+                record = new AttendanceRecord();
+                record.setWorkDate(date);
+                // employee PHẢI được set từ nơi tạo record ban đầu
+            }
+
+            record.setPaidMinutes(FULL_DAY_MINUTES);
+            record.setWorkType(AttendanceWorkType.FULL_DAY);
+            attendanceRepo.save(record);
+            return;
+        }
+
+        // =================================================
+        // 2️⃣ SPECIAL SCHEDULE APPROVED
+        // =================================================
+        Employee employee = employeeRepo.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+        
+        List<SpecialSchedule> schedules =
+                specialScheduleRepo.findApprovedSchedulesByEmployeeAndDate(employee, date);
+
+        if (!schedules.isEmpty()) {
+
+            if (record == null) {
+                record = new AttendanceRecord();
+                record.setEmployee(employee);
+                record.setWorkDate(date);
+            }
+
+            // Với đồ án: lịch đặc thù → tính đủ công
+            record.setPaidMinutes(FULL_DAY_MINUTES);
+            record.setWorkType(AttendanceWorkType.FULL_DAY);
+            attendanceRepo.save(record);
+            return;
+        }
+
+        // =================================================
+        // 3️⃣ TIMEKEEPING EXPLANATION APPROVED
+        // =================================================
+        var explanationOpt = explanationRepo.findApprovedByEmployeeAndDate(employeeId, date);
+
+        if (explanationOpt.isPresent()) {
+
+            if (record == null) {
+                record = new AttendanceRecord();
+                record.setEmployee(employee);
+                record.setWorkDate(date);
+            }
+
+            // Với đồ án: giải trình hợp lệ → tính đủ công
+            record.setPaidMinutes(FULL_DAY_MINUTES);
+            record.setWorkType(AttendanceWorkType.FULL_DAY);
+            attendanceRepo.save(record);
+            return;
+        }
+
+        // =================================================
+        // 4️⃣ DỮ LIỆU THÔ (CHECK IN / CHECK OUT)
+        // =================================================
+        int workedMinutes = record.getWorkedMinutes() != null
+                ? record.getWorkedMinutes()
+                : 0;
+
+        if (workedMinutes >= FULL_DAY_MINUTES) {
+            record.setPaidMinutes(FULL_DAY_MINUTES);
+            record.setWorkType(AttendanceWorkType.FULL_DAY);
+        } else if (workedMinutes >= HALF_DAY_MINUTES) {
+            record.setPaidMinutes(HALF_DAY_MINUTES);
+            record.setWorkType(AttendanceWorkType.HALF_DAY);
+        } else {
+            record.setPaidMinutes(0);
+            record.setWorkType(AttendanceWorkType.ABSENT);
+        }
+
+        attendanceRepo.save(record);
+    }
+
+    // =====================================================
+    // TÍNH CÔNG THEO THÁNG
+    // =====================================================
+    @Override
+    public void recalculateMonthly(Long employeeId, YearMonth month) {
+
+        for (int day = 1; day <= month.lengthOfMonth(); day++) {
+            recalculateDaily(employeeId, month.atDay(day));
+        }
+    }
+}

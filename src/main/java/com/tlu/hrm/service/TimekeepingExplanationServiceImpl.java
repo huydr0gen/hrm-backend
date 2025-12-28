@@ -40,13 +40,16 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
 	private final TimekeepingExplanationRepository repository;
     private final EmployeeRepository employeeRepository;
     private final ApprovalResolverService approvalResolverService;
+    private final AttendanceCalculationService attendanceCalculationService;
     
 	public TimekeepingExplanationServiceImpl(TimekeepingExplanationRepository repository,
-			EmployeeRepository employeeRepository, ApprovalResolverService approvalResolverService) {
+			EmployeeRepository employeeRepository, ApprovalResolverService approvalResolverService,
+			AttendanceCalculationService attendanceCalculationService) {
 		super();
 		this.repository = repository;
 		this.employeeRepository = employeeRepository;
 		this.approvalResolverService = approvalResolverService;
+		this.attendanceCalculationService = attendanceCalculationService;
 	}
 
 	// =====================================================
@@ -221,6 +224,14 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
         e.setDecidedBy(actorUserId);
         e.setDecidedAt(LocalDateTime.now());
         e.setManagerNote(dto.getManagerNote());
+        
+        if (e.getStatus() == TimekeepingExplanationStatus.APPROVED) {
+
+            attendanceCalculationService.recalculateDaily(
+                    e.getEmployee().getId(),
+                    e.getWorkDate()
+            );
+        }
 
         return toDTO(e);
     }

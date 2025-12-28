@@ -191,6 +191,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         dto.setPosition(emp.getPosition());
         dto.setDepartmentId(emp.getDepartment().getId());
         dto.setDepartmentName(emp.getDepartment().getName());
+        dto.setStatus(emp.getStatus());
         dto.setEmail(emp.getEmail());
         dto.setPhoneNumber(emp.getPhoneNumber());
 

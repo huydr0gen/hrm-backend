@@ -1,0 +1,63 @@
+package com.tlu.hrm.dto;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+
+public class AttendanceDayResponseDTO {
+
+	private LocalDate date;
+
+    private LocalTime checkIn;
+    private LocalTime checkOut;
+
+    private Integer workedMinutes;
+    private Integer paidMinutes;
+
+    // ===== DISPLAY FIELDS =====
+    private String display;     // "p:8", "p:4 x:4"
+    private String color;       // optional: FULL / HALF / OFF
+	public LocalDate getDate() {
+		return date;
+	}
+	public void setDate(LocalDate date) {
+		this.date = date;
+	}
+	public LocalTime getCheckIn() {
+		return checkIn;
+	}
+	public void setCheckIn(LocalTime checkIn) {
+		this.checkIn = checkIn;
+	}
+	public LocalTime getCheckOut() {
+		return checkOut;
+	}
+	public void setCheckOut(LocalTime checkOut) {
+		this.checkOut = checkOut;
+	}
+	public Integer getWorkedMinutes() {
+		return workedMinutes;
+	}
+	public void setWorkedMinutes(Integer workedMinutes) {
+		this.workedMinutes = workedMinutes;
+	}
+	public Integer getPaidMinutes() {
+		return paidMinutes;
+	}
+	public void setPaidMinutes(Integer paidMinutes) {
+		this.paidMinutes = paidMinutes;
+	}
+	public String getDisplay() {
+		return display;
+	}
+	public void setDisplay(String display) {
+		this.display = display;
+	}
+	public String getColor() {
+		return color;
+	}
+	public void setColor(String color) {
+		this.color = color;
+	}
+
+    
+}

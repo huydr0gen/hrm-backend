@@ -8,10 +8,5 @@ import com.tlu.hrm.dto.AttendanceImportResultDTO;
 
 public interface AttendanceImportService {
 
-	AttendanceImportResultDTO importExcel(
-            MultipartFile file,
-            YearMonth month
-    );
-
-    byte[] exportTemplate();
+	AttendanceImportResultDTO importExcel(MultipartFile file, YearMonth month);
 }

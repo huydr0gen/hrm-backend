@@ -36,15 +36,18 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     private final UserRepository userRepo;
     private final AuditLogService audit;
     private final ApprovalResolverService approvalResolverService;
+    private final AttendanceCalculationService attendanceCalculationService;
     
 	public LeaveRequestServiceImpl(LeaveRequestRepository leaveRequestRepository, EmployeeRepository employeeRepo,
-			UserRepository userRepo, AuditLogService audit, ApprovalResolverService approvalResolverService) {
+			UserRepository userRepo, AuditLogService audit, ApprovalResolverService approvalResolverService,
+			AttendanceCalculationService attendanceCalculationService) {
 		super();
 		this.leaveRequestRepository = leaveRequestRepository;
 		this.employeeRepo = employeeRepo;
 		this.userRepo = userRepo;
 		this.audit = audit;
 		this.approvalResolverService = approvalResolverService;
+		this.attendanceCalculationService = attendanceCalculationService;
 	}
 
 	// =====================================================
@@ -245,6 +248,20 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         req.setUpdatedAt(LocalDateTime.now());
 
         LeaveRequest saved = leaveRequestRepository.save(req);
+        
+        if (saved.getStatus() == LeaveStatus.APPROVED) {
+
+            Long employeeId = saved.getEmployee().getId();
+            LocalDate start = saved.getStartDate();
+            LocalDate end = saved.getEndDate();
+
+            // tính lại công cho từng ngày nghỉ
+            LocalDate d = start;
+            while (!d.isAfter(end)) {
+                attendanceCalculationService.recalculateDaily(employeeId, d);
+                d = d.plusDays(1);
+            }
+        }
 
         audit.log(actorId, "LEAVE_DECIDE",
                 action.name() + " leave request id=" + id + " note=" + note);

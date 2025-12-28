@@ -4,9 +4,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.tlu.hrm.enums.EmployeeStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -38,6 +41,10 @@ public class Employee {
     @ManyToOne
     @JoinColumn(name = "department_id", nullable = false)
     private Department department;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private EmployeeStatus status = EmployeeStatus.ACTIVE;
 
     @Column(length = 150)
     private String email;
@@ -49,13 +56,13 @@ public class Employee {
     @JsonBackReference
     private User user;
     
-    @Column(name = "created_at", updatable = false, insertable = false)
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     public Employee() {}
 
 	public Employee(Long id, String code, String fullName, LocalDate dateOfBirth, String position,
-			Department department, String email, String phoneNumber, User user, LocalDateTime createdAt) {
+			Department department, EmployeeStatus status, String email, String phoneNumber, User user, LocalDateTime createdAt) {
 		super();
 		this.id = id;
 		this.code = code;
@@ -63,6 +70,7 @@ public class Employee {
 		this.dateOfBirth = dateOfBirth;
 		this.position = position;
 		this.department = department;
+		this.status = status;
 		this.email = email;
 		this.phoneNumber = phoneNumber;
 		this.user = user;
@@ -115,6 +123,14 @@ public class Employee {
 
 	public void setDepartment(Department department) {
 		this.department = department;
+	}
+
+	public EmployeeStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(EmployeeStatus status) {
+		this.status = status;
 	}
 
 	public String getEmail() {

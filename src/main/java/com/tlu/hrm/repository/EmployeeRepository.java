@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import com.tlu.hrm.entities.Department;
 import com.tlu.hrm.entities.Employee;
+import com.tlu.hrm.enums.EmployeeStatus;
 
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 	
@@ -33,4 +34,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     List<Employee> findByDepartment(Department department);
 
     Page<Employee> findByDepartment(Department department, Pageable pageable);
+    
+    List<Employee> findAllByStatus(EmployeeStatus status);
 }

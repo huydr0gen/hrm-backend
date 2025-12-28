@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
 
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -19,7 +20,6 @@ import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.enums.AttendanceWorkType;
 import com.tlu.hrm.repository.AttendanceRecordRepository;
 import com.tlu.hrm.repository.EmployeeRepository;
-import com.tlu.hrm.utils.ExcelAttendanceTemplateUtil;
 
 import jakarta.transaction.Transactional;
 
@@ -51,69 +51,63 @@ public class AttendanceImportServiceImpl implements AttendanceImportService {
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
 
                 Row row = sheet.getRow(i);
-                if (row == null || row.getCell(0) == null) {
+                if (row == null) {
                     continue;
                 }
 
                 result.setTotalRows(result.getTotalRows() + 1);
 
                 try {
-                    String empCode = row.getCell(0).getStringCellValue().trim();
-                    if (empCode.isEmpty()) {
-                        throw new RuntimeException("Employee code is empty");
+                    // ===== EMPLOYEE CODE =====
+                    Cell codeCell = row.getCell(0);
+                    if (codeCell == null || codeCell.getCellType() != CellType.STRING) {
+                        throw new RuntimeException("Employee code is invalid");
                     }
+                    String empCode = codeCell.getStringCellValue().trim();
 
-                    LocalDate date;
+                    // ===== WORK DATE =====
+                    LocalDate workDate;
                     try {
-                        date = row.getCell(1)
-                                  .getLocalDateTimeCellValue()
-                                  .toLocalDate();
+                        workDate = row.getCell(2)
+                                .getLocalDateTimeCellValue()
+                                .toLocalDate();
                     } catch (Exception e) {
                         throw new RuntimeException("Invalid work date");
                     }
 
-                    LocalTime in = null;
-                    LocalTime out = null;
+                    // ===== CHECK IN / OUT =====
+                    LocalTime checkIn = readTime(row.getCell(3));
+                    LocalTime checkOut = readTime(row.getCell(4));
 
-                    if (row.getCell(2) != null 
-                            && row.getCell(2).getCellType() == CellType.NUMERIC) {
-                        in = row.getCell(2)
-                                .getLocalDateTimeCellValue()
-                                .toLocalTime();
-                    }
-
-                    if (row.getCell(3) != null 
-                            && row.getCell(3).getCellType() == CellType.NUMERIC) {
-                        out = row.getCell(3)
-                                 .getLocalDateTimeCellValue()
-                                 .toLocalTime();
-                    }
-
-                    if (in != null && out != null && out.isBefore(in)) {
+                    if (checkIn != null && checkOut != null && checkOut.isBefore(checkIn)) {
                         throw new RuntimeException("Check-out is before check-in");
                     }
 
-                    Employee emp = employeeRepo.findByCode(empCode)
+                    Employee employee = employeeRepo.findByCode(empCode)
                             .orElseThrow(() ->
-                                    new RuntimeException("Employee code not found: " + empCode)
+                                    new RuntimeException("Employee not found: " + empCode)
                             );
 
                     int workedMinutes = 0;
-                    if (in != null && out != null) {
-                        workedMinutes = (int) Duration.between(in, out).toMinutes();
+                    if (checkIn != null && checkOut != null) {
+                        workedMinutes = (int) Duration
+                                .between(checkIn, checkOut)
+                                .toMinutes();
                     }
 
                     AttendanceRecord record =
-                            attendanceRepo.findByEmployeeIdAndWorkDate(emp.getId(), date)
-                                    .orElse(new AttendanceRecord());
+                            attendanceRepo.findByEmployeeIdAndWorkDate(
+                                    employee.getId(), workDate
+                            ).orElse(new AttendanceRecord());
 
-                    record.setEmployee(emp);
-                    record.setWorkDate(date);
-                    record.setCheckIn(in);
-                    record.setCheckOut(out);
+                    record.setEmployee(employee);
+                    record.setWorkDate(workDate);
+                    record.setCheckIn(checkIn);
+                    record.setCheckOut(checkOut);
                     record.setWorkedMinutes(workedMinutes);
                     record.setNote("Imported from Excel");
 
+                    // ===== TÍNH CÔNG THÔ =====
                     if (workedMinutes >= 480) {
                         record.setPaidMinutes(480);
                         record.setWorkType(AttendanceWorkType.FULL_DAY);
@@ -129,7 +123,9 @@ public class AttendanceImportServiceImpl implements AttendanceImportService {
                     result.setSuccessRows(result.getSuccessRows() + 1);
 
                 } catch (Exception ex) {
-                    result.getErrors().add("Row " + (i + 1) + ": " + ex.getMessage());
+                    result.getErrors().add(
+                            "Row " + (i + 1) + ": " + ex.getMessage()
+                    );
                 }
             }
 
@@ -140,8 +136,13 @@ public class AttendanceImportServiceImpl implements AttendanceImportService {
         return result;
     }
 
-    @Override
-    public byte[] exportTemplate() {
-        return ExcelAttendanceTemplateUtil.generate();
+    // =============================
+    // HELPER: đọc giờ an toàn
+    // =============================
+    private LocalTime readTime(Cell cell) {
+        if (cell == null || cell.getCellType() != CellType.NUMERIC) {
+            return null;
+        }
+        return cell.getLocalDateTimeCellValue().toLocalTime();
     }
 }

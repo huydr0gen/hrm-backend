@@ -3,6 +3,8 @@ package com.tlu.hrm.dto;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.tlu.hrm.enums.EmployeeStatus;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Thông tin nhân viên trả về cho frontend")
@@ -49,6 +51,12 @@ public class EmployeeDTO {
 	        example = "Kinh doanh"
 	    )
 	    private String departmentName;
+	    
+	    @Schema(
+		        description = "Trạng thái của nhân viên",
+		        example = "ACTIVE"
+		    )
+		    private EmployeeStatus status;
 
 	    @Schema(
 	        description = "Email liên hệ",
@@ -130,6 +138,14 @@ public class EmployeeDTO {
 
 		public void setDepartmentName(String departmentName) {
 			this.departmentName = departmentName;
+		}
+
+		public EmployeeStatus getStatus() {
+			return status;
+		}
+
+		public void setStatus(EmployeeStatus status) {
+			this.status = status;
 		}
 
 		public String getEmail() {
