@@ -3,6 +3,7 @@ package com.tlu.hrm.utils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
@@ -88,26 +89,33 @@ public class ExcelAttendanceMonthlyExporter {
                     dateCell.setCellValue(java.sql.Date.valueOf(date));
                     dateCell.setCellStyle(dateStyle);
 
-                    // CHECK_IN
-                    if (record != null && record.getCheckIn() != null) {
-                        Cell inCell = row.createCell(3);
-                        inCell.setCellValue(
-                                java.sql.Time.valueOf(record.getCheckIn())
-                        );
-                        inCell.setCellStyle(timeStyle);
-                    }
-
-                    // CHECK_OUT
-                    if (record != null && record.getCheckOut() != null) {
-                        Cell outCell = row.createCell(4);
-                        outCell.setCellValue(
-                                java.sql.Time.valueOf(record.getCheckOut())
-                        );
-                        outCell.setCellStyle(timeStyle);
-                    }
+	                 // =========================
+	                 // CHECK_IN / CHECK_OUT
+	                 // =========================
+	                 LocalTime checkIn;
+	                 LocalTime checkOut;
+	
+	                 if (record != null && record.getCheckIn() != null && record.getCheckOut() != null) {
+	                     checkIn = record.getCheckIn();
+	                     checkOut = record.getCheckOut();
+	                 } else {
+	                     // 👉 GIỜ MẪU CHO NGÀY CHƯA CÓ DỮ LIỆU
+	                     checkIn = LocalTime.of(8, 0);
+	                     checkOut = LocalTime.of(17, 0);
+	                 }
+	
+	                 // CHECK_IN
+	                 Cell inCell = row.createCell(3);
+	                 inCell.setCellValue(java.sql.Time.valueOf(checkIn));
+	                 inCell.setCellStyle(timeStyle);
+	
+	                 // CHECK_OUT
+	                 Cell outCell = row.createCell(4);
+	                 outCell.setCellValue(java.sql.Time.valueOf(checkOut));
+	                 outCell.setCellStyle(timeStyle);
                 }
             }
-
+            
             // =========================
             // Auto size
             // =========================
