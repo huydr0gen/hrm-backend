@@ -14,6 +14,8 @@ import com.tlu.hrm.entities.Employee;
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 	
 	boolean existsByCode(String code);
+	
+	Optional<Employee> findByCode(String code);
 
     @Query("""
         SELECT MAX(e.code)
