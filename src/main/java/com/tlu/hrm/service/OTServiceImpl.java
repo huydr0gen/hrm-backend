@@ -291,6 +291,7 @@ public class OTServiceImpl implements OTService {
 
 		    // CHỈ TRẢ VỀ PARTICIPANT CỦA CHÍNH NHÂN VIÊN
 		    OTParticipantDTO pDto = new OTParticipantDTO();
+		    pDto.setId(p.getId());
 		    pDto.setEmployeeId(p.getEmployee().getId());
 		    pDto.setEmployeeCode(p.getEmployee().getCode());
 		    pDto.setEmployeeName(p.getEmployee().getFullName());

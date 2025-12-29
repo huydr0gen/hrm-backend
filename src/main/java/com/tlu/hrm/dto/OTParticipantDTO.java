@@ -6,12 +6,20 @@ import com.tlu.hrm.enums.OTParticipantStatus;
 
 public class OTParticipantDTO {
 
+	private Long id;
 	private Long employeeId;
 	private String employeeCode;
     private String employeeName;
     private OTParticipantStatus status;
     private String rejectReason;
     private LocalDateTime respondedAt;
+    
+	public Long getId() {
+		return id;
+	}
+	public void setId(Long id) {
+		this.id = id;
+	}
 	public Long getEmployeeId() {
 		return employeeId;
 	}
