@@ -152,7 +152,7 @@ public class OTServiceImpl implements OTService {
 
     @Override
     public Page<OTRequestResponseDTO> getMyOTs(int page, int size) {
-    	
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
             throw new RuntimeException("Unauthenticated");
@@ -171,13 +171,14 @@ public class OTServiceImpl implements OTService {
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
 
         Pageable pageable = PageRequest.of(
-                page, size,
-                Sort.by("createdAt").descending()
+                page,
+                size,
+                Sort.by("otRequest.createdAt").descending() // ✅ FIX
         );
 
         return participantRepo
                 .findByEmployeeId(emp.getId(), pageable)
-                .map(p -> toDTO(p.getOtRequest()));   // 🔥 dùng mapper nội bộ
+                .map(p -> toDTO(p.getOtRequest()));
     }
     
     @Override
