@@ -154,31 +154,20 @@ public class OTServiceImpl implements OTService {
     public Page<OTRequestResponseDTO> getMyOTs(int page, int size) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            throw new RuntimeException("Unauthenticated");
-        }
+        CustomUserDetails ud = (CustomUserDetails) auth.getPrincipal();
 
-        Object principal = auth.getPrincipal();
-        Long userId;
-
-        if (principal instanceof CustomUserDetails ud) {
-            userId = ud.getId();
-        } else {
-            throw new RuntimeException("Cannot resolve current user");
-        }
-
-        Employee emp = employeeRepo.findByUserId(userId)
+        Employee emp = employeeRepo.findByUserId(ud.getId())
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
 
         Pageable pageable = PageRequest.of(
                 page,
                 size,
-                Sort.by("otRequest.createdAt").descending() // ✅ FIX
+                Sort.by("otRequest.createdAt").descending()
         );
 
         return participantRepo
                 .findByEmployeeId(emp.getId(), pageable)
-                .map(p -> toDTO(p.getOtRequest()));
+                .map(this::toDTOForEmployee);
     }
     
     @Override
@@ -282,5 +271,37 @@ public class OTServiceImpl implements OTService {
 	
 	     return dto;
 	 }
+	 
+	 private OTRequestResponseDTO toDTOForEmployee(OTParticipant p) {
+
+		    OTRequest ot = p.getOtRequest();
+
+		    OTRequestResponseDTO dto = new OTRequestResponseDTO();
+
+		    dto.setId(ot.getId());
+		    dto.setOtDate(ot.getOtDate());
+		    dto.setStartTime(ot.getStartTime());
+		    dto.setEndTime(ot.getEndTime());
+		    dto.setReason(ot.getReason());
+		    dto.setStatus(ot.getStatus());
+
+		    // manager info
+		    dto.setManagerId(ot.getManager().getId());
+		    dto.setManagerName(ot.getManager().getFullName());
+
+		    // CHỈ TRẢ VỀ PARTICIPANT CỦA CHÍNH NHÂN VIÊN
+		    OTParticipantDTO pDto = new OTParticipantDTO();
+		    pDto.setEmployeeId(p.getEmployee().getId());
+		    pDto.setEmployeeCode(p.getEmployee().getCode());
+		    pDto.setEmployeeName(p.getEmployee().getFullName());
+		    pDto.setStatus(p.getStatus());
+		    pDto.setRejectReason(p.getRejectReason());
+		    pDto.setRespondedAt(p.getRespondedAt());
+
+		    dto.setParticipants(List.of(pDto));
+		    dto.setCreatedAt(ot.getCreatedAt());
+
+		    return dto;
+		}
     
 }
