@@ -10,7 +10,8 @@ public class OTRequestCreateDTO {
     private LocalTime startTime;
     private LocalTime endTime;
     private String reason;
-    private List<Long> employeeIds;
+    private List<String> employeeCodes;
+    
 	public LocalDate getOtDate() {
 		return otDate;
 	}
@@ -35,11 +36,11 @@ public class OTRequestCreateDTO {
 	public void setReason(String reason) {
 		this.reason = reason;
 	}
-	public List<Long> getEmployeeIds() {
-		return employeeIds;
+	public List<String> getEmployeeCodes() {
+		return employeeCodes;
 	}
-	public void setEmployeeIds(List<Long> employeeIds) {
-		this.employeeIds = employeeIds;
+	public void setEmployeeCodes(List<String> employeeIds) {
+		this.employeeCodes = employeeIds;
 	}
     
     

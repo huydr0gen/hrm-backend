@@ -68,16 +68,19 @@ public class OTServiceImpl implements OTService {
 	    ot.setReason(dto.getReason());
 	    ot.setManager(manager);
 
-	    List<OTParticipant> participants = dto.getEmployeeIds().stream()
-	            .map(empId -> {
+	    List<OTParticipant> participants = dto.getEmployeeCodes().stream()
+	            .map(code -> {
 
-	                Employee emp = employeeRepo.findById(empId)
-	                        .orElseThrow(() -> new RuntimeException("Employee not found"));
+	                Employee emp = employeeRepo.findByCode(code)
+	                        .orElseThrow(() ->
+	                                new RuntimeException("Employee not found: " + code)
+	                        );
 
 	                if (!emp.getDepartment().getId()
 	                        .equals(manager.getDepartment().getId())) {
 	                    throw new IllegalArgumentException(
-	                            "Employee not in manager department");
+	                            "Employee not in manager department: " + code
+	                    );
 	                }
 
 	                OTParticipant p = new OTParticipant();
