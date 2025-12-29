@@ -30,16 +30,5 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
     	        @Param("end") LocalDate end
     	);
     
-    @Query("""
-    	    SELECT a
-    	    FROM AttendanceRecord a
-    	    WHERE a.employee.id = :employeeId
-    	      AND a.workDate BETWEEN :start AND :end
-    	    ORDER BY a.workDate
-    	""")
-    	List<AttendanceRecord> findByEmployeeAndMonth(
-    	        @Param("employeeId") Long employeeId,
-    	        @Param("start") LocalDate start,
-    	        @Param("end") LocalDate end
-    	);
+    
 }
