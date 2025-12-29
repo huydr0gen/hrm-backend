@@ -9,6 +9,9 @@ public class AttendanceMonthlyResponseDTO {
     private int totalPaidMinutes;
     private double totalWorkingDays;
     
+    private int totalOTMinutes;
+    private double totalOTHours;
+    
 	public List<AttendanceDayResponseDTO> getDays() {
 		return days;
 	}
@@ -26,6 +29,18 @@ public class AttendanceMonthlyResponseDTO {
 	}
 	public void setTotalWorkingDays(double totalWorkingDays) {
 		this.totalWorkingDays = totalWorkingDays;
+	}
+	public int getTotalOTMinutes() {
+		return totalOTMinutes;
+	}
+	public void setTotalOTMinutes(int totalOTMinutes) {
+		this.totalOTMinutes = totalOTMinutes;
+	}
+	public double getTotalOTHours() {
+		return totalOTHours;
+	}
+	public void setTotalOTHours(double totalOTHours) {
+		this.totalOTHours = totalOTHours;
 	}
     
     

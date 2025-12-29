@@ -117,6 +117,13 @@ public class AttendanceCalculationServiceImpl implements AttendanceCalculationSe
         // =================================================
         // 4️⃣ DỮ LIỆU THÔ (CHECK IN / CHECK OUT)
         // =================================================
+        if (record == null) {
+            record = new AttendanceRecord();
+            record.setEmployee(employee);
+            record.setWorkDate(date);
+            record.setWorkedMinutes(0);
+        }
+        
         int workedMinutes = record.getWorkedMinutes() != null
                 ? record.getWorkedMinutes()
                 : 0;
@@ -144,5 +151,37 @@ public class AttendanceCalculationServiceImpl implements AttendanceCalculationSe
         for (int day = 1; day <= month.lengthOfMonth(); day++) {
             recalculateDaily(employeeId, month.atDay(day));
         }
+    }
+    
+    @Override
+    public void addOTMinutes(Long employeeId, LocalDate date, int otMinutes) {
+
+        AttendanceRecord record = attendanceRepo
+                .findByEmployeeIdAndWorkDate(employeeId, date)
+                .orElse(null);
+
+        if (otMinutes <= 0) {
+            return;
+        }
+        
+        if (record == null) {
+            record = new AttendanceRecord();
+            record.setEmployee(
+                    employeeRepo.findById(employeeId)
+                            .orElseThrow(() -> new RuntimeException("Employee not found"))
+            );
+            record.setWorkDate(date);
+            record.setWorkedMinutes(0);
+            record.setPaidMinutes(0);
+            record.setWorkType(AttendanceWorkType.ABSENT);
+        }
+
+        int currentOT = record.getOtMinutes() != null
+                ? record.getOtMinutes()
+                : 0;
+
+        record.setOtMinutes(currentOT + otMinutes);
+
+        attendanceRepo.save(record);
     }
 }

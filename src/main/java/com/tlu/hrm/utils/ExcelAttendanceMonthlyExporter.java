@@ -22,12 +22,13 @@ import com.tlu.hrm.entities.Employee;
 public class ExcelAttendanceMonthlyExporter {
 
 	private static final String[] HEADERS = {
-            "EMPLOYEE_CODE",
-            "EMPLOYEE_NAME",
-            "WORK_DATE",
-            "CHECK_IN",
-            "CHECK_OUT"
-    };
+		    "EMPLOYEE_CODE",
+		    "EMPLOYEE_NAME",
+		    "WORK_DATE",
+		    "CHECK_IN",
+		    "CHECK_OUT",
+		    "OT_HOURS"
+		};
 
     public static byte[] generate(
             List<Employee> employees,
@@ -113,6 +114,14 @@ public class ExcelAttendanceMonthlyExporter {
 	                 Cell outCell = row.createCell(4);
 	                 outCell.setCellValue(java.sql.Time.valueOf(checkOut));
 	                 outCell.setCellStyle(timeStyle);
+	                 
+	                 double otHours = 0;
+
+	                 if (record != null && record.getOtMinutes() != null) {
+	                     otHours = record.getOtMinutes() / 60.0;
+	                 }
+
+	                 row.createCell(5).setCellValue(otHours);
                 }
             }
             

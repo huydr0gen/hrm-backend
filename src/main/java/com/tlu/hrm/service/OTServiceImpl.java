@@ -1,6 +1,8 @@
 package com.tlu.hrm.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,13 +37,15 @@ public class OTServiceImpl implements OTService {
 	private final OTRequestRepository otRepo;
     private final OTParticipantRepository participantRepo;
     private final EmployeeRepository employeeRepo;
+    private final AttendanceCalculationService attendanceCalculationService;
     
 	public OTServiceImpl(OTRequestRepository otRepo, OTParticipantRepository participantRepo,
-			EmployeeRepository employeeRepo) {
+			EmployeeRepository employeeRepo, AttendanceCalculationService attendanceCalculationService) {
 		super();
 		this.otRepo = otRepo;
 		this.participantRepo = participantRepo;
 		this.employeeRepo = employeeRepo;
+		this.attendanceCalculationService = attendanceCalculationService;
 	}
     
 	@Override
@@ -227,6 +231,35 @@ public class OTServiceImpl implements OTService {
         }
 
         ot.setStatus(OTRequestStatus.CANCELLED);
+    }
+    
+    @Transactional
+    public void completeOT(Long otRequestId) {
+
+        OTRequest ot = otRepo.findById(otRequestId)
+                .orElseThrow(() -> new RuntimeException("OT not found"));
+
+        if (ot.getStatus() != OTRequestStatus.ACCEPTED
+            && ot.getStatus() != OTRequestStatus.PARTIALLY_ACCEPTED) {
+            throw new IllegalStateException("OT not ready to complete");
+        }
+
+        int otMinutes = (int) ChronoUnit.MINUTES.between(
+                ot.getStartTime(),
+                ot.getEndTime()
+        );
+
+        for (OTParticipant p : ot.getParticipants()) {
+            if (p.getStatus() == OTParticipantStatus.ACCEPTED) {
+
+                Long empId = p.getEmployee().getId();
+                LocalDate date = ot.getOtDate();
+
+                attendanceCalculationService.addOTMinutes(empId, date, otMinutes);
+            }
+        }
+
+        ot.setStatus(OTRequestStatus.COMPLETED);
     }
     
 	 // =====================================================

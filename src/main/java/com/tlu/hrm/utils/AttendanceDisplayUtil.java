@@ -12,18 +12,27 @@ public class AttendanceDisplayUtil {
             return "";
         }
 
+        StringBuilder sb = new StringBuilder();
+
         int paid = r.getPaidMinutes();
+        int otMinutes = r.getOtMinutes() != null ? r.getOtMinutes() : 0;
 
+        // ===== PAID / ABSENT =====
         if (paid >= FULL_DAY_MINUTES) {
-            return "p:8";
-        }
-
-        if (paid > 0) {
+            sb.append("p:8");
+        } else if (paid > 0) {
             int p = paid / 60;
             int x = (FULL_DAY_MINUTES - paid) / 60;
-            return "p:" + p + " x:" + x;
+            sb.append("p:").append(p).append(" x:").append(x);
+        } else {
+            sb.append("x:8");
         }
 
-        return "x:8";
+        // ===== OT =====
+        if (otMinutes > 0) {
+            sb.append(" ot:").append(otMinutes / 60);
+        }
+
+        return sb.toString();
     }
 }

@@ -10,4 +10,6 @@ public interface AttendanceCalculationService {
 
     // Tính lại công cho cả tháng
     void recalculateMonthly(Long employeeId, YearMonth month);
+    
+    void addOTMinutes(Long employeeId, LocalDate date, int otMinutes);
 }

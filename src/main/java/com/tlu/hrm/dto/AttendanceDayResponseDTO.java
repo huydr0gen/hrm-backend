@@ -12,6 +12,8 @@ public class AttendanceDayResponseDTO {
 
     private Integer workedMinutes;
     private Integer paidMinutes;
+    
+    private Integer otMinutes;
 
     // ===== DISPLAY FIELDS =====
     private String display;     // "p:8", "p:4 x:4"
@@ -45,6 +47,12 @@ public class AttendanceDayResponseDTO {
 	}
 	public void setPaidMinutes(Integer paidMinutes) {
 		this.paidMinutes = paidMinutes;
+	}
+	public Integer getOtMinutes() {
+		return otMinutes;
+	}
+	public void setOtMinutes(Integer otMinutes) {
+		this.otMinutes = otMinutes;
 	}
 	public String getDisplay() {
 		return display;

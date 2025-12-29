@@ -26,64 +26,76 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
 	}
 	
 	@Override
-	public AttendanceMonthlyResponseDTO getMonthly(
-	        Long employeeId,
-	        YearMonth month) {
+    public AttendanceMonthlyResponseDTO getMonthly(
+            Long employeeId,
+            YearMonth month) {
 
-	    LocalDate start = month.atDay(1);
-	    LocalDate end = month.atEndOfMonth();
+        LocalDate start = month.atDay(1);
+        LocalDate end = month.atEndOfMonth();
 
-	    List<AttendanceRecord> records =
-	            attendanceRepo.findMonthly(employeeId, start, end);
+        List<AttendanceRecord> records =
+                attendanceRepo.findMonthly(employeeId, start, end);
+        
+        int totalOTMinutes = records.stream()
+                .map(AttendanceRecord::getOtMinutes)
+                .filter(m -> m != null)
+                .mapToInt(Integer::intValue)
+                .sum();
 
-	    Map<LocalDate, AttendanceRecord> map =
-	            records.stream()
-	                   .collect(Collectors.toMap(
-	                       AttendanceRecord::getWorkDate,
-	                       r -> r
-	                   ));
+        Map<LocalDate, AttendanceRecord> map =
+                records.stream()
+                       .collect(Collectors.toMap(
+                               AttendanceRecord::getWorkDate,
+                               r -> r
+                       ));
 
-	    List<AttendanceDayResponseDTO> days = new ArrayList<>();
+        List<AttendanceDayResponseDTO> days = new ArrayList<>();
 
-	    for (int d = 1; d <= month.lengthOfMonth(); d++) {
+        int totalPaidMinutes = 0;
 
-	        LocalDate date = month.atDay(d);
-	        AttendanceRecord r = map.get(date);
+        for (int d = 1; d <= month.lengthOfMonth(); d++) {
 
-	        AttendanceDayResponseDTO dto =
-	                new AttendanceDayResponseDTO();
+            LocalDate date = month.atDay(d);
+            AttendanceRecord r = map.get(date);
 
-	        dto.setDate(date);
+            AttendanceDayResponseDTO dto = new AttendanceDayResponseDTO();
+            dto.setDate(date);
 
-	        if (r != null) {
-	            dto.setCheckIn(r.getCheckIn());
-	            dto.setCheckOut(r.getCheckOut());
-	            dto.setWorkedMinutes(r.getWorkedMinutes());
-	            dto.setPaidMinutes(r.getPaidMinutes());
-	            dto.setDisplay(
-	                    AttendanceDisplayUtil.buildDisplay(r)
-	            );
-	        }
+            if (r != null) {
+                dto.setCheckIn(r.getCheckIn());
+                dto.setCheckOut(r.getCheckOut());
+                dto.setWorkedMinutes(r.getWorkedMinutes());
+                dto.setPaidMinutes(r.getPaidMinutes());
 
-	        days.add(dto);
-	    }
+                int ot = r.getOtMinutes() != null ? r.getOtMinutes() : 0;
+                dto.setOtMinutes(ot);
 
-	    // ===============================
-	    // TÍNH TỔNG NGÀY CÔNG THÁNG
-	    // ===============================
-	    int totalPaidMinutes = days.stream()
-	            .map(AttendanceDayResponseDTO::getPaidMinutes)
-	            .filter(m -> m != null)
-	            .mapToInt(Integer::intValue)
-	            .sum();
+                // display (giữ logic cũ + thêm OT)
+                dto.setDisplay(
+                        AttendanceDisplayUtil.buildDisplay(r)
+                );
 
-	    AttendanceMonthlyResponseDTO res =
-	            new AttendanceMonthlyResponseDTO();
+                if (r.getPaidMinutes() != null) {
+                    totalPaidMinutes += r.getPaidMinutes();
+                }
+            }
 
-	    res.setDays(days);
-	    res.setTotalPaidMinutes(totalPaidMinutes);
-	    res.setTotalWorkingDays(totalPaidMinutes / 480.0);
+            days.add(dto);
+        }
 
-	    return res;
-	}
+        AttendanceMonthlyResponseDTO res =
+                new AttendanceMonthlyResponseDTO();
+
+        res.setDays(days);
+        res.setTotalPaidMinutes(totalPaidMinutes);
+        res.setTotalWorkingDays(totalPaidMinutes / 480.0);
+
+        // ===============================
+        // OT SUMMARY
+        // ===============================
+        res.setTotalOTMinutes(totalOTMinutes);
+        res.setTotalOTHours(totalOTMinutes / 60.0);
+
+        return res;
+    }
 }

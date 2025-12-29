@@ -29,6 +29,9 @@ public class AttendanceRecord {
 
     private Integer workedMinutes;
     private Integer paidMinutes;
+    
+    @Column(name = "ot_minutes")
+    private Integer otMinutes = 0;
 
     @Enumerated(EnumType.STRING)
     private AttendanceWorkType workType;
@@ -54,7 +57,8 @@ public class AttendanceRecord {
 	}
 
 	public AttendanceRecord(Long id, Employee employee, LocalDate workDate, LocalTime checkIn, LocalTime checkOut,
-			Integer workedMinutes, Integer paidMinutes, AttendanceWorkType workType, String note) {
+			Integer workedMinutes, Integer paidMinutes, Integer otMinutes, AttendanceWorkType workType, String note,
+			LocalDateTime createdAt, LocalDateTime updatedAt) {
 		super();
 		this.id = id;
 		this.employee = employee;
@@ -63,8 +67,11 @@ public class AttendanceRecord {
 		this.checkOut = checkOut;
 		this.workedMinutes = workedMinutes;
 		this.paidMinutes = paidMinutes;
+		this.otMinutes = otMinutes;
 		this.workType = workType;
 		this.note = note;
+		this.createdAt = createdAt;
+		this.updatedAt = updatedAt;
 	}
 
 	public Long getId() {
@@ -123,6 +130,14 @@ public class AttendanceRecord {
 		this.paidMinutes = paidMinutes;
 	}
 
+	public Integer getOtMinutes() {
+		return otMinutes;
+	}
+
+	public void setOtMinutes(Integer otMinutes) {
+		this.otMinutes = otMinutes;
+	}
+
 	public AttendanceWorkType getWorkType() {
 		return workType;
 	}
@@ -137,6 +152,22 @@ public class AttendanceRecord {
 
 	public void setNote(String note) {
 		this.note = note;
+	}
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public LocalDateTime getUpdatedAt() {
+		return updatedAt;
+	}
+
+	public void setUpdatedAt(LocalDateTime updatedAt) {
+		this.updatedAt = updatedAt;
 	}
     
     
