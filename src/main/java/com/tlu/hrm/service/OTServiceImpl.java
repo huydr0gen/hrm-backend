@@ -255,6 +255,7 @@ public class OTServiceImpl implements OTService {
 	         for (OTParticipant p : ot.getParticipants()) {
 	
 	             OTParticipantDTO pDto = new OTParticipantDTO();
+	             pDto.setId(p.getId());
 	             pDto.setEmployeeId(p.getEmployee().getId());
 	             pDto.setEmployeeCode(p.getEmployee().getCode());
 	             pDto.setEmployeeName(p.getEmployee().getFullName());
