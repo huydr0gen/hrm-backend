@@ -16,38 +16,50 @@ public interface SalaryRecordRepository extends JpaRepository<SalaryRecord, Long
 	boolean existsByEmployeeIdAndMonthAndYear(
         Long employeeId, Integer month, Integer year);
 	
-	// Tổng lương cơ bản trong tháng
+	// Tổng lương cơ bản
     @Query("""
-        SELECT COALESCE(SUM(sr.baseSalary), 0)
+        SELECT COALESCE(SUM(sr.basicSalary), 0)
         FROM SalaryRecord sr
         WHERE sr.month = :month
           AND sr.year = :year
     """)
-    Long sumBaseSalary(
+    Long sumBasicSalary(
             @Param("month") Integer month,
             @Param("year") Integer year
     );
 
-    // Tổng lương OT trong tháng
+    // Tổng tiền OT
     @Query("""
-        SELECT COALESCE(SUM(sr.otSalary), 0)
+        SELECT COALESCE(SUM(sr.otPay), 0)
         FROM SalaryRecord sr
         WHERE sr.month = :month
           AND sr.year = :year
     """)
-    Long sumOtSalary(
+    Long sumOtPay(
             @Param("month") Integer month,
             @Param("year") Integer year
     );
 
-    // Lương trung bình
+    // Tổng thu nhập (đã trừ / cộng)
     @Query("""
-        SELECT COALESCE(AVG(sr.baseSalary), 0)
+        SELECT COALESCE(SUM(sr.totalSalary), 0)
         FROM SalaryRecord sr
         WHERE sr.month = :month
           AND sr.year = :year
     """)
-    Long avgSalary(
+    Long sumTotalSalary(
+            @Param("month") Integer month,
+            @Param("year") Integer year
+    );
+
+    // Thu nhập trung bình
+    @Query("""
+        SELECT COALESCE(AVG(sr.totalSalary), 0)
+        FROM SalaryRecord sr
+        WHERE sr.month = :month
+          AND sr.year = :year
+    """)
+    Long avgTotalSalary(
             @Param("month") Integer month,
             @Param("year") Integer year
     );

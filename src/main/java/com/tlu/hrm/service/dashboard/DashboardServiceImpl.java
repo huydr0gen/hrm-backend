@@ -58,9 +58,9 @@ public class DashboardServiceImpl implements DashboardService {
 
         SalaryStatsDTO salary =
                 new SalaryStatsDTO(
-                		salaryRecordRepo.sumBaseSalary(m, y),
-                		salaryRecordRepo.sumOtSalary(m, y),
-                		salaryRecordRepo.avgSalary(m, y)
+                		salaryRecordRepo.sumTotalSalary(m, y), // tổng chi
+                		salaryRecordRepo.sumOtPay(m, y),        // tổng OT
+                		salaryRecordRepo.avgTotalSalary(m, y)   // trung bình
                 );
 
         return new DashboardOverviewDTO(
