@@ -3,6 +3,8 @@ package com.tlu.hrm.service.dashboard;
 import java.time.LocalTime;
 import java.time.YearMonth;
 
+import org.springframework.stereotype.Service;
+
 import com.tlu.hrm.dto.dashboard.AttendanceStatsDTO;
 import com.tlu.hrm.dto.dashboard.DashboardOverviewDTO;
 import com.tlu.hrm.dto.dashboard.OtStatsDTO;
@@ -10,6 +12,7 @@ import com.tlu.hrm.dto.dashboard.SalaryStatsDTO;
 import com.tlu.hrm.repository.AttendanceRecordRepository;
 import com.tlu.hrm.repository.SalaryRecordRepository;
 
+@Service
 public class DashboardServiceImpl implements DashboardService {
 
 	private final AttendanceRecordRepository attendanceRecordRepo;
