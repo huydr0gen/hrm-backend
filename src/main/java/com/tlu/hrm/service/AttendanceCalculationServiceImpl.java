@@ -50,6 +50,9 @@ public class AttendanceCalculationServiceImpl implements AttendanceCalculationSe
         AttendanceRecord record = attendanceRepo
                 .findByEmployeeIdAndWorkDate(employeeId, date)
                 .orElse(null);
+        
+        Employee employee = employeeRepo.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
 
         // =================================================
         // 1️⃣ LEAVE APPROVED → override toàn bộ công
@@ -61,6 +64,7 @@ public class AttendanceCalculationServiceImpl implements AttendanceCalculationSe
 
             if (record == null) {
                 record = new AttendanceRecord();
+                record.setEmployee(employee);
                 record.setWorkDate(date);
                 // employee PHẢI được set từ nơi tạo record ban đầu
             }
@@ -74,9 +78,6 @@ public class AttendanceCalculationServiceImpl implements AttendanceCalculationSe
         // =================================================
         // 2️⃣ SPECIAL SCHEDULE APPROVED
         // =================================================
-        Employee employee = employeeRepo.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
-
         List<SpecialSchedule> schedules =
                 specialScheduleRepo.findApprovedSchedulesByEmployeeAndDate(employee, date);
 
