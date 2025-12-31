@@ -9,6 +9,8 @@ import org.springframework.data.repository.query.Param;
 
 import com.tlu.hrm.entities.SalaryRecord;
 
+import jakarta.transaction.Transactional;
+
 public interface SalaryRecordRepository extends JpaRepository<SalaryRecord, Long> {
 
 	Optional<SalaryRecord> findByEmployeeIdAndMonthAndYear(
@@ -66,6 +68,7 @@ public interface SalaryRecordRepository extends JpaRepository<SalaryRecord, Long
     );
     
     @Modifying
+    @Transactional
     @Query("""
         delete from SalaryRecord s
         where s.month = :month and s.year = :year
