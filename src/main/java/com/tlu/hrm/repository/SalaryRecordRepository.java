@@ -3,6 +3,7 @@ package com.tlu.hrm.repository;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -63,4 +64,11 @@ public interface SalaryRecordRepository extends JpaRepository<SalaryRecord, Long
             @Param("month") Integer month,
             @Param("year") Integer year
     );
+    
+    @Modifying
+    @Query("""
+        delete from SalaryRecord s
+        where s.month = :month and s.year = :year
+    """)
+    void deleteByMonthAndYear(int month, int year);
 }
