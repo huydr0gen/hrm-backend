@@ -11,6 +11,7 @@ import com.tlu.hrm.entities.AttendanceRecord;
 import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.entities.SpecialSchedule;
 import com.tlu.hrm.enums.AttendanceWorkType;
+import com.tlu.hrm.enums.SpecialScheduleType;
 import com.tlu.hrm.repository.AttendanceRecordRepository;
 import com.tlu.hrm.repository.EmployeeRepository;
 import com.tlu.hrm.repository.LeaveRequestRepository;
@@ -75,7 +76,7 @@ public class AttendanceCalculationServiceImpl implements AttendanceCalculationSe
         // =================================================
         Employee employee = employeeRepo.findById(employeeId)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
-        
+
         List<SpecialSchedule> schedules =
                 specialScheduleRepo.findApprovedSchedulesByEmployeeAndDate(employee, date);
 
@@ -85,9 +86,32 @@ public class AttendanceCalculationServiceImpl implements AttendanceCalculationSe
                 record = new AttendanceRecord();
                 record.setEmployee(employee);
                 record.setWorkDate(date);
+                record.setWorkedMinutes(0);
             }
 
-            // Với đồ án: lịch đặc thù → tính đủ công
+            SpecialSchedule ss = schedules.get(0);
+
+            // Riêng cho lịch con nhỏ
+            if (ss.getType() == SpecialScheduleType.CHILD_CARE) {
+
+                int requiredMinutes = ss.getWorkingHours() * 60; // 7h = 420
+                int workedMinutes = record.getWorkedMinutes() != null
+                        ? record.getWorkedMinutes()
+                        : 0;
+
+                if (workedMinutes >= requiredMinutes) {
+                    record.setPaidMinutes(FULL_DAY_MINUTES); // vẫn tính 8h
+                    record.setWorkType(AttendanceWorkType.FULL_DAY);
+                } else {
+                    record.setPaidMinutes(0);
+                    record.setWorkType(AttendanceWorkType.ABSENT);
+                }
+
+                attendanceRepo.save(record);
+                return;
+            }
+
+            // Các loại lịch đặc thù khác → giữ logic cũ
             record.setPaidMinutes(FULL_DAY_MINUTES);
             record.setWorkType(AttendanceWorkType.FULL_DAY);
             attendanceRepo.save(record);
