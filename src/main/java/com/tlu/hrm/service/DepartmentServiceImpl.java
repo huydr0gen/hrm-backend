@@ -56,6 +56,10 @@ public class DepartmentServiceImpl implements DepartmentService{
             department.setName(dto.getName());
         }
 
+        if (dto.getActive() != null) {
+            department.setActive(dto.getActive());
+        }
+
         Department updated = departmentRepository.save(department);
         return mapToDTO(updated);
     }

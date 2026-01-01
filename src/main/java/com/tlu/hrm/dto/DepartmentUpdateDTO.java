@@ -10,15 +10,28 @@ public class DepartmentUpdateDTO {
 	        example = "Phòng Kế toán",
 	        nullable = true
 	    )
-	private String name;
+	    private String name;
 
-	public String getName() {
-		return name;
-	}
+	    @Schema(
+	        description = "Trạng thái hoạt động của phòng ban",
+	        example = "true",
+	        nullable = true
+	    )
+	    private Boolean active;
 
-	public void setName(String name) {
-		this.name = name;
-	}
-	
-	
+	    public String getName() {
+	        return name;
+	    }
+
+	    public void setName(String name) {
+	        this.name = name;
+	    }
+
+	    public Boolean getActive() {
+	        return active;
+	    }
+
+	    public void setActive(Boolean active) {
+	        this.active = active;
+	    }
 }
