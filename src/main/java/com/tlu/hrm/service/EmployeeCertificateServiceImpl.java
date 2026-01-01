@@ -3,6 +3,7 @@ package com.tlu.hrm.service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.tlu.hrm.dto.EmployeeCertificateCreateDTO;
@@ -26,8 +27,13 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
 		this.employeeRepo = employeeRepo;
 	}
     
-	@Override
+	// =====================================================
+    // HR
+    // =====================================================
+
+    @Override
     public EmployeeCertificateResponseDTO create(EmployeeCertificateCreateDTO dto) {
+
         Employee employee = employeeRepo.findById(dto.getEmployeeId())
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
 
@@ -44,6 +50,7 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
 
     @Override
     public EmployeeCertificateResponseDTO update(Long id, EmployeeCertificateUpdateDTO dto) {
+
         EmployeeCertificate cert = certificateRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Certificate not found"));
 
@@ -62,14 +69,37 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
     }
 
     @Override
-    public Page<EmployeeCertificateResponseDTO> getByEmployee(
-            Long employeeId, int page, int size) {
+    public Page<EmployeeCertificateResponseDTO> listAll(
+            int page, int size, String sort) {
 
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, parseSort(sort));
 
-        return certificateRepo.findByEmployeeId(employeeId, pageable)
+        return certificateRepo.findAll(pageable)
                 .map(this::toDTO);
     }
+
+    @Override
+    public Page<EmployeeCertificateResponseDTO> search(
+            String keyword, int page, int size, String sort) {
+
+        Pageable pageable = PageRequest.of(page, size, parseSort(sort));
+
+        return certificateRepo.searchByEmployee(keyword, pageable)
+                .map(this::toDTO);
+    }
+
+    @Override
+    public EmployeeCertificateResponseDTO getDetail(Long id) {
+
+        EmployeeCertificate cert = certificateRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Certificate not found"));
+
+        return toDTO(cert);
+    }
+
+    // =====================================================
+    // EMPLOYEE
+    // =====================================================
 
     @Override
     public Page<EmployeeCertificateResponseDTO> getMyCertificates(
@@ -78,27 +108,15 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
         Employee emp = employeeRepo.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
 
-        return getByEmployee(emp.getId(), page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        return certificateRepo.findByEmployeeId(emp.getId(), pageable)
+                .map(this::toDTO);
     }
 
     @Override
-    public EmployeeCertificateResponseDTO getById(Long id) {
-        return toDTO(
-                certificateRepo.findById(id)
-                        .orElseThrow(() -> new RuntimeException("Certificate not found"))
-        );
-    }
-    
-    @Override
-    public EmployeeCertificateResponseDTO getDetail(Long id) {
-        EmployeeCertificate cert = certificateRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Certificate not found"));
-
-        return toDTO(cert);
-    }
-
-    @Override
-    public EmployeeCertificateResponseDTO getMyCertificateDetail(Long userId, Long id) {
+    public EmployeeCertificateResponseDTO getMyCertificateDetail(
+            Long userId, Long id) {
 
         Employee emp = employeeRepo.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
@@ -113,6 +131,34 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
         return toDTO(cert);
     }
 
+    // =====================================================
+    // OLD – KHÔNG DÙNG Ở FE
+    // =====================================================
+
+    @Override
+    public Page<EmployeeCertificateResponseDTO> getByEmployee(
+            Long employeeId, int page, int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        return certificateRepo.findByEmployeeId(employeeId, pageable)
+                .map(this::toDTO);
+    }
+
+    // =====================================================
+    // COMMON
+    // =====================================================
+
+    private Sort parseSort(String sort) {
+        String[] arr = sort.split(",");
+        return Sort.by(
+                "desc".equalsIgnoreCase(arr[1])
+                        ? Sort.Direction.DESC
+                        : Sort.Direction.ASC,
+                arr[0]
+        );
+    }
+
     private EmployeeCertificateResponseDTO toDTO(EmployeeCertificate c) {
         EmployeeCertificateResponseDTO dto = new EmployeeCertificateResponseDTO();
         dto.setId(c.getId());
@@ -125,5 +171,4 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
         dto.setNote(c.getNote());
         return dto;
     }
-
 }

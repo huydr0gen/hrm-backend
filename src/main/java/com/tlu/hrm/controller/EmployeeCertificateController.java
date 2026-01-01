@@ -21,7 +21,35 @@ public class EmployeeCertificateController {
 		this.service = service;
 	}
 	
-	// ===== HR =====
+	// =====================================================
+    // HR
+    // =====================================================
+
+    @GetMapping
+    @PreAuthorize("hasRole('HR')")
+    public ResponseEntity<?> listAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt,desc") String sort) {
+
+        return ResponseEntity.ok(
+                service.listAll(page, size, sort)
+        );
+    }
+
+    @GetMapping("/search")
+    @PreAuthorize("hasRole('HR')")
+    public ResponseEntity<?> search(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt,desc") String sort) {
+
+        return ResponseEntity.ok(
+                service.search(keyword, page, size, sort)
+        );
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('HR')")
     public ResponseEntity<?> create(@RequestBody EmployeeCertificateCreateDTO dto) {
@@ -30,8 +58,10 @@ public class EmployeeCertificateController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('HR')")
-    public ResponseEntity<?> update(@PathVariable Long id,
-                                    @RequestBody EmployeeCertificateUpdateDTO dto) {
+    public ResponseEntity<?> update(
+            @PathVariable Long id,
+            @RequestBody EmployeeCertificateUpdateDTO dto) {
+
         return ResponseEntity.ok(service.update(id, dto));
     }
 
@@ -42,19 +72,16 @@ public class EmployeeCertificateController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping
+    @GetMapping("/{id}")
     @PreAuthorize("hasRole('HR')")
-    public ResponseEntity<?> getByEmployee(
-            @RequestParam Long employeeId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-
-        return ResponseEntity.ok(
-                service.getByEmployee(employeeId, page, size)
-        );
+    public ResponseEntity<?> getDetail(@PathVariable Long id) {
+        return ResponseEntity.ok(service.getDetail(id));
     }
 
-    // ===== EMPLOYEE =====
+    // =====================================================
+    // EMPLOYEE
+    // =====================================================
+
     @GetMapping("/my")
     @PreAuthorize("hasRole('EMPLOYEE')")
     public ResponseEntity<?> getMyCertificates(
@@ -69,13 +96,7 @@ public class EmployeeCertificateController {
                 service.getMyCertificates(user.getId(), page, size)
         );
     }
-    
-    @GetMapping("/{id}")
-    @PreAuthorize("hasRole('HR')")
-    public ResponseEntity<?> getDetail(@PathVariable Long id) {
-        return ResponseEntity.ok(service.getDetail(id));
-    }
-    
+
     @GetMapping("/my/{id}")
     @PreAuthorize("hasRole('EMPLOYEE')")
     public ResponseEntity<?> getMyCertificateDetail(@PathVariable Long id) {

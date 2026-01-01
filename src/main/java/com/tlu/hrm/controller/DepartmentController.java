@@ -76,7 +76,7 @@ public class DepartmentController {
             - HR
             
             Ghi chú:
-            - Chỉ cập nhật tên phòng ban
+            - Cập nhật tên và trạng thái hoạt động phòng ban
             - Không cho phép trùng tên
             """
     )
