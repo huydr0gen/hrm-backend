@@ -10,6 +10,12 @@ public class DepartmentDTO {
 	        example = "1"
 	)
     private Long id;
+	
+	@Schema(
+	        description = "Mã phòng ban",
+	        example = "DEP001"
+	    )
+	    private String code;
 
     @Schema(
         description = "Tên phòng ban",
@@ -29,6 +35,14 @@ public class DepartmentDTO {
 
 	public void setId(Long id) {
 		this.id = id;
+	}
+
+	public String getCode() {
+		return code;
+	}
+
+	public void setCode(String code) {
+		this.code = code;
 	}
 
 	public String getName() {

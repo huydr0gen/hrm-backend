@@ -10,6 +10,9 @@ public class Department {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+	@Column(nullable = false, unique = true)
+    private String code;
+	
     @Column(nullable = false, unique = true)
     private String name;
 
@@ -20,9 +23,9 @@ public class Department {
 		super();
 	}
 
-	public Department(Long id, String name, boolean active) {
+	public Department(String code, String name, boolean active) {
 		super();
-		this.id = id;
+		this.code = code;
 		this.name = name;
 		this.active = active;
 	}
@@ -33,6 +36,14 @@ public class Department {
 
 	public void setId(Long id) {
 		this.id = id;
+	}
+
+	public String getCode() {
+		return code;
+	}
+
+	public void setCode(String code) {
+		this.code = code;
 	}
 
 	public String getName() {
@@ -50,6 +61,6 @@ public class Department {
 	public void setActive(boolean active) {
 		this.active = active;
 	}
-    
-    
+
+
 }

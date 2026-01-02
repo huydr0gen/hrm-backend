@@ -10,16 +10,40 @@ import io.swagger.v3.oas.annotations.media.Schema;
 )
 public class DepartmentApprovalViewDTO {
 	@Schema(
-        description = "ID phòng ban",
+        description = "ID phòng ban được áp dụng cấu hình duyệt",
         example = "1"
     )
     private Long departmentId;
 
     @Schema(
-        description = "User ID của người duyệt",
+        description = "Mã phòng ban",
+        example = "IT"
+    )
+    private String departmentCode;
+
+    @Schema(
+        description = "Tên phòng ban",
+        example = "Phòng Công nghệ thông tin"
+    )
+    private String departmentName;
+    
+    @Schema(
+        description = "ID của người duyệt",
         example = "5"
     )
     private Long approverId;
+
+    @Schema(
+        description = "Mã nhân viên của người duyệt",
+        example = "EMP005"
+    )
+    private String approverCode;
+
+    @Schema(
+        description = "Tên nhân viên của người duyệt",
+        example = "Nguyễn Văn A"
+    )
+    private String approverName;
 
     @Schema(
         description = "Thời điểm thiết lập hoặc cập nhật người duyệt",
@@ -35,12 +59,44 @@ public class DepartmentApprovalViewDTO {
 		this.departmentId = departmentId;
 	}
 
+	public String getDepartmentCode() {
+		return departmentCode;
+	}
+
+	public void setDepartmentCode(String departmentCode) {
+		this.departmentCode = departmentCode;
+	}
+
+	public String getDepartmentName() {
+		return departmentName;
+	}
+
+	public void setDepartmentName(String departmentName) {
+		this.departmentName = departmentName;
+	}
+
 	public Long getApproverId() {
 		return approverId;
 	}
 
 	public void setApproverId(Long approverId) {
 		this.approverId = approverId;
+	}
+
+	public String getApproverCode() {
+		return approverCode;
+	}
+
+	public void setApproverCode(String approverCode) {
+		this.approverCode = approverCode;
+	}
+
+	public String getApproverName() {
+		return approverName;
+	}
+
+	public void setApproverName(String approverName) {
+		this.approverName = approverName;
 	}
 
 	public LocalDateTime getCreatedAt() {
@@ -50,6 +106,7 @@ public class DepartmentApprovalViewDTO {
 	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
 	}
-    
+
+	
     
 }

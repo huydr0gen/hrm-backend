@@ -22,7 +22,6 @@ public class DepartmentServiceImpl implements DepartmentService{
 	}
 	
 	// ================= CREATE =================
-
     @Override
     public DepartmentDTO create(DepartmentCreateDTO dto) {
 
@@ -32,14 +31,13 @@ public class DepartmentServiceImpl implements DepartmentService{
 
         Department department = new Department();
         department.setName(dto.getName());
+        department.setCode(generateDepartmentCode());
         department.setActive(true);
 
-        Department saved = departmentRepository.save(department);
-        return mapToDTO(saved);
+        return mapToDTO(departmentRepository.save(department));
     }
 
     // ================= UPDATE =================
-
     @Override
     public DepartmentDTO update(Long id, DepartmentUpdateDTO dto) {
 
@@ -60,12 +58,10 @@ public class DepartmentServiceImpl implements DepartmentService{
             department.setActive(dto.getActive());
         }
 
-        Department updated = departmentRepository.save(department);
-        return mapToDTO(updated);
+        return mapToDTO(departmentRepository.save(department));
     }
 
     // ================= DELETE (SOFT) =================
-
     @Override
     public void delete(Long id) {
 
@@ -77,7 +73,6 @@ public class DepartmentServiceImpl implements DepartmentService{
     }
 
     // ================= GET ALL =================
-
     @Override
     public Page<DepartmentDTO> getAll(int page, int size) {
 
@@ -87,15 +82,28 @@ public class DepartmentServiceImpl implements DepartmentService{
                 .map(this::mapToDTO);
     }
 
-    // ================= MAP DTO =================
+    // ================= HELPER =================
+    private String generateDepartmentCode() {
 
+        String maxCode = departmentRepository.findMaxDepartmentCode();
+
+        if (maxCode == null) {
+            return "DEP001";
+        }
+
+        int next = Integer.parseInt(maxCode.substring(3)) + 1;
+        return String.format("DEP%03d", next);
+    }
+
+    // ================= MAP DTO =================
     private DepartmentDTO mapToDTO(Department department) {
 
         DepartmentDTO dto = new DepartmentDTO();
         dto.setId(department.getId());
+        dto.setCode(department.getCode());
         dto.setName(department.getName());
         dto.setActive(department.isActive());
-
         return dto;
     }
+
 }

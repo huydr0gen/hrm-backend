@@ -8,8 +8,13 @@ import com.tlu.hrm.dto.ApprovalConfigCreateDTO;
 import com.tlu.hrm.dto.ApprovalConfigDTO;
 import com.tlu.hrm.entities.ApprovalConfig;
 import com.tlu.hrm.entities.AuditLog;
+import com.tlu.hrm.entities.Department;
+import com.tlu.hrm.entities.Employee;
+import com.tlu.hrm.enums.ApprovalTargetType;
 import com.tlu.hrm.repository.ApprovalConfigRepository;
 import com.tlu.hrm.repository.AuditLogRepository;
+import com.tlu.hrm.repository.DepartmentRepository;
+import com.tlu.hrm.repository.EmployeeRepository;
 import com.tlu.hrm.security.CustomUserDetails;
 
 @Service
@@ -17,12 +22,17 @@ public class ApprovalConfigServiceImpl implements ApprovalConfigService {
 
 	private final ApprovalConfigRepository approvalConfigRepository;
 	private final AuditLogRepository auditLogRepository;
-	
+	private final EmployeeRepository employeeRepository;
+	private final DepartmentRepository departmentRepository;
+
 	public ApprovalConfigServiceImpl(ApprovalConfigRepository approvalConfigRepository,
-			AuditLogRepository auditLogRepository) {
+			AuditLogRepository auditLogRepository, EmployeeRepository employeeRepository,
+			DepartmentRepository departmentRepository) {
 		super();
 		this.approvalConfigRepository = approvalConfigRepository;
 		this.auditLogRepository = auditLogRepository;
+		this.employeeRepository = employeeRepository;
+		this.departmentRepository = departmentRepository;
 	}
 
 	@Override
@@ -86,8 +96,46 @@ public class ApprovalConfigServiceImpl implements ApprovalConfigService {
         dto.setId(config.getId());
         dto.setTargetType(config.getTargetType());
         dto.setTargetId(config.getTargetId());
-        dto.setApproverId(config.getApproverId());
         dto.setActive(config.isActive());
+
+        // =====================================================
+        // TARGET INFO
+        // =====================================================
+
+        if (config.getTargetType() == ApprovalTargetType.EMPLOYEE) {
+
+            Employee emp = employeeRepository
+                    .findById(config.getTargetId())
+                    .orElseThrow(() ->
+                            new RuntimeException("Target employee not found"));
+
+            dto.setTargetCode(emp.getCode());
+            dto.setTargetName(emp.getFullName());
+
+        } else if (config.getTargetType() == ApprovalTargetType.DEPARTMENT) {
+
+            Department dept = departmentRepository
+                    .findById(config.getTargetId())
+                    .orElseThrow(() ->
+                            new RuntimeException("Target department not found"));
+
+            dto.setTargetCode(dept.getCode());
+            dto.setTargetName(dept.getName());
+        }
+
+        // =====================================================
+        // APPROVER INFO
+        // =====================================================
+
+        Employee approver = employeeRepository
+                .findById(config.getApproverId())
+                .orElseThrow(() ->
+                        new RuntimeException("Approver not found"));
+
+        dto.setApproverId(approver.getId());
+        dto.setApproverCode(approver.getCode());
+        dto.setApproverName(approver.getFullName());
+
         return dto;
     }
 

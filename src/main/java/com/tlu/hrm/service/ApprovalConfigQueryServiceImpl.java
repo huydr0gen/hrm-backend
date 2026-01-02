@@ -8,74 +8,127 @@ import org.springframework.stereotype.Service;
 
 import com.tlu.hrm.dto.DepartmentApprovalViewDTO;
 import com.tlu.hrm.dto.PersonalApprovalViewDTO;
+import com.tlu.hrm.entities.Department;
+import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.enums.ApprovalTargetType;
 import com.tlu.hrm.repository.ApprovalConfigRepository;
+import com.tlu.hrm.repository.DepartmentRepository;
+import com.tlu.hrm.repository.EmployeeRepository;
 
 @Service
 public class ApprovalConfigQueryServiceImpl implements ApprovalConfigQueryService {
 
 	private final ApprovalConfigRepository approvalConfigRepository;
+	private final EmployeeRepository employeeRepository;
+	private final DepartmentRepository departmentRepository;
 
-	public ApprovalConfigQueryServiceImpl(ApprovalConfigRepository approvalConfigRepository) {
+	
+	
+	public ApprovalConfigQueryServiceImpl(ApprovalConfigRepository approvalConfigRepository,
+			EmployeeRepository employeeRepository, DepartmentRepository departmentRepository) {
 		super();
 		this.approvalConfigRepository = approvalConfigRepository;
+		this.employeeRepository = employeeRepository;
+		this.departmentRepository = departmentRepository;
 	}
-	
+
 	// =====================================================
     // GET – PHÒNG BAN
     // =====================================================
-    @Override
-    public Page<DepartmentApprovalViewDTO> getDepartmentApprovals(
-            int page,
-            int size
-    ) {
-        Pageable pageable = PageRequest.of(
-            page,
-            size,
-            Sort.by("createdAt").descending()
-        );
+	@Override
+	public Page<DepartmentApprovalViewDTO> getDepartmentApprovals(
+	        int page,
+	        int size
+	) {
+	    Pageable pageable = PageRequest.of(
+	        page,
+	        size,
+	        Sort.by("createdAt").descending()
+	    );
 
-        return approvalConfigRepository
-            .findByTargetTypeAndActiveTrue(
-                ApprovalTargetType.DEPARTMENT,
-                pageable
-            )
-            .map(cfg -> {
-                DepartmentApprovalViewDTO dto =
-                        new DepartmentApprovalViewDTO();
-                dto.setDepartmentId(cfg.getTargetId());
-                dto.setApproverId(cfg.getApproverId());
-                dto.setCreatedAt(cfg.getCreatedAt());
-                return dto;
-            });
-    }
+	    return approvalConfigRepository
+	        .findByTargetTypeAndActiveTrue(
+	            ApprovalTargetType.DEPARTMENT,
+	            pageable
+	        )
+	        .map(cfg -> {
+
+	            DepartmentApprovalViewDTO dto =
+	                    new DepartmentApprovalViewDTO();
+
+	            // ===== TARGET DEPARTMENT =====
+	            Department dept = departmentRepository
+	                    .findById(cfg.getTargetId())
+	                    .orElseThrow(() ->
+	                            new RuntimeException("Department not found"));
+
+	            dto.setDepartmentId(dept.getId());
+	            dto.setDepartmentCode(dept.getCode());
+	            dto.setDepartmentName(dept.getName());
+
+	            // ===== APPROVER =====
+	            Employee approver = employeeRepository
+	                    .findById(cfg.getApproverId())
+	                    .orElseThrow(() ->
+	                            new RuntimeException("Approver not found"));
+
+	            dto.setApproverId(approver.getId());
+	            dto.setApproverCode(approver.getCode());
+	            dto.setApproverName(approver.getFullName());
+
+	            dto.setCreatedAt(cfg.getCreatedAt());
+
+	            return dto;
+	        });
+	}
 
     // =====================================================
     // GET – CÁ NHÂN
     // =====================================================
-    @Override
-    public Page<PersonalApprovalViewDTO> getPersonalApprovals(
-            int page,
-            int size
-    ) {
-        Pageable pageable = PageRequest.of(
-            page,
-            size,
-            Sort.by("createdAt").descending()
-        );
+	@Override
+	public Page<PersonalApprovalViewDTO> getPersonalApprovals(
+	        int page,
+	        int size
+	) {
+	    Pageable pageable = PageRequest.of(
+	        page,
+	        size,
+	        Sort.by("createdAt").descending()
+	    );
 
-        return approvalConfigRepository
-            .findByTargetTypeAndActiveTrue(
-                ApprovalTargetType.EMPLOYEE,
-                pageable
-            )
-            .map(cfg -> {
-                PersonalApprovalViewDTO dto =
-                        new PersonalApprovalViewDTO();
-                dto.setEmployeeId(cfg.getTargetId());
-                dto.setApproverId(cfg.getApproverId());
-                dto.setCreatedAt(cfg.getCreatedAt());
-                return dto;
-            });
-    }
+	    return approvalConfigRepository
+	        .findByTargetTypeAndActiveTrue(
+	            ApprovalTargetType.EMPLOYEE,
+	            pageable
+	        )
+	        .map(cfg -> {
+
+	            PersonalApprovalViewDTO dto =
+	                    new PersonalApprovalViewDTO();
+
+	            // ===== TARGET EMPLOYEE =====
+	            Employee emp = employeeRepository
+	                    .findById(cfg.getTargetId())
+	                    .orElseThrow(() ->
+	                            new RuntimeException("Employee not found"));
+
+	            dto.setEmployeeId(emp.getId());
+	            dto.setEmployeeCode(emp.getCode());
+	            dto.setEmployeeName(emp.getFullName());
+
+	            // ===== APPROVER =====
+	            Employee approver = employeeRepository
+	                    .findById(cfg.getApproverId())
+	                    .orElseThrow(() ->
+	                            new RuntimeException("Approver not found"));
+
+	            dto.setApproverId(approver.getId());
+	            dto.setApproverCode(approver.getCode());
+	            dto.setApproverName(approver.getFullName());
+
+	            dto.setCreatedAt(cfg.getCreatedAt());
+
+	            return dto;
+	        });
+	}
 }
