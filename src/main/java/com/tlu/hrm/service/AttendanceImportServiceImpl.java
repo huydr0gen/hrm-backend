@@ -11,6 +11,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,6 +21,7 @@ import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.enums.AttendanceWorkType;
 import com.tlu.hrm.repository.AttendanceRecordRepository;
 import com.tlu.hrm.repository.EmployeeRepository;
+import com.tlu.hrm.security.CustomUserDetails;
 
 
 @Service
@@ -27,18 +29,27 @@ public class AttendanceImportServiceImpl implements AttendanceImportService {
 
 	private final EmployeeRepository employeeRepo;
     private final AttendanceRecordRepository attendanceRepo;
+    private final AttendanceImportHistoryService attendanceImportHistoryService;
 
     public AttendanceImportServiceImpl(
             EmployeeRepository employeeRepo,
-            AttendanceRecordRepository attendanceRepo) {
+            AttendanceRecordRepository attendanceRepo,
+            AttendanceImportHistoryService attendanceImportHistoryService) {
         this.employeeRepo = employeeRepo;
         this.attendanceRepo = attendanceRepo;
+        this.attendanceImportHistoryService = attendanceImportHistoryService;
     }
 
     @Override
     public AttendanceImportResultDTO importExcel(
             MultipartFile file,
             YearMonth month) {
+    	
+        Long currentEmployeeId = ((CustomUserDetails)
+                SecurityContextHolder.getContext()
+                        .getAuthentication()
+                        .getPrincipal()
+        ).getEmployeeId();
 
         AttendanceImportResultDTO result = new AttendanceImportResultDTO();
 
@@ -46,6 +57,9 @@ public class AttendanceImportServiceImpl implements AttendanceImportService {
 
             Sheet sheet = workbook.getSheetAt(0);
 
+            // =================================================
+            // 2️⃣ DUYỆT TỪNG DÒNG EXCEL (IMPORT CÔNG)
+            // =================================================
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
 
                 Row row = sheet.getRow(i);
@@ -127,6 +141,16 @@ public class AttendanceImportServiceImpl implements AttendanceImportService {
                 }
             }
 
+            // =================================================
+            // 3️⃣ GHI LỊCH SỬ IMPORT (CHỈ 1 LẦN / FILE)
+            // =================================================
+            attendanceImportHistoryService.createHistory(
+                    month.toString(),               // ví dụ: 2026-01
+                    file.getOriginalFilename(),      // tên file
+                    null,                            // file path / url (nếu có)
+                    currentEmployeeId               // người import
+            );
+
         } catch (Exception e) {
             throw new RuntimeException("Cannot read excel file", e);
         }
@@ -134,9 +158,9 @@ public class AttendanceImportServiceImpl implements AttendanceImportService {
         return result;
     }
 
-    // =============================
+    // =================================================
     // HELPER: đọc giờ an toàn
-    // =============================
+    // =================================================
     private LocalTime readTime(Cell cell) {
         if (cell == null || cell.getCellType() != CellType.NUMERIC) {
             return null;
@@ -144,3 +168,4 @@ public class AttendanceImportServiceImpl implements AttendanceImportService {
         return cell.getLocalDateTimeCellValue().toLocalTime();
     }
 }
+
