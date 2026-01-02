@@ -498,6 +498,11 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
 
         dto.setType(e.getType());
         dto.setReason(e.getReason());
+        
+        dto.setProjectCode(e.getProjectCode());
+        dto.setProjectName(e.getProjectName());
+        dto.setManagerCode(e.getOnsiteManagerCode());
+        dto.setManagerName(e.getOnsiteManagerName());
 
         dto.setStatus(e.getStatus());
         dto.setApproverId(e.getApproverId());
