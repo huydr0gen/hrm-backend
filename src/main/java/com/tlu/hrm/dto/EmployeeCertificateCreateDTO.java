@@ -5,6 +5,7 @@ import java.time.LocalDate;
 public class EmployeeCertificateCreateDTO {
 
 	private Long employeeId;
+	private String empCode;
     private String name;
     private String issuer;
     private LocalDate issuedDate;
@@ -15,6 +16,12 @@ public class EmployeeCertificateCreateDTO {
 	}
 	public void setEmployeeId(Long employeeId) {
 		this.employeeId = employeeId;
+	}
+	public String getEmpCode() {
+		return empCode;
+	}
+	public void setEmpCode(String empCode) {
+		this.empCode = empCode;
 	}
 	public String getName() {
 		return name;

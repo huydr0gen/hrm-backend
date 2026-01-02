@@ -34,8 +34,34 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
     @Override
     public EmployeeCertificateResponseDTO create(EmployeeCertificateCreateDTO dto) {
 
-        Employee employee = employeeRepo.findById(dto.getEmployeeId())
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
+    	Employee employee;
+
+        //Ưu tiên empCode (khóa nghiệp vụ)
+        if (dto.getEmpCode() != null && !dto.getEmpCode().isBlank()) {
+
+            employee = employeeRepo.findByCode(dto.getEmpCode())
+                    .orElseThrow(() ->
+                            new RuntimeException(
+                                    "Employee not found with code: " + dto.getEmpCode()
+                            )
+                    );
+
+        }
+        //Fallback employeeId (legacy / nội bộ)
+        else if (dto.getEmployeeId() != null) {
+
+            employee = employeeRepo.findById(dto.getEmployeeId())
+                    .orElseThrow(() ->
+                            new RuntimeException(
+                                    "Employee not found with id: " + dto.getEmployeeId()
+                            )
+                    );
+
+        }
+        //Không truyền gì → lỗi rõ ràng
+        else {
+            throw new RuntimeException("empCode or employeeId is required");
+        }
 
         EmployeeCertificate cert = new EmployeeCertificate();
         cert.setEmployee(employee);
