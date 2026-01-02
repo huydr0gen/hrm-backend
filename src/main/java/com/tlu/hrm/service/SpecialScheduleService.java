@@ -13,19 +13,29 @@ import com.tlu.hrm.enums.DecisionAction;
 
 public interface SpecialScheduleService {
 
-	// EMPLOYEE
+	// =========================
+    // EMPLOYEE
+    // =========================
     Page<SpecialScheduleResponseDTO> getMySchedules(int page, int size);
 
+    // =========================
     // MANAGER
+    // =========================
     Page<SpecialScheduleResponseDTO> getDepartmentSchedules(int page, int size);
 
-    // APPROVER
-    Page<SpecialScheduleResponseDTO> getMyApprovalSchedules(int page, int size);
+    // =========================
+    // APPROVER (theo cấu hình duyệt)
+    // =========================
+    Page<SpecialScheduleResponseDTO> getPendingForApprover(int page, int size);
 
-    // SEARCH mở rộng
+    // =========================
+    // SEARCH / FILTER
+    // =========================
     Page<SpecialScheduleResponseDTO> list(SpecialScheduleFilterDTO filter);
 
+    // =========================
     // CRUD
+    // =========================
     SpecialScheduleResponseDTO create(SpecialScheduleCreateDTO dto);
 
     SpecialScheduleResponseDTO update(Long id, SpecialScheduleUpdateDTO dto);
@@ -34,10 +44,10 @@ public interface SpecialScheduleService {
 
     SpecialScheduleResponseDTO detail(Long id);
 
+    // =========================
     // APPROVAL
+    // =========================
     SpecialScheduleResponseDTO decide(Long id, DecisionAction action);
 
     BulkDecisionResultDTO decideMany(List<Long> ids, DecisionAction action);
-    
-    Page<SpecialScheduleResponseDTO> getPendingForApprover(int page, int size);
 }

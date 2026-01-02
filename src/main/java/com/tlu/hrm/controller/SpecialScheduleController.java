@@ -89,35 +89,6 @@ public class SpecialScheduleController {
     }
 
     // =====================================================
-    // VIEW MY APPROVALS – APPROVER
-    // =====================================================
-    @Operation(
-        summary = "Người duyệt xem các lịch đặc thù cần xử lý",
-        description = """
-            Role:
-            - Người được thiết lập là approver
-
-            Nghiệp vụ:
-            - Chỉ trả về lịch có:
-              + approverId = user hiện tại
-              + status = PENDING
-            """
-    )
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lấy danh sách thành công"),
-        @ApiResponse(responseCode = "403", description = "Không có quyền truy cập")
-    })
-    @GetMapping("/my-approvals")
-    public ResponseEntity<Page<SpecialScheduleResponseDTO>> getMyApprovalSchedules(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-
-        return ResponseEntity.ok(
-                specialScheduleService.getMyApprovalSchedules(page, size)
-        );
-    }
-
-    // =====================================================
     // DETAIL
     // =====================================================
     @Operation(

@@ -6,7 +6,6 @@ import java.util.Set;
 
 import org.springframework.data.jpa.domain.Specification;
 
-import com.tlu.hrm.entities.Department;
 import com.tlu.hrm.entities.LeaveRequest;
 import com.tlu.hrm.enums.LeaveStatus;
 import com.tlu.hrm.enums.LeaveType;

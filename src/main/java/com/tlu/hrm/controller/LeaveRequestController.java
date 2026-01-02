@@ -104,32 +104,6 @@ public class LeaveRequestController {
     }
 
     // =====================================================
-    // MANAGER – DEPARTMENT REQUESTS
-    // =====================================================
-    @Operation(
-        summary = "Quản lý xem đơn nghỉ của phòng ban",
-        description = """
-            Màn hình: Duyệt đơn nghỉ (Manager)
-
-            Ghi chú:
-            - Chỉ hiển thị đơn của nhân viên trong phòng ban
-            """
-    )
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lấy danh sách đơn nghỉ phòng ban thành công"),
-        @ApiResponse(responseCode = "403", description = "Không có quyền MANAGER")
-    })
-    @PreAuthorize("hasRole('MANAGER')")
-    @GetMapping("/department")
-    public ResponseEntity<Page<LeaveRequestDTO>> departmentRequests(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-
-        Long managerId = getCurrentUserId();
-        return ResponseEntity.ok(service.getDepartmentRequests(managerId, page, size));
-    }
-
-    // =====================================================
     // HR / ADMIN – FILTER LIST (READ ONLY)
     // =====================================================
     @Operation(

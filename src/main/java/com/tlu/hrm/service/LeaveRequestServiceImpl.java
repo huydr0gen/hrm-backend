@@ -324,21 +324,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
                 .findAll((root, q, cb) -> cb.equal(root.get("employee"), emp), pageable)
                 .map(this::toDTO);
     }
-
-    @Override
-    public Page<LeaveRequestDTO> getDepartmentRequests(Long managerUserId, int page, int size) {
-
-        Employee manager = employeeRepo.findByUserId(managerUserId)
-                .orElseThrow(() -> new RuntimeException("Manager not found"));
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-
-        Specification<LeaveRequest> spec =
-                LeaveRequestSpecification.hasDepartment(manager.getDepartment().getId());
-
-        return leaveRequestRepository.findAll(spec, pageable).map(this::toDTO);
-    }
-
+    
     @Override
     public Page<LeaveRequestDTO> getAllFiltered(
             String employeeName,

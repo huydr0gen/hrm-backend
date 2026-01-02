@@ -19,8 +19,6 @@ public interface LeaveRequestService {
 
     Page<LeaveRequestDTO> getMyRequests(Long userId, int page, int size);
 
-    Page<LeaveRequestDTO> getDepartmentRequests(Long managerId, int page, int size);
-
     Page<LeaveRequestDTO> getAllFiltered(
         String employeeName,
         Long departmentId,
