@@ -59,8 +59,15 @@ public class ApprovalConfigQueryServiceImpl implements ApprovalConfigQueryServic
 	            // ===== TARGET DEPARTMENT =====
 	            Department dept = departmentRepository
 	                    .findById(cfg.getTargetId())
-	                    .orElseThrow(() ->
-	                            new RuntimeException("Department not found"));
+	                    .orElse(null);
+
+	            if (dept != null) {
+	                dto.setDepartmentId(dept.getId());
+	                dto.setDepartmentCode(dept.getCode());
+	                dto.setDepartmentName(dept.getName());
+	            } else {
+	                dto.setDepartmentName("[DEPARTMENT NOT FOUND]");
+	            }
 
 	            dto.setDepartmentId(dept.getId());
 	            dto.setDepartmentCode(dept.getCode());
@@ -69,12 +76,17 @@ public class ApprovalConfigQueryServiceImpl implements ApprovalConfigQueryServic
 	            // ===== APPROVER =====
 	            Employee approver = employeeRepository
 	                    .findById(cfg.getApproverId())
-	                    .orElseThrow(() ->
-	                            new RuntimeException("Approver not found"));
+	                    .orElse(null);
 
-	            dto.setApproverId(approver.getId());
-	            dto.setApproverCode(approver.getCode());
-	            dto.setApproverName(approver.getFullName());
+	            if (approver != null) {
+	                dto.setApproverId(approver.getId());
+	                dto.setApproverCode(approver.getCode());
+	                dto.setApproverName(approver.getFullName());
+	            } else {
+	                dto.setApproverId(null);
+	                dto.setApproverCode(null);
+	                dto.setApproverName("[APPROVER NOT FOUND]");
+	            }
 
 	            dto.setCreatedAt(cfg.getCreatedAt());
 
@@ -119,12 +131,15 @@ public class ApprovalConfigQueryServiceImpl implements ApprovalConfigQueryServic
 	            // ===== APPROVER =====
 	            Employee approver = employeeRepository
 	                    .findById(cfg.getApproverId())
-	                    .orElseThrow(() ->
-	                            new RuntimeException("Approver not found"));
+	                    .orElse(null);
 
-	            dto.setApproverId(approver.getId());
-	            dto.setApproverCode(approver.getCode());
-	            dto.setApproverName(approver.getFullName());
+	            if (approver != null) {
+	                dto.setApproverId(approver.getId());
+	                dto.setApproverCode(approver.getCode());
+	                dto.setApproverName(approver.getFullName());
+	            } else {
+	                dto.setApproverName("[APPROVER NOT FOUND]");
+	            }
 
 	            dto.setCreatedAt(cfg.getCreatedAt());
 
