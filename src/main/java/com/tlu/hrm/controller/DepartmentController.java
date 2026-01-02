@@ -1,7 +1,6 @@
 package com.tlu.hrm.controller;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -11,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.tlu.hrm.dto.DepartmentCreateDTO;
@@ -125,27 +125,31 @@ public class DepartmentController {
     // ================= GET ALL ACTIVE =================
 
     @Operation(
-        summary = "Lấy danh sách phòng ban đang hoạt động",
-        description = """
-            Màn hình:
-            - Dropdown chọn phòng ban (tạo / sửa nhân viên)
-            - Danh sách phòng ban
-            
-            Role:
-            - HR
-            - ADMIN (nếu cần xem)
-            
-            Ghi chú:
-            - Chỉ trả về phòng ban active = true
-            """
-    )
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lấy danh sách phòng ban thành công")
-    })
-    @PreAuthorize("hasAnyRole('HR','ADMIN')")
-    @GetMapping("/active")
-    public ResponseEntity<List<DepartmentDTO>> getAllActive() {
+    	    summary = "Lấy danh sách tất cả phòng ban",
+    	    description = """
+    	        Màn hình:
+    	        - Quản lý phòng ban
+    	        - Xem cơ cấu tổ chức
 
-        return ResponseEntity.ok(departmentService.getAllActive());
-    }
+    	        Role:
+    	        - HR
+    	        - ADMIN
+    	        - EMPLOYEE
+
+    	        Ghi chú:
+    	        - Trả về cả phòng ban đang hoạt động và ngừng hoạt động
+    	        - Có phân trang
+    	        """
+    	)
+    	@ApiResponses({
+    	    @ApiResponse(responseCode = "200", description = "Lấy danh sách phòng ban thành công")
+    	})
+    	@PreAuthorize("hasAnyRole('HR', 'EMPLOYEE')")
+    	@GetMapping
+    	public ResponseEntity<Page<DepartmentDTO>> getAll(
+    	        @RequestParam(defaultValue = "0") int page,
+    	        @RequestParam(defaultValue = "10") int size) {
+
+    	    return ResponseEntity.ok(departmentService.getAll(page, size));
+    	}
 }

@@ -1,6 +1,6 @@
 package com.tlu.hrm.service;
 
-import java.util.List;
+import org.springframework.data.domain.Page;
 
 import com.tlu.hrm.dto.DepartmentCreateDTO;
 import com.tlu.hrm.dto.DepartmentDTO;
@@ -14,5 +14,5 @@ public interface DepartmentService {
 
     void delete(Long id);
 
-    List<DepartmentDTO> getAllActive();
+    Page<DepartmentDTO> getAll(int page, int size);
 }

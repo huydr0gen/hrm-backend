@@ -1,8 +1,8 @@
 package com.tlu.hrm.service;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.tlu.hrm.dto.DepartmentCreateDTO;
@@ -76,16 +76,15 @@ public class DepartmentServiceImpl implements DepartmentService{
         departmentRepository.save(department);
     }
 
-    // ================= GET ALL ACTIVE =================
+    // ================= GET ALL =================
 
     @Override
-    public List<DepartmentDTO> getAllActive() {
+    public Page<DepartmentDTO> getAll(int page, int size) {
 
-        return departmentRepository.findAll()
-                .stream()
-                .filter(Department::isActive)
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
+        Pageable pageable = PageRequest.of(page, size);
+
+        return departmentRepository.findAll(pageable)
+                .map(this::mapToDTO);
     }
 
     // ================= MAP DTO =================
