@@ -310,7 +310,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     }
 
     // =====================================================
-    // LIST APIs (GIỮ NGUYÊN)
+    // LIST APIs
     // =====================================================
     @Override
     public Page<LeaveRequestDTO> getMyRequests(Long userId, int page, int size) {
@@ -360,6 +360,39 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 
         return leaveRequestRepository.findAll(spec, pageable).map(this::toDTO);
     }
+    
+	 // =====================================================
+	 // APPROVER – PENDING LIST (NEW)
+	 // =====================================================
+	 @Override
+	 public Page<LeaveRequestDTO> getPendingForApprover(int page, int size) {
+	
+	     Long userId = getCurrentUserId();
+	
+	     Employee actor = employeeRepo.findByUserId(userId)
+	             .orElseThrow(() -> new RuntimeException("Employee not found"));
+	
+	     Long approverEmployeeId = actor.getId();
+	
+	     // ===== LẤY QUYỀN DUYỆT (CỘNG DỒN) =====
+	     var approvedEmployeeIds =
+	             approvalResolverService.getApprovedEmployeeIds(approverEmployeeId);
+	
+	     var approvedDepartmentIds =
+	             approvalResolverService.getApprovedDepartmentIds(approverEmployeeId);
+	
+	     Pageable pageable =
+	             PageRequest.of(page, size, Sort.by("createdAt").descending());
+	
+	     Specification<LeaveRequest> spec =
+	             LeaveRequestSpecification.buildForApprover(
+	                     approvedEmployeeIds,
+	                     approvedDepartmentIds
+	             );
+	
+	     return leaveRequestRepository.findAll(spec, pageable)
+	             .map(this::toDTO);
+	 }
 
     // =====================================================
     // DTO Mapper

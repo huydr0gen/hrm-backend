@@ -2,6 +2,7 @@ package com.tlu.hrm.spec;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.data.jpa.domain.Specification;
 
@@ -14,12 +15,11 @@ import jakarta.persistence.criteria.Predicate;
 
 public class TimekeepingExplanationSpecification {
 
-	public static Specification<TimekeepingExplanation> build(
-	        TimekeepingExplanationFilterDTO filter,
-	        Long forcedDepartmentId,
-	        Long forcedEmployeeId,
-	        Long forcedApproverId
-	) {
+	public static Specification<TimekeepingExplanation> buildForApprover(
+            TimekeepingExplanationFilterDTO filter,
+            Set<Long> approvedEmployeeIds,
+            Set<Long> approvedDepartmentIds
+    ) {
         return (root, query, cb) -> {
 
             List<Predicate> predicates = new ArrayList<>();
@@ -28,7 +28,31 @@ public class TimekeepingExplanationSpecification {
                     root.join("employee");
 
             // =====================
-            // Filter theo employee code
+            // QUYỀN DUYỆT (CỘNG DỒN)
+            // =====================
+            List<Predicate> approvalPredicates = new ArrayList<>();
+
+            if (approvedEmployeeIds != null && !approvedEmployeeIds.isEmpty()) {
+                approvalPredicates.add(
+                        employeeJoin.get("id").in(approvedEmployeeIds)
+                );
+            }
+
+            if (approvedDepartmentIds != null && !approvedDepartmentIds.isEmpty()) {
+                approvalPredicates.add(
+                        employeeJoin.get("department").get("id")
+                                .in(approvedDepartmentIds)
+                );
+            }
+
+            if (!approvalPredicates.isEmpty()) {
+                predicates.add(
+                        cb.or(approvalPredicates.toArray(new Predicate[0]))
+                );
+            }
+
+            // =====================
+            // FILTER NGHIỆP VỤ
             // =====================
             if (filter.getEmployeeCode() != null && !filter.getEmployeeCode().isBlank()) {
                 predicates.add(
@@ -39,54 +63,6 @@ public class TimekeepingExplanationSpecification {
                 );
             }
 
-            // =====================
-            // Filter theo department (HR)
-            // =====================
-            if (filter.getDepartmentId() != null) {
-                predicates.add(
-                        cb.equal(
-                                employeeJoin.get("department").get("id"),
-                                filter.getDepartmentId()
-                        )
-                );
-            }
-
-            // =====================
-            // Ép department cho MANAGER
-            // =====================
-            if (forcedDepartmentId != null) {
-                predicates.add(
-                        cb.equal(
-                                employeeJoin.get("department").get("id"),
-                                forcedDepartmentId
-                        )
-                );
-            }
-
-            // =====================
-            // Ép employee cho EMPLOYEE
-            // =====================
-            if (forcedEmployeeId != null) {
-                predicates.add(
-                        cb.equal(
-                                employeeJoin.get("id"),
-                                forcedEmployeeId
-                        )
-                );
-            }
-            
-            // =====================
-            // Ép approver cho người duyệt cá nhân
-            // =====================
-            if (forcedApproverId != null) {
-                predicates.add(
-                    cb.equal(root.get("approverId"), forcedApproverId)
-                );
-            }
-
-            // =====================
-            // Filter theo ngày công
-            // =====================
             if (filter.getFromDate() != null) {
                 predicates.add(
                         cb.greaterThanOrEqualTo(
@@ -105,9 +81,6 @@ public class TimekeepingExplanationSpecification {
                 );
             }
 
-            // =====================
-            // Filter theo trạng thái
-            // =====================
             if (filter.getStatus() != null) {
                 predicates.add(
                         cb.equal(

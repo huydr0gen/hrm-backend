@@ -120,45 +120,32 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
         Employee actor = getCurrentEmployee();
         Set<String> roles = getRoles();
 
-        Long forcedDepartmentId = null;
-        Long forcedEmployeeId = null;
-        Long forcedApproverId = null;
+     // =======================
+     // APPROVAL PERMISSIONS
+     // =======================
+     Long approverEmployeeId = actor.getId();
 
-        boolean isHr = roles.contains("ROLE_HR");
-        boolean isManager = roles.contains("ROLE_MANAGER");
+     Set<Long> approvedEmployeeIds =
+             approvalResolverService.getApprovedEmployeeIds(approverEmployeeId);
 
-        // =======================
-        // EMPLOYEE: chỉ thấy đơn của mình
-        // =======================
-        if (roles.contains("ROLE_EMPLOYEE")) {
-            forcedEmployeeId = actor.getId();
-        }
+     Set<Long> approvedDepartmentIds =
+             approvalResolverService.getApprovedDepartmentIds(approverEmployeeId);
 
-        // =======================
-        // MANAGER: chỉ thấy đơn phòng ban
-        // =======================
-        if (isManager) {
-            forcedDepartmentId = actor.getDepartment().getId();
-        }
-
-        // =======================
-        // NGƯỜI DUYỆT CÁ NHÂN
-        // (không có role riêng cho approver)
-        // =======================
-        if (!isHr && !isManager) {
-            forcedApproverId = actor.getUser().getId();
-        }
+     // EMPLOYEE thường: chỉ thấy đơn của mình
+     if (roles.contains("ROLE_EMPLOYEE")) {
+         approvedEmployeeIds = Set.of(actor.getId());
+         approvedDepartmentIds = Set.of();
+     }
 
         Pageable pageable = PageRequest.of(
                 page, size, Sort.by("createdAt").descending()
         );
 
         Specification<TimekeepingExplanation> spec =
-                TimekeepingExplanationSpecification.build(
+                TimekeepingExplanationSpecification.buildForApprover(
                         filter,
-                        forcedDepartmentId,
-                        forcedEmployeeId,
-                        forcedApproverId
+                        approvedEmployeeIds,
+                        approvedDepartmentIds
                 );
 
         return repository.findAll(spec, pageable)

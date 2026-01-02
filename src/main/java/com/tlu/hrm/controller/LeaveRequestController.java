@@ -278,4 +278,28 @@ public class LeaveRequestController {
                 )
         );
     }
+    
+ // =====================================================
+ // APPROVER – PENDING LIST (NEW)
+ // =====================================================
+ @Operation(
+     summary = "Người duyệt xem danh sách đơn nghỉ cần duyệt",
+     description = """
+         Dùng cho Manager / HR được thiết lập duyệt.
+
+         - Áp dụng ApprovalConfig (cá nhân + phòng ban)
+         - Chỉ lấy đơn PENDING
+         - Có phân trang
+         """
+	 )
+	 @PreAuthorize("hasAnyRole('MANAGER','HR')")
+	 @GetMapping("/pending")
+	 public ResponseEntity<Page<LeaveRequestDTO>> pendingForApprover(
+	         @RequestParam(defaultValue = "0") int page,
+	         @RequestParam(defaultValue = "10") int size
+	 ) {
+	     return ResponseEntity.ok(
+	             service.getPendingForApprover(page, size)
+	     );
+	 }
 }

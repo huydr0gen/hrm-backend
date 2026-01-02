@@ -383,6 +383,35 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
 
         repository.delete(ss);
     }
+    
+ // ======================================================
+ // APPROVER – PENDING LIST (APPROVAL CONFIG)
+ // ======================================================
+	 @Override
+	 public Page<SpecialScheduleResponseDTO> getPendingForApprover(
+	         int page,
+	         int size) {
+	
+	     Employee actor = getCurrentEmployee();
+	     Long approverEmployeeId = actor.getId();
+	
+	     Set<Long> approvedEmployeeIds =
+	             approvalResolverService.getApprovedEmployeeIds(approverEmployeeId);
+	
+	     Set<Long> approvedDepartmentIds =
+	             approvalResolverService.getApprovedDepartmentIds(approverEmployeeId);
+	
+	     Pageable pageable = PageRequest.of(page, size);
+	
+	     Specification<SpecialSchedule> spec =
+	             SpecialScheduleSpecification.buildForApprover(
+	                     approvedEmployeeIds,
+	                     approvedDepartmentIds
+	             );
+	
+	     return repository.findAll(spec, pageable)
+	             .map(this::toDTO);
+	 }
 
     // ======================================================
     // WORKING TIME

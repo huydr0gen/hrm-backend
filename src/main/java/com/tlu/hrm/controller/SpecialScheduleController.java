@@ -255,4 +255,27 @@ public class SpecialScheduleController {
                 )
         );
     }
+    
+	 // =====================================================
+	 // APPROVER – PENDING LIST (NEW – APPROVAL CONFIG)
+	 // =====================================================
+	 @Operation(
+	     summary = "Người duyệt xem lịch đặc thù cần xử lý",
+	     description = """
+	         Áp dụng ApprovalConfig (cá nhân + phòng ban).
+	
+	         - Chỉ lấy lịch PENDING
+	         - Có phân trang
+	         """
+	 )
+	 @GetMapping("/pending")
+	 public ResponseEntity<Page<SpecialScheduleResponseDTO>> pendingForApprover(
+	         @RequestParam(defaultValue = "0") int page,
+	         @RequestParam(defaultValue = "10") int size
+	 ) {
+	     return ResponseEntity.ok(
+	             specialScheduleService.getPendingForApprover(page, size)
+	     );
+	 }
+
 }

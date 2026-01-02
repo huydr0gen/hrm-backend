@@ -39,4 +39,6 @@ public interface LeaveRequestService {
         String comment,
         Long actorId
     );
+    
+    Page<LeaveRequestDTO> getPendingForApprover(int page, int size);
 }

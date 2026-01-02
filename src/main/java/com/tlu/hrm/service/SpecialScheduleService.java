@@ -38,4 +38,6 @@ public interface SpecialScheduleService {
     SpecialScheduleResponseDTO decide(Long id, DecisionAction action);
 
     BulkDecisionResultDTO decideMany(List<Long> ids, DecisionAction action);
+    
+    Page<SpecialScheduleResponseDTO> getPendingForApprover(int page, int size);
 }

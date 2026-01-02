@@ -1,6 +1,14 @@
 package com.tlu.hrm.service;
 
+import java.util.Set;
+
 public interface ApprovalResolverService {
 
-	Long resolveApproverId(Long employeeId, Long departmentId);
+	// ===== DÙNG KHI EMPLOYEE TẠO ĐƠN =====
+    Long resolveApproverId(Long employeeId, Long departmentId);
+
+    // ===== DÙNG KHI APPROVER XEM ĐƠN =====
+    Set<Long> getApprovedEmployeeIds(Long approverEmployeeId);
+
+    Set<Long> getApprovedDepartmentIds(Long approverEmployeeId);
 }
