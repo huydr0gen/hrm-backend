@@ -15,6 +15,9 @@ public class Department {
 	
     @Column(nullable = false, unique = true)
     private String name;
+    
+    @Column(length = 255)
+    private String description;
 
     @Column(nullable = false)
     private boolean active = true;
@@ -23,10 +26,11 @@ public class Department {
 		super();
 	}
 
-	public Department(String code, String name, boolean active) {
+	public Department(String code, String name, String description, boolean active) {
 		super();
 		this.code = code;
 		this.name = name;
+		this.description = description;
 		this.active = active;
 	}
 
@@ -52,6 +56,14 @@ public class Department {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
 	public boolean isActive() {

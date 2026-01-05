@@ -22,6 +22,11 @@ public class DepartmentDTO {
         example = "Kế toán"
     )
     private String name;
+    
+    @Schema(
+	    description = "Mô tả phòng ban"
+	)
+	private String description;
 
     @Schema(
         description = "Trạng thái hoạt động",
@@ -51,6 +56,14 @@ public class DepartmentDTO {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
 	public boolean isActive() {

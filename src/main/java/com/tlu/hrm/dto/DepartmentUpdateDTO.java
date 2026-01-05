@@ -6,32 +6,47 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public class DepartmentUpdateDTO {
 
 	@Schema(
-	        description = "Tên phòng ban mới",
-	        example = "Phòng Kế toán",
-	        nullable = true
-	    )
-	    private String name;
+        description = "Tên phòng ban mới",
+        example = "Phòng Kế toán",
+        nullable = true
+    )
+    private String name;
+	
+	@Schema(
+	    description = "Mô tả phòng ban",
+	    example = "Phòng phụ trách tài chính",
+	    nullable = true
+	)
+	private String description;
 
-	    @Schema(
-	        description = "Trạng thái hoạt động của phòng ban",
-	        example = "true",
-	        nullable = true
-	    )
-	    private Boolean active;
+    @Schema(
+        description = "Trạng thái hoạt động của phòng ban",
+        example = "true",
+        nullable = true
+    )
+    private Boolean active;
 
-	    public String getName() {
-	        return name;
-	    }
+    public String getName() {
+        return name;
+    }
 
-	    public void setName(String name) {
-	        this.name = name;
-	    }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	    public Boolean getActive() {
-	        return active;
-	    }
+    public String getDescription() {
+		return description;
+	}
 
-	    public void setActive(Boolean active) {
-	        this.active = active;
-	    }
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public Boolean getActive() {
+        return active;
+    }
+
+    public void setActive(Boolean active) {
+        this.active = active;
+    }
 }

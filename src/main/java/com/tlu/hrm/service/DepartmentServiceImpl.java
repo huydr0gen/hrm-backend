@@ -31,6 +31,7 @@ public class DepartmentServiceImpl implements DepartmentService{
 
         Department department = new Department();
         department.setName(dto.getName());
+        department.setDescription(dto.getDescription());
         department.setCode(generateDepartmentCode());
         department.setActive(true);
 
@@ -52,6 +53,10 @@ public class DepartmentServiceImpl implements DepartmentService{
             }
 
             department.setName(dto.getName());
+        }
+        
+        if (dto.getDescription() != null) {
+            department.setDescription(dto.getDescription());
         }
 
         if (dto.getActive() != null) {
@@ -102,6 +107,7 @@ public class DepartmentServiceImpl implements DepartmentService{
         dto.setId(department.getId());
         dto.setCode(department.getCode());
         dto.setName(department.getName());
+        dto.setDescription(department.getDescription());
         dto.setActive(department.isActive());
         return dto;
     }
