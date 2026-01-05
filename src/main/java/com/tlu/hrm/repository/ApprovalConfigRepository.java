@@ -1,5 +1,6 @@
 package com.tlu.hrm.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -11,14 +12,24 @@ import com.tlu.hrm.enums.ApprovalTargetType;
 
 public interface ApprovalConfigRepository extends JpaRepository<ApprovalConfig, Long> {
 
-	Optional<ApprovalConfig>
+	// ===== LOGIC (ID BASED) =====
+    Optional<ApprovalConfig>
     findByTargetTypeAndTargetIdAndActiveTrue(
-        ApprovalTargetType targetType,
-        Long targetId
+            ApprovalTargetType targetType,
+            Long targetId
     );
-	
-	Page<ApprovalConfig> findByTargetTypeAndActiveTrue(
-	    ApprovalTargetType targetType,
-	    Pageable pageable
-	);
+
+    List<ApprovalConfig> findByApproverIdAndActiveTrue(Long approverId);
+
+    // ===== UI / UX (CODE BASED) =====
+    Optional<ApprovalConfig>
+    findByTargetTypeAndTargetCodeAndActiveTrue(
+            ApprovalTargetType targetType,
+            String targetCode
+    );
+
+    Page<ApprovalConfig> findByTargetTypeAndActiveTrue(
+            ApprovalTargetType targetType,
+            Pageable pageable
+    );
 }

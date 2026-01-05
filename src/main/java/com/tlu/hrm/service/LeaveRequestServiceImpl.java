@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -51,8 +52,9 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 	}
 
 	// =====================================================
-    // Helper: current user id
+    // Helper
     // =====================================================
+
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
@@ -80,6 +82,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     // =====================================================
     // CREATE (EMPLOYEE)
     // =====================================================
+
     @Override
     @Transactional
     public LeaveRequestDTO createRequest(LeaveRequestCreateDTO dto) {
@@ -93,7 +96,6 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             throw new IllegalArgumentException("Start date must be before end date");
         }
 
-        // 1️⃣ Check overlap với APPROVED
         boolean overlap = leaveRequestRepository.existsApprovedOverlap(
                 emp.getId(),
                 dto.getStartDate(),
@@ -103,7 +105,6 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             throw new IllegalStateException("Leave overlaps with approved request");
         }
 
-        // 2️⃣ Check quota (ANNUAL only)
         if (dto.getType() == LeaveType.ANNUAL) {
 
             int usedDays = leaveRequestRepository
@@ -123,7 +124,6 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             }
         }
 
-        // 3️⃣ Resolve approver
         Long approverId = approvalResolverService.resolveApproverId(
                 emp.getId(),
                 emp.getDepartment().getId()
@@ -141,14 +141,16 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 
         LeaveRequest saved = leaveRequestRepository.save(req);
 
-        audit.log(userId, "LEAVE_CREATE", "Created leave request id=" + saved.getId());
+        audit.log(userId, "LEAVE_CREATE",
+                "Create leave request id=" + saved.getId());
 
         return toDTO(saved);
     }
 
     // =====================================================
-    // UPDATE (EMPLOYEE – ONLY PENDING)
+    // UPDATE (EMPLOYEE)
     // =====================================================
+
     @Override
     @Transactional
     public LeaveRequestDTO employeeUpdate(Long id, LeaveRequestUpdateDTO dto, Long userId) {
@@ -175,7 +177,6 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             throw new IllegalArgumentException("Start date must be before end date");
         }
 
-        // Re-check overlap (exclude itself)
         boolean overlap = leaveRequestRepository.existsApprovedOverlapExclude(
                 emp.getId(),
                 req.getId(),
@@ -186,7 +187,6 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             throw new IllegalStateException("Leave overlaps with approved request");
         }
 
-        // Re-check quota (ANNUAL)
         if (req.getType() == LeaveType.ANNUAL) {
 
             int usedDays = leaveRequestRepository
@@ -211,14 +211,67 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 
         LeaveRequest saved = leaveRequestRepository.save(req);
 
-        audit.log(userId, "LEAVE_UPDATE", "Updated leave request id=" + id);
+        audit.log(userId, "LEAVE_UPDATE",
+                "Update leave request id=" + id);
 
         return toDTO(saved);
     }
 
     // =====================================================
-    // DECIDE (APPROVER)
+    // GET / FILTER
     // =====================================================
+
+    @Override
+    public LeaveRequestDTO getById(Long id) {
+        return leaveRequestRepository.findById(id)
+                .map(this::toDTO)
+                .orElseThrow(() -> new RuntimeException("Leave request not found"));
+    }
+
+    @Override
+    public Page<LeaveRequestDTO> getMyRequests(Long userId, int page, int size) {
+
+        Employee emp = employeeRepo.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        return leaveRequestRepository
+                .findAll(
+                        (root, q, cb) -> cb.equal(root.get("employee"), emp),
+                        pageable
+                )
+                .map(this::toDTO);
+    }
+
+    @Override
+    public Page<LeaveRequestDTO> getAllFiltered(
+            String employeeName,
+            Long departmentId,
+            String status,
+            String type,
+            int page,
+            int size
+    ) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        Specification<LeaveRequest> spec = Specification
+                .where(LeaveRequestSpecification.hasEmployeeName(employeeName))
+                .and(LeaveRequestSpecification.hasDepartment(departmentId))
+                .and(LeaveRequestSpecification.hasStatus(
+                        status != null ? LeaveStatus.valueOf(status) : null))
+                .and(LeaveRequestSpecification.hasType(
+                        type != null ? LeaveType.valueOf(type) : null));
+
+        return leaveRequestRepository.findAll(spec, pageable)
+                .map(this::toDTO);
+    }
+
+    // =====================================================
+    // DECIDE
+    // =====================================================
+
     @Override
     @Transactional
     public LeaveRequestDTO decide(Long id, DecisionAction action, String note, Long actorId) {
@@ -234,13 +287,11 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             throw new SecurityException("You are not assigned approver");
         }
 
-        if (action == DecisionAction.APPROVE) {
-            req.setStatus(LeaveStatus.APPROVED);
-        } else if (action == DecisionAction.REJECT) {
-            req.setStatus(LeaveStatus.REJECTED);
-        } else {
-            throw new IllegalArgumentException("Unsupported decision action");
-        }
+        req.setStatus(
+                action == DecisionAction.APPROVE
+                        ? LeaveStatus.APPROVED
+                        : LeaveStatus.REJECTED
+        );
 
         req.setManagerNote(note);
         req.setDecidedBy(actorId);
@@ -248,49 +299,30 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         req.setUpdatedAt(LocalDateTime.now());
 
         LeaveRequest saved = leaveRequestRepository.save(req);
-        
+
         if (saved.getStatus() == LeaveStatus.APPROVED) {
-
-            Long employeeId = saved.getEmployee().getId();
-            LocalDate start = saved.getStartDate();
-            LocalDate end = saved.getEndDate();
-
-            // tính lại công cho từng ngày nghỉ
-            LocalDate d = start;
-            while (!d.isAfter(end)) {
-                attendanceCalculationService.recalculateDaily(employeeId, d);
+            LocalDate d = saved.getStartDate();
+            while (!d.isAfter(saved.getEndDate())) {
+                attendanceCalculationService.recalculateDaily(
+                        saved.getEmployee().getId(), d);
                 d = d.plusDays(1);
             }
         }
 
         audit.log(actorId, "LEAVE_DECIDE",
-                action.name() + " leave request id=" + id + " note=" + note);
+                action.name() + " leave request id=" + id);
 
         return toDTO(saved);
     }
-    
-    // =====================================================
-    // get by id
-    // =====================================================
-    @Override
-    public LeaveRequestDTO getById(Long id) {
 
-        LeaveRequest req = leaveRequestRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Leave request not found"));
-
-        return toDTO(req);
-    }
-
-    // =====================================================
-    // BULK DECIDE
-    // =====================================================
     @Override
     @Transactional
     public BulkDecisionResultDTO decideMany(
             List<Long> ids,
             DecisionAction action,
             String note,
-            Long actorId) {
+            Long actorId
+    ) {
 
         List<Long> success = new ArrayList<>();
         List<Long> failed = new ArrayList<>();
@@ -304,85 +336,49 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             }
         }
 
-        audit.log(actorId, "LEAVE_DECIDE_BULK", action.name() + " ids=" + ids);
+        audit.log(actorId, "LEAVE_DECIDE_BULK",
+                action.name() + " leaveRequestIds=" + ids);
 
         return new BulkDecisionResultDTO(success, failed);
     }
 
     // =====================================================
-    // LIST APIs
+    // APPROVER – PENDING LIST
     // =====================================================
-    @Override
-    public Page<LeaveRequestDTO> getMyRequests(Long userId, int page, int size) {
 
-        Employee emp = employeeRepo.findByUserId(userId)
+    @Override
+    public Page<LeaveRequestDTO> getPendingForApprover(int page, int size) {
+
+        Long userId = getCurrentUserId();
+
+        Employee actor = employeeRepo.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Long approverEmployeeId = actor.getId();
 
-        return leaveRequestRepository
-                .findAll((root, q, cb) -> cb.equal(root.get("employee"), emp), pageable)
+        Set<Long> approvedEmployeeIds =
+                approvalResolverService.getApprovedEmployeeIds(approverEmployeeId);
+
+        Set<Long> approvedDepartmentIds =
+                approvalResolverService.getApprovedDepartmentIds(approverEmployeeId);
+
+        Pageable pageable =
+                PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        Specification<LeaveRequest> spec =
+                LeaveRequestSpecification.buildForApprover(
+                        approvedEmployeeIds,
+                        approvedDepartmentIds
+                );
+
+        return leaveRequestRepository.findAll(spec, pageable)
                 .map(this::toDTO);
     }
-    
-    @Override
-    public Page<LeaveRequestDTO> getAllFiltered(
-            String employeeName,
-            Long departmentId,
-            String status,
-            String type,
-            int page,
-            int size) {
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-
-        Specification<LeaveRequest> spec = Specification
-                .where(LeaveRequestSpecification.hasEmployeeName(employeeName))
-                .and(LeaveRequestSpecification.hasDepartment(departmentId))
-                .and(LeaveRequestSpecification.hasStatus(
-                        status != null ? LeaveStatus.valueOf(status) : null))
-                .and(LeaveRequestSpecification.hasType(
-                        type != null ? LeaveType.valueOf(type) : null));
-
-        return leaveRequestRepository.findAll(spec, pageable).map(this::toDTO);
-    }
-    
-	 // =====================================================
-	 // APPROVER – PENDING LIST (NEW)
-	 // =====================================================
-	 @Override
-	 public Page<LeaveRequestDTO> getPendingForApprover(int page, int size) {
-	
-	     Long userId = getCurrentUserId();
-	
-	     Employee actor = employeeRepo.findByUserId(userId)
-	             .orElseThrow(() -> new RuntimeException("Employee not found"));
-	
-	     Long approverEmployeeId = actor.getId();
-	
-	     // ===== LẤY QUYỀN DUYỆT (CỘNG DỒN) =====
-	     var approvedEmployeeIds =
-	             approvalResolverService.getApprovedEmployeeIds(approverEmployeeId);
-	
-	     var approvedDepartmentIds =
-	             approvalResolverService.getApprovedDepartmentIds(approverEmployeeId);
-	
-	     Pageable pageable =
-	             PageRequest.of(page, size, Sort.by("createdAt").descending());
-	
-	     Specification<LeaveRequest> spec =
-	             LeaveRequestSpecification.buildForApprover(
-	                     approvedEmployeeIds,
-	                     approvedDepartmentIds
-	             );
-	
-	     return leaveRequestRepository.findAll(spec, pageable)
-	             .map(this::toDTO);
-	 }
 
     // =====================================================
-    // DTO Mapper
+    // DTO MAPPER
     // =====================================================
+
     private LeaveRequestDTO toDTO(LeaveRequest req) {
 
         LeaveRequestDTO dto = new LeaveRequestDTO();

@@ -16,37 +16,44 @@ public class ApprovalConfigCreateDTO {
         example = "DEPARTMENT",
         allowableValues = {"EMPLOYEE", "DEPARTMENT"}
     )
-	private ApprovalTargetType targetType;
-	
-	@Schema(
-        description = "ID của đối tượng được áp dụng (employeeId hoặc departmentId)",
-        example = "1"
+    private ApprovalTargetType targetType;
+
+    @Schema(
+        description = "Mã đối tượng được áp dụng (employeeCode hoặc departmentCode)",
+        example = "EMP005 / IT"
     )
-    private Long targetId;
-	
-	@Schema(
-        description = "User ID của người duyệt",
-        example = "3"
+    private String targetCode;
+
+    @Schema(
+        description = "Mã nhân viên của người duyệt",
+        example = "EMP003"
     )
-    private Long approverId;
+    private String approverCode;
+
 	public ApprovalTargetType getTargetType() {
 		return targetType;
 	}
+
 	public void setTargetType(ApprovalTargetType targetType) {
 		this.targetType = targetType;
 	}
-	public Long getTargetId() {
-		return targetId;
+
+	public String getTargetCode() {
+		return targetCode;
 	}
-	public void setTargetId(Long targetId) {
-		this.targetId = targetId;
+
+	public void setTargetCode(String targetCode) {
+		this.targetCode = targetCode;
 	}
-	public Long getApproverId() {
-		return approverId;
+
+	public String getApproverCode() {
+		return approverCode;
 	}
-	public void setApproverId(Long approverId) {
-		this.approverId = approverId;
+
+	public void setApproverCode(String approverCode) {
+		this.approverCode = approverCode;
 	}
+	
     
     
 }

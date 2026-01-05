@@ -39,126 +39,128 @@ public class ApprovalConfigServiceImpl implements ApprovalConfigService {
     public ApprovalConfigDTO createOrUpdate(ApprovalConfigCreateDTO dto) {
 
         if (dto.getTargetType() == null
-                || dto.getTargetId() == null
-                || dto.getApproverId() == null) {
+                || dto.getTargetCode() == null
+                || dto.getApproverCode() == null) {
             throw new RuntimeException("Thiếu dữ liệu thiết lập người duyệt");
         }
 
+        // =====================================================
+        // Resolve TARGET (CODE → ID)
+        // =====================================================
+        Long targetId;
+        String targetName;
+
+        if (dto.getTargetType() == ApprovalTargetType.EMPLOYEE) {
+            Employee emp = employeeRepository.findByCode(dto.getTargetCode())
+                    .orElseThrow(() -> new RuntimeException("Target employee not found"));
+            targetId = emp.getId();
+            targetName = emp.getFullName();
+
+        } else {
+            Department dept = departmentRepository.findByCode(dto.getTargetCode())
+                    .orElseThrow(() -> new RuntimeException("Target department not found"));
+            targetId = dept.getId();
+            targetName = dept.getName();
+        }
+
+        // =====================================================
+        // Resolve APPROVER (CODE → ID)
+        // =====================================================
+        Employee approver = employeeRepository.findByCode(dto.getApproverCode())
+                .orElseThrow(() -> new RuntimeException("Approver not found"));
+
+        Long approverId = approver.getId();
+
+        // =====================================================
+        // Find existing config by LOGIC (targetType + targetId)
+        // =====================================================
         ApprovalConfig config = approvalConfigRepository
                 .findByTargetTypeAndTargetIdAndActiveTrue(
                         dto.getTargetType(),
-                        dto.getTargetId()
+                        targetId
                 )
                 .orElse(null);
 
-        Long oldApproverId = null;
+        String oldApproverCode = null;
         String action;
 
         if (config == null) {
             // ===== CREATE =====
             config = new ApprovalConfig(
                     dto.getTargetType(),
-                    dto.getTargetId(),
-                    dto.getApproverId()
+                    targetId,
+                    approverId,
+                    dto.getTargetCode(),
+                    dto.getApproverCode()
             );
             action = "APPROVAL_CONFIG_CREATE";
         } else {
             // ===== UPDATE =====
-            oldApproverId = config.getApproverId();
-            config.setApproverId(dto.getApproverId());
+            oldApproverCode = config.getApproverCode();
+            config.setApproverId(approverId);
+            config.setApproverCode(dto.getApproverCode());
             action = "APPROVAL_CONFIG_UPDATE";
         }
 
-        config.setActive(true);
         ApprovalConfig saved = approvalConfigRepository.save(config);
 
-        // ==== GHI AUDIT LOG ====
+        // =====================================================
+        // AUDIT LOG
+        // =====================================================
         AuditLog log = new AuditLog();
         log.setUserId(getCurrentUserId());
         log.setAction(action);
         log.setDetails(buildAuditDetails(
                 dto.getTargetType().name(),
-                dto.getTargetId(),
-                oldApproverId,
-                dto.getApproverId()
+                dto.getTargetCode(),
+                oldApproverCode,
+                dto.getApproverCode()
         ));
         auditLogRepository.save(log);
 
-        return mapToDTO(saved);
+        return mapToDTO(saved, targetName, approver.getFullName());
     }
 
     // =====================================================
-    // Helper methods
+    // DTO MAPPER
     // =====================================================
-
-    private ApprovalConfigDTO mapToDTO(ApprovalConfig config) {
+    private ApprovalConfigDTO mapToDTO(
+            ApprovalConfig config,
+            String targetName,
+            String approverName
+    ) {
         ApprovalConfigDTO dto = new ApprovalConfigDTO();
         dto.setId(config.getId());
         dto.setTargetType(config.getTargetType());
-        dto.setTargetId(config.getTargetId());
+        dto.setTargetCode(config.getTargetCode());
+        dto.setTargetName(targetName);
+        dto.setApproverCode(config.getApproverCode());
+        dto.setApproverName(approverName);
         dto.setActive(config.isActive());
-
-        // =====================================================
-        // TARGET INFO
-        // =====================================================
-
-        if (config.getTargetType() == ApprovalTargetType.EMPLOYEE) {
-
-            Employee emp = employeeRepository
-                    .findById(config.getTargetId())
-                    .orElseThrow(() ->
-                            new RuntimeException("Target employee not found"));
-
-            dto.setTargetCode(emp.getCode());
-            dto.setTargetName(emp.getFullName());
-
-        } else if (config.getTargetType() == ApprovalTargetType.DEPARTMENT) {
-
-            Department dept = departmentRepository
-                    .findById(config.getTargetId())
-                    .orElseThrow(() ->
-                            new RuntimeException("Target department not found"));
-
-            dto.setTargetCode(dept.getCode());
-            dto.setTargetName(dept.getName());
-        }
-
-        // =====================================================
-        // APPROVER INFO
-        // =====================================================
-
-        Employee approver = employeeRepository
-                .findById(config.getApproverId())
-                .orElseThrow(() ->
-                        new RuntimeException("Approver not found"));
-
-        dto.setApproverId(approver.getId());
-        dto.setApproverCode(approver.getCode());
-        dto.setApproverName(approver.getFullName());
-
         return dto;
     }
 
     private String buildAuditDetails(
             String targetType,
-            Long targetId,
-            Long oldApproverId,
-            Long newApproverId
+            String targetCode,
+            String oldApproverCode,
+            String newApproverCode
     ) {
-        if (oldApproverId == null) {
+        if (oldApproverCode == null) {
             return String.format(
-                    "Create approver for %s[%d] -> %d",
+                    "Create approver for %s[%s] -> %s",
                     targetType,
-                    targetId,
-                    newApproverId
+                    targetCode,
+                    newApproverCode
             );
         }
+
         return String.format(
-                "Update approver for %s[%d]: %d -> %d",
+                "Update approver for %s[%s]: %s -> %s",
                 targetType,
-                targetId,
-                oldApproverId,
-                newApproverId
+                targetCode,
+                oldApproverCode,
+                newApproverCode
         );
     }
 
@@ -171,11 +173,9 @@ public class ApprovalConfigServiceImpl implements ApprovalConfigService {
             return null;
         }
 
-        Object principal = auth.getPrincipal();
-        if (principal instanceof CustomUserDetails userDetails) {
+        if (auth.getPrincipal() instanceof CustomUserDetails userDetails) {
             return userDetails.getUser().getId();
         }
-
         return null;
     }
 }

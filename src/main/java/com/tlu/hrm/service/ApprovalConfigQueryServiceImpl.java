@@ -58,7 +58,7 @@ public class ApprovalConfigQueryServiceImpl implements ApprovalConfigQueryServic
 
 	            // ===== TARGET DEPARTMENT =====
 	            Department dept = departmentRepository
-	                    .findById(cfg.getTargetId())
+	                    .findByCode(cfg.getTargetCode())
 	                    .orElse(null);
 
 	            if (dept != null) {
@@ -75,7 +75,7 @@ public class ApprovalConfigQueryServiceImpl implements ApprovalConfigQueryServic
 
 	            // ===== APPROVER =====
 	            Employee approver = employeeRepository
-	                    .findById(cfg.getApproverId())
+	                    .findByCode(cfg.getApproverCode())
 	                    .orElse(null);
 
 	            if (approver != null) {
@@ -120,7 +120,7 @@ public class ApprovalConfigQueryServiceImpl implements ApprovalConfigQueryServic
 
 	            // ===== TARGET EMPLOYEE =====
 	            Employee emp = employeeRepository
-	                    .findById(cfg.getTargetId())
+	                    .findByCode(cfg.getTargetCode())
 	                    .orElseThrow(() ->
 	                            new RuntimeException("Employee not found"));
 
@@ -130,7 +130,7 @@ public class ApprovalConfigQueryServiceImpl implements ApprovalConfigQueryServic
 
 	            // ===== APPROVER =====
 	            Employee approver = employeeRepository
-	                    .findById(cfg.getApproverId())
+	                    .findByCode(cfg.getApproverCode())
 	                    .orElse(null);
 
 	            if (approver != null) {

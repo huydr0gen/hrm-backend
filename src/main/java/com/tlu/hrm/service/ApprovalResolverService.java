@@ -5,10 +5,12 @@ import java.util.Set;
 public interface ApprovalResolverService {
 
 	// ===== DÙNG KHI EMPLOYEE TẠO ĐƠN =====
-    Long resolveApproverId(Long employeeId, Long departmentId);
+	Long resolveApproverId(Long employeeId, Long departmentId);
 
     // ===== DÙNG KHI APPROVER XEM ĐƠN =====
-    Set<Long> getApprovedEmployeeIds(Long approverEmployeeId);
+	Set<Long> getApprovedEmployeeIds(Long approverEmployeeId);
 
-    Set<Long> getApprovedDepartmentIds(Long approverEmployeeId);
+	Set<Long> getApprovedDepartmentIds(Long approverEmployeeId);
+	
+	String resolveApproverCode(String employeeCode, String departmentCode);
 }

@@ -19,22 +19,29 @@ public class ApprovalConfig {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // EMPLOYEE / DEPARTMENT
     @Enumerated(EnumType.STRING)
     @Column(name = "target_type", nullable = false)
     private ApprovalTargetType targetType;
 
+    // ===== LOGIC =====
     @Column(name = "target_id", nullable = false)
     private Long targetId;
-    // employeeId hoặc departmentId
 
     @Column(name = "approver_id", nullable = false)
     private Long approverId;
-    // userId của người duyệt
+
+    // ===== UI / UX =====
+    @Column(name = "target_code", nullable = false, length = 50)
+    private String targetCode;
+
+    @Column(name = "approver_code", nullable = false, length = 50)
+    private String approverCode;
 
     @Column(nullable = false)
     private boolean active = true;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
 	public ApprovalConfig() {
@@ -44,22 +51,28 @@ public class ApprovalConfig {
 	public ApprovalConfig(
 	        ApprovalTargetType targetType,
 	        Long targetId,
-	        Long approverId
+	        Long approverId,
+	        String targetCode,
+	        String approverCode
 	) {
 	    this.targetType = targetType;
 	    this.targetId = targetId;
 	    this.approverId = approverId;
+	    this.targetCode = targetCode;
+	    this.approverCode = approverCode;
 	    this.active = true;
 	    this.createdAt = LocalDateTime.now();
 	}
 
-	public ApprovalConfig(Long id, ApprovalTargetType targetType, Long targetId, Long approverId, boolean active,
-			LocalDateTime createdAt) {
+	public ApprovalConfig(Long id, ApprovalTargetType targetType, Long targetId, Long approverId, String targetCode,
+			String approverCode, boolean active, LocalDateTime createdAt) {
 		super();
 		this.id = id;
 		this.targetType = targetType;
 		this.targetId = targetId;
 		this.approverId = approverId;
+		this.targetCode = targetCode;
+		this.approverCode = approverCode;
 		this.active = active;
 		this.createdAt = createdAt;
 	}
@@ -96,6 +109,22 @@ public class ApprovalConfig {
 		this.approverId = approverId;
 	}
 
+	public String getTargetCode() {
+		return targetCode;
+	}
+
+	public void setTargetCode(String targetCode) {
+		this.targetCode = targetCode;
+	}
+
+	public String getApproverCode() {
+		return approverCode;
+	}
+
+	public void setApproverCode(String approverCode) {
+		this.approverCode = approverCode;
+	}
+
 	public boolean isActive() {
 		return active;
 	}
@@ -111,6 +140,7 @@ public class ApprovalConfig {
 	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
 	}
-    
+
+	
     
 }

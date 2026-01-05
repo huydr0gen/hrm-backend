@@ -5,83 +5,96 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.tlu.hrm.entities.ApprovalConfig;
 import com.tlu.hrm.enums.ApprovalTargetType;
 import com.tlu.hrm.repository.ApprovalConfigRepository;
 
 @Service
 public class ApprovalResolverServiceImpl implements ApprovalResolverService {
 
-	private final ApprovalConfigRepository repository;
+	private final ApprovalConfigRepository approvalConfigRepository;
 
-	public ApprovalResolverServiceImpl(ApprovalConfigRepository repository) {
+	public ApprovalResolverServiceImpl(ApprovalConfigRepository approvalConfigRepository) {
 		super();
-		this.repository = repository;
+		this.approvalConfigRepository = approvalConfigRepository;
 	}
 	
 	// =====================================================
-    // DÙNG KHI EMPLOYEE TẠO ĐƠN
+    // CORE – ID BASED (CHO NGHIỆP VỤ)
     // =====================================================
+
     @Override
     public Long resolveApproverId(Long employeeId, Long departmentId) {
 
-        // 1️⃣ cá nhân
-        var personal = repository
-            .findByTargetTypeAndTargetIdAndActiveTrue(
-                ApprovalTargetType.EMPLOYEE,
-                employeeId
-            );
+        return approvalConfigRepository
+                .findByTargetTypeAndTargetIdAndActiveTrue(
+                        ApprovalTargetType.EMPLOYEE,
+                        employeeId
+                )
+                .map(ApprovalConfig::getApproverId)
 
-        if (personal.isPresent()) {
-            return personal.get().getApproverId();
-        }
+                .or(() ->
+                        approvalConfigRepository
+                                .findByTargetTypeAndTargetIdAndActiveTrue(
+                                        ApprovalTargetType.DEPARTMENT,
+                                        departmentId
+                                )
+                                .map(ApprovalConfig::getApproverId)
+                )
 
-        // 2️⃣ phòng ban
-        var department = repository
-            .findByTargetTypeAndTargetIdAndActiveTrue(
-                ApprovalTargetType.DEPARTMENT,
-                departmentId
-            );
-
-        if (department.isPresent()) {
-            return department.get().getApproverId();
-        }
-
-        throw new RuntimeException(
-            "Chưa cấu hình người duyệt cho nhân viên này"
-        );
+                .orElseThrow(() ->
+                        new RuntimeException("Chưa cấu hình người duyệt cho nhân viên này"));
     }
-
-    // =====================================================
-    // DÙNG KHI APPROVER XEM ĐƠN CẦN DUYỆT
-    // =====================================================
 
     @Override
     public Set<Long> getApprovedEmployeeIds(Long approverEmployeeId) {
 
-        return repository
-            .findAll()
-            .stream()
-            .filter(c ->
-                c.isActive()
-                && c.getApproverId().equals(approverEmployeeId)
-                && c.getTargetType() == ApprovalTargetType.EMPLOYEE
-            )
-            .map(c -> c.getTargetId())
-            .collect(Collectors.toSet());
+        return approvalConfigRepository
+                .findByApproverIdAndActiveTrue(approverEmployeeId)
+                .stream()
+                .filter(c -> c.getTargetType() == ApprovalTargetType.EMPLOYEE)
+                .map(ApprovalConfig::getTargetId)
+                .collect(Collectors.toSet());
     }
 
     @Override
     public Set<Long> getApprovedDepartmentIds(Long approverEmployeeId) {
 
-        return repository
-            .findAll()
-            .stream()
-            .filter(c ->
-                c.isActive()
-                && c.getApproverId().equals(approverEmployeeId)
-                && c.getTargetType() == ApprovalTargetType.DEPARTMENT
-            )
-            .map(c -> c.getTargetId())
-            .collect(Collectors.toSet());
+        return approvalConfigRepository
+                .findByApproverIdAndActiveTrue(approverEmployeeId)
+                .stream()
+                .filter(c -> c.getTargetType() == ApprovalTargetType.DEPARTMENT)
+                .map(ApprovalConfig::getTargetId)
+                .collect(Collectors.toSet());
+    }
+
+    // =====================================================
+    // CODE BASED – DÙNG CHO UI / CONFIG
+    // =====================================================
+
+    @Override
+    public String resolveApproverCode(
+            String employeeCode,
+            String departmentCode
+    ) {
+
+        return approvalConfigRepository
+                .findByTargetTypeAndTargetCodeAndActiveTrue(
+                        ApprovalTargetType.EMPLOYEE,
+                        employeeCode
+                )
+                .map(ApprovalConfig::getApproverCode)
+
+                .or(() ->
+                        approvalConfigRepository
+                                .findByTargetTypeAndTargetCodeAndActiveTrue(
+                                        ApprovalTargetType.DEPARTMENT,
+                                        departmentCode
+                                )
+                                .map(ApprovalConfig::getApproverCode)
+                )
+
+                .orElseThrow(() ->
+                        new RuntimeException("Chưa cấu hình người duyệt cho nhân viên này"));
     }
 }

@@ -20,19 +20,29 @@ public class ApprovalConfigDTO {
     )
     private ApprovalTargetType targetType;
 
+    // ===== LOGIC=====
+
     @Schema(
-        description = "ID của đối tượng được áp dụng (ID nhân viên hoặc ID phòng ban)",
-        example = "5"
+        description = "ID đối tượng áp dụng (employeeId hoặc departmentId)",
+        example = "5",
+        accessMode = Schema.AccessMode.READ_ONLY
     )
     private Long targetId;
 
+    @Schema(
+        description = "ID của người duyệt",
+        example = "3",
+        accessMode = Schema.AccessMode.READ_ONLY
+    )
+    private Long approverId;
+
     // =====================================================
-    // TARGET DISPLAY
+    // TARGET DISPLAY (UI / UX)
     // =====================================================
 
     @Schema(
         description = "Mã đối tượng áp dụng (mã nhân viên hoặc mã phòng ban)",
-        example = "EMP005 / IT"
+        example = "EMP005 / DEP003"
     )
     private String targetCode;
 
@@ -43,14 +53,8 @@ public class ApprovalConfigDTO {
     private String targetName;
 
     // =====================================================
-    // APPROVER INFO
+    // APPROVER INFO (UI / UX)
     // =====================================================
-
-    @Schema(
-        description = "ID của người duyệt",
-        example = "3"
-    )
-    private Long approverId;
 
     @Schema(
         description = "Mã nhân viên của người duyệt",
@@ -98,6 +102,14 @@ public class ApprovalConfigDTO {
 		this.targetId = targetId;
 	}
 
+	public Long getApproverId() {
+		return approverId;
+	}
+
+	public void setApproverId(Long approverId) {
+		this.approverId = approverId;
+	}
+
 	public String getTargetCode() {
 		return targetCode;
 	}
@@ -112,14 +124,6 @@ public class ApprovalConfigDTO {
 
 	public void setTargetName(String targetName) {
 		this.targetName = targetName;
-	}
-
-	public Long getApproverId() {
-		return approverId;
-	}
-
-	public void setApproverId(Long approverId) {
-		this.approverId = approverId;
 	}
 
 	public String getApproverCode() {
@@ -145,7 +149,7 @@ public class ApprovalConfigDTO {
 	public void setActive(boolean active) {
 		this.active = active;
 	}
-	
-	
     
+    
+
 }
