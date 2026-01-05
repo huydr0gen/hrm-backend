@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.tlu.hrm.enums.EmployeeStatus;
+import com.tlu.hrm.enums.Gender;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,7 +17,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 @Entity
@@ -34,6 +34,16 @@ public class Employee {
     private String fullName;
 
     private LocalDate dateOfBirth;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender")
+    private Gender gender;
+
+    @Column(name = "citizen_id", nullable = false, unique = true, length = 20)
+    private String citizenId;
+
+    @Column(name = "address", length = 255)
+    private String address;
 
     @Column(nullable = false)
     private String position;
@@ -61,13 +71,17 @@ public class Employee {
 
     public Employee() {}
 
-	public Employee(Long id, String code, String fullName, LocalDate dateOfBirth, String position,
-			Department department, EmployeeStatus status, String email, String phoneNumber, User user, LocalDateTime createdAt) {
+	public Employee(Long id, String code, String fullName, LocalDate dateOfBirth, Gender gender, String citizenId,
+			String address, String position, Department department, EmployeeStatus status, String email,
+			String phoneNumber, User user, LocalDateTime createdAt) {
 		super();
 		this.id = id;
 		this.code = code;
 		this.fullName = fullName;
 		this.dateOfBirth = dateOfBirth;
+		this.gender = gender;
+		this.citizenId = citizenId;
+		this.address = address;
 		this.position = position;
 		this.department = department;
 		this.status = status;
@@ -107,6 +121,30 @@ public class Employee {
 
 	public void setDateOfBirth(LocalDate dateOfBirth) {
 		this.dateOfBirth = dateOfBirth;
+	}
+
+	public Gender getGender() {
+		return gender;
+	}
+
+	public void setGender(Gender gender) {
+		this.gender = gender;
+	}
+
+	public String getCitizenId() {
+		return citizenId;
+	}
+
+	public void setCitizenId(String citizenId) {
+		this.citizenId = citizenId;
+	}
+
+	public String getAddress() {
+		return address;
+	}
+
+	public void setAddress(String address) {
+		this.address = address;
 	}
 
 	public String getPosition() {
@@ -157,19 +195,14 @@ public class Employee {
 		this.user = user;
 	}
 
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
 	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
 	}
 
-	@PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    
+	
 	
 }

@@ -33,29 +33,40 @@ public class EmployeeServiceImpl implements EmployeeService {
 	}
 	
 	// ================= CREATE =================
-    @Override
-    public EmployeeDTO createEmployee(EmployeeCreateDTO dto) {
+	@Override
+	public EmployeeDTO createEmployee(EmployeeCreateDTO dto) {
 
-        Department department = departmentRepository.findById(dto.getDepartmentId())
-                .orElseThrow(() -> new RuntimeException("Department not found"));
+	    // ===== CHECK CITIZEN ID =====
+	    if (dto.getCitizenId() == null || dto.getCitizenId().isBlank()) {
+	        throw new RuntimeException("Citizen ID is required");
+	    }
 
-        Employee emp = new Employee();
+	    if (employeeRepository.existsByCitizenId(dto.getCitizenId())) {
+	        throw new RuntimeException("Citizen ID already exists");
+	    }
 
-        // =====================================================
-        // 🔹 AUTO GENERATE EMPLOYEE CODE (SAFE, DB-BASED)
-        // =====================================================
-        emp.setCode(generateEmployeeCode());
+	    Department department = departmentRepository.findById(dto.getDepartmentId())
+	            .orElseThrow(() -> new RuntimeException("Department not found"));
 
-        emp.setFullName(dto.getFullName());
-        emp.setDateOfBirth(dto.getDateOfBirth());
-        emp.setPosition(dto.getPosition());
-        emp.setDepartment(department);
-        emp.setEmail(null); // email tạo sau khi có user
-        emp.setPhoneNumber(dto.getPhoneNumber());
+	    Employee emp = new Employee();
 
-        Employee saved = employeeRepository.save(emp);
-        return mapToDTO(saved);
-    }
+	    // AUTO CODE
+	    emp.setCode(generateEmployeeCode());
+
+	    emp.setFullName(dto.getFullName());
+	    emp.setDateOfBirth(dto.getDateOfBirth());
+	    emp.setGender(dto.getGender());         
+	    emp.setCitizenId(dto.getCitizenId());   
+	    emp.setAddress(dto.getAddress());        
+
+	    emp.setPosition(dto.getPosition());
+	    emp.setDepartment(department);
+	    emp.setEmail(null);
+	    emp.setPhoneNumber(dto.getPhoneNumber());
+
+	    Employee saved = employeeRepository.save(emp);
+	    return mapToDTO(saved);
+	}
 
     // =====================================================
     // 🔹 SUPPORT METHOD: GENERATE EMPLOYEE CODE
@@ -126,6 +137,13 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         if (dto.getFullName() != null) emp.setFullName(dto.getFullName());
         if (dto.getDateOfBirth() != null) emp.setDateOfBirth(dto.getDateOfBirth());
+        
+        if (dto.getGender() != null)
+            emp.setGender(dto.getGender());
+
+        if (dto.getAddress() != null)
+            emp.setAddress(dto.getAddress());
+        
         if (dto.getPosition() != null) emp.setPosition(dto.getPosition());
 
         if (dto.getDepartmentId() != null) {
@@ -188,6 +206,9 @@ public class EmployeeServiceImpl implements EmployeeService {
         dto.setCode(emp.getCode());
         dto.setFullName(emp.getFullName());
         dto.setDateOfBirth(emp.getDateOfBirth());
+        dto.setGender(emp.getGender());
+        dto.setCitizenId(emp.getCitizenId());
+        dto.setAddress(emp.getAddress());
         dto.setPosition(emp.getPosition());
         dto.setDepartmentId(emp.getDepartment().getId());
         dto.setDepartmentName(emp.getDepartment().getName());

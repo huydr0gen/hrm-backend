@@ -35,5 +35,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     Page<Employee> findByDepartment(Department department, Pageable pageable);
     
+    boolean existsByCitizenId(String citizenId);
+    
     List<Employee> findAllByStatus(EmployeeStatus status);
 }

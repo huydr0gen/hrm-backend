@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import com.tlu.hrm.enums.EmployeeStatus;
+import com.tlu.hrm.enums.Gender;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -33,6 +34,22 @@ public class EmployeeDTO {
 	        example = "1998-05-20"
 	    )
 	    private LocalDate dateOfBirth;
+	    
+	    @Schema(
+    	    description = "Giới tính",
+    	    example = "MALE"
+    	)
+    	private Gender gender;
+
+    	@Schema(
+    	    description = "Căn cước công dân"
+    	)
+    	private String citizenId;
+
+    	@Schema(
+    	    description = "Địa chỉ"
+    	)
+    	private String address;
 
 	    @Schema(
 	    	    description = "Cấp bậc / vai trò trong tổ chức (level)",
@@ -83,7 +100,6 @@ public class EmployeeDTO {
         )
         private LocalDateTime createdAt;
 
-
 		public Long getId() {
 			return id;
 		}
@@ -114,6 +130,30 @@ public class EmployeeDTO {
 
 		public void setDateOfBirth(LocalDate dateOfBirth) {
 			this.dateOfBirth = dateOfBirth;
+		}
+
+		public Gender getGender() {
+			return gender;
+		}
+
+		public void setGender(Gender gender) {
+			this.gender = gender;
+		}
+
+		public String getCitizenId() {
+			return citizenId;
+		}
+
+		public void setCitizenId(String citizenId) {
+			this.citizenId = citizenId;
+		}
+
+		public String getAddress() {
+			return address;
+		}
+
+		public void setAddress(String address) {
+			this.address = address;
 		}
 
 		public String getPosition() {
@@ -180,5 +220,7 @@ public class EmployeeDTO {
 			this.createdAt = createdAt;
 		}
 
+
+		
 	    
 }

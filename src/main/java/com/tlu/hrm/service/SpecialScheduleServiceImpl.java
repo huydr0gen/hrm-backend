@@ -26,6 +26,7 @@ import com.tlu.hrm.entities.Department;
 import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.entities.SpecialSchedule;
 import com.tlu.hrm.enums.DecisionAction;
+import com.tlu.hrm.enums.Gender;
 import com.tlu.hrm.enums.SpecialScheduleStatus;
 import com.tlu.hrm.repository.EmployeeRepository;
 import com.tlu.hrm.repository.SpecialScheduleRepository;
@@ -79,11 +80,36 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         switch (dto.getType()) {
 
             case MATERNITY -> {
+            	if (emp.getGender() == null || emp.getGender() != Gender.FEMALE) {
+                    throw new IllegalArgumentException(
+                        "Không đủ điều kiện đăng ký nghỉ thai sản (chỉ áp dụng cho nhân viên nữ)"
+                    );
+                }
+
                 ss.setEndDate(dto.getStartDate().plusMonths(6));
             }
 
             case CHILD_CARE -> {
-                ss.setEndDate(dto.getStartDate().plusMonths(7));
+            	Gender gender = emp.getGender();
+
+                if (gender == null) {
+                    throw new IllegalArgumentException(
+                        "Vui lòng cập nhật giới tính trước khi đăng ký lịch chăm con nhỏ"
+                    );
+                }
+
+                if (gender == Gender.FEMALE) {
+                	// nữ - 7 tháng
+                    ss.setEndDate(dto.getStartDate().plusMonths(7));
+                } else if (gender == Gender.MALE) {
+                    // nam -  14 ngày
+                    ss.setEndDate(dto.getStartDate().plusDays(14));
+                } else {
+                    throw new IllegalArgumentException(
+                        "Giới tính hiện tại không áp dụng cho chế độ nghỉ chăm con"
+                    );
+                }
+
                 applyWorkingTime(ss, dto);
                 validateChildCareWorkingTime(ss);
                 ss.setWorkingHours(7); // 7h làm – 8h công

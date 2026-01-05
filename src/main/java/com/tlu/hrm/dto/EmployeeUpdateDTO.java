@@ -2,6 +2,8 @@ package com.tlu.hrm.dto;
 
 import java.time.LocalDate;
 
+import com.tlu.hrm.enums.Gender;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Dữ liệu cập nhật thông tin nhân viên")
@@ -18,6 +20,20 @@ public class EmployeeUpdateDTO {
 	        example = "2000-10-15"
 	    )
     private LocalDate dateOfBirth;
+	
+	@Schema(
+	    description = "Giới tính",
+	    example = "OTHER",
+	    nullable = true
+	)
+	private Gender gender;
+
+	@Schema(
+	    description = "Địa chỉ",
+	    example = "Hà Nội",
+	    nullable = true
+	)
+	private String address;
 	
 	@Schema(
 		    description = "Cấp bậc / vai trò trong tổ chức (level)",
@@ -49,6 +65,18 @@ public class EmployeeUpdateDTO {
 	}
 	public void setDateOfBirth(LocalDate dateOfBirth) {
 		this.dateOfBirth = dateOfBirth;
+	}
+	public Gender getGender() {
+		return gender;
+	}
+	public void setGender(Gender gender) {
+		this.gender = gender;
+	}
+	public String getAddress() {
+		return address;
+	}
+	public void setAddress(String address) {
+		this.address = address;
 	}
 	public String getPosition() {
 		return position;
