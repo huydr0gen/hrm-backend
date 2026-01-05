@@ -19,13 +19,13 @@ public class AttendanceDisplayUtil {
 
         // ===== PAID / ABSENT =====
         if (paid >= FULL_DAY_MINUTES) {
-            sb.append("p:8");
-        } else if (paid > 0) {
-            int p = paid / 60;
-            int x = (FULL_DAY_MINUTES - paid) / 60;
-            sb.append("p:").append(p).append(" x:").append(x);
-        } else {
             sb.append("x:8");
+        } else if (paid > 0) {
+            int x = paid / 60;
+            int p = (FULL_DAY_MINUTES - paid) / 60;
+            sb.append("x:").append(x).append(" p:").append(p);
+        } else {
+            sb.append("p:8");
         }
 
         // ===== OT =====
