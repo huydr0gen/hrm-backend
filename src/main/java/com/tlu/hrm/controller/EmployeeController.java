@@ -129,6 +129,32 @@ public class EmployeeController {
     public ResponseEntity<EmployeeDTO> getById(@PathVariable Long id) {
         return ResponseEntity.ok(employeeService.getEmployeeById(id));
     }
+    
+    // employee details
+    
+    @Operation(
+	    summary = "Nhân viên xem thông tin cá nhân",
+	    description = """
+	        Màn hình: Hồ sơ cá nhân
+	        
+	        Role:
+	        - EMPLOYEE
+	        
+	        Luồng nghiệp vụ:
+	        - Nhân viên đăng nhập
+	        - Hệ thống tự xác định employee từ user đang đăng nhập
+	        - Trả về hồ sơ nhân viên
+	        
+	        Ghi chú:
+	        - Nhân viên chỉ xem được thông tin của chính mình
+	        """
+	)
+	@PreAuthorize("hasRole('EMPLOYEE')")
+	@GetMapping("/me")
+	public ResponseEntity<EmployeeDTO> getMyProfile() {
+	    return ResponseEntity.ok(employeeService.getMyProfile());
+	}
+
 
  // UPDATE EMPLOYEE ------------------------------------------------------------
 

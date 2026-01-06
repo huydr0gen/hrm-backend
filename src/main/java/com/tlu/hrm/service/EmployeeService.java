@@ -15,6 +15,8 @@ public interface EmployeeService {
     EmployeeDTO getEmployeeById(Long id);
 
     Page<EmployeeDTO> getEmployeesWithoutUser(int page, int size);
+    
+    EmployeeDTO getMyProfile();
 
     EmployeeDTO updateEmployee(Long id, EmployeeUpdateDTO dto);
 

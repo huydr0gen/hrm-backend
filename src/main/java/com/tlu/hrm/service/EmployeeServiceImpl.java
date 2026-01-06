@@ -197,6 +197,28 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         return employees.map(this::mapToDTO);
     }
+    
+    // ================= MY PROFILE =================
+    @Override
+    public EmployeeDTO getMyProfile() {
+
+        Object principal = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal();
+
+        if (!(principal instanceof CustomUserDetails userDetails)) {
+            throw new RuntimeException("Unauthenticated");
+        }
+
+        if (userDetails.getEmployeeId() == null) {
+            throw new RuntimeException("User has no employee profile");
+        }
+
+        Employee emp = employeeRepository.findById(userDetails.getEmployeeId())
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+        return mapToDTO(emp);
+    }
 
     // ================= MAP DTO =================
     private EmployeeDTO mapToDTO(Employee emp) {
