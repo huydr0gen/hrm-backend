@@ -29,11 +29,11 @@ public class UserHandshakeHandler extends DefaultHandshakeHandler{
 
         if (token != null && jwtService.validateToken(token)) {
 
-            Long userId = jwtService.getUserId(token); // ✅ ĐÚNG
+            Long employeeId = jwtService.getEmployeeId(token); // ✅ ĐÚNG
 
             Authentication authentication =
                     new UsernamePasswordAuthenticationToken(
-                            userId.toString(), // Principal name = userId
+                    		employeeId.toString(), // Principal name = userId
                             null,
                             null
                     );

@@ -7,7 +7,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import com.tlu.hrm.dto.NotificationResponse;
-import com.tlu.hrm.repository.EmployeeRepository;
+import com.tlu.hrm.repository.UserRepository;
 import com.tlu.hrm.service.NotificationService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,14 +24,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class NotificationController {
 
 	private final NotificationService notificationService;
-    private final EmployeeRepository employeeRepository;
+	private final UserRepository userRepository;
 
     public NotificationController(
             NotificationService notificationService,
-            EmployeeRepository employeeRepository
+            UserRepository userRepository
     ) {
         this.notificationService = notificationService;
-        this.employeeRepository = employeeRepository;
+        this.userRepository = userRepository;
     }
 
     /* ================== HELPER ================== */
@@ -42,10 +42,11 @@ public class NotificationController {
 
         String username = authentication.getName();
 
-        return employeeRepository.findByUsername(username)
+        return userRepository.findByUsername(username)
                 .orElseThrow(() ->
                         new RuntimeException("User not found: " + username)
                 )
+                .getEmployee()
                 .getId();
     }
 
