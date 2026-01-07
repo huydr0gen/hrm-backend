@@ -20,6 +20,8 @@ public interface TimekeepingExplanationService {
             int page,
             int size
     );
+    
+    Page<TimekeepingExplanationResponseDTO> getPending(int page, int size);
 
     TimekeepingExplanationResponseDTO getById(Long id);
 

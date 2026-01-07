@@ -151,6 +151,42 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
         return repository.findAll(spec, pageable)
                 .map(this::toDTO);
     }
+    
+    @Override
+    public Page<TimekeepingExplanationResponseDTO> getPending(int page, int size) {
+
+        Employee actor = getCurrentEmployee();
+        Set<String> roles = getRoles();
+
+        if (!roles.contains("ROLE_HR") && !roles.contains("ROLE_MANAGER")) {
+            throw new AccessDeniedException("No permission");
+        }
+
+        Long approverEmployeeId = actor.getId();
+
+        Set<Long> approvedEmployeeIds =
+                approvalResolverService.getApprovedEmployeeIds(approverEmployeeId);
+
+        Set<Long> approvedDepartmentIds =
+                approvalResolverService.getApprovedDepartmentIds(approverEmployeeId);
+
+        Pageable pageable = PageRequest.of(
+                page, size, Sort.by("createdAt").descending()
+        );
+
+        TimekeepingExplanationFilterDTO filter = new TimekeepingExplanationFilterDTO();
+        filter.setStatus(TimekeepingExplanationStatus.PENDING);
+
+        Specification<TimekeepingExplanation> spec =
+                TimekeepingExplanationSpecification.buildForApprover(
+                        filter,
+                        approvedEmployeeIds,
+                        approvedDepartmentIds
+                );
+
+        return repository.findAll(spec, pageable)
+                .map(this::toDTO);
+    }
 
     // =====================================================
     // DETAIL
