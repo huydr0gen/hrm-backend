@@ -40,6 +40,4 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     List<Employee> findAllByStatus(EmployeeStatus status);
     
     long countByStatus(EmployeeStatus status);
-    
-    Optional<Employee> findByUsername(String username);
 }
