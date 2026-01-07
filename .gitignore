@@ -4,6 +4,9 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+# Upload files (attendance import)
+/uploads/
+
 ### STS ###
 .apt_generated
 .classpath
