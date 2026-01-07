@@ -38,4 +38,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     boolean existsByCitizenId(String citizenId);
     
     List<Employee> findAllByStatus(EmployeeStatus status);
+    
+    long countByStatus(EmployeeStatus status);
 }
