@@ -21,6 +21,7 @@ import com.tlu.hrm.dto.OTResponseDTO;
 import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.entities.OTParticipant;
 import com.tlu.hrm.entities.OTRequest;
+import com.tlu.hrm.enums.NotificationType;
 import com.tlu.hrm.enums.OTParticipantStatus;
 import com.tlu.hrm.enums.OTRequestStatus;
 import com.tlu.hrm.repository.EmployeeRepository;
@@ -38,14 +39,17 @@ public class OTServiceImpl implements OTService {
     private final OTParticipantRepository participantRepo;
     private final EmployeeRepository employeeRepo;
     private final AttendanceCalculationService attendanceCalculationService;
+    private final NotificationService notificationService;
     
 	public OTServiceImpl(OTRequestRepository otRepo, OTParticipantRepository participantRepo,
-			EmployeeRepository employeeRepo, AttendanceCalculationService attendanceCalculationService) {
+			EmployeeRepository employeeRepo, AttendanceCalculationService attendanceCalculationService,
+			NotificationService notificationService) {
 		super();
 		this.otRepo = otRepo;
 		this.participantRepo = participantRepo;
 		this.employeeRepo = employeeRepo;
 		this.attendanceCalculationService = attendanceCalculationService;
+		this.notificationService = notificationService;
 	}
     
 	@Override
@@ -98,7 +102,19 @@ public class OTServiceImpl implements OTService {
 
 	    OTRequest saved = otRepo.save(ot);
 
-	    return toDTO(saved);
+	    for (OTParticipant p : saved.getParticipants()) {
+            notificationService.createNotification(
+                    p.getEmployee().getId(),
+                    "Có yêu cầu tăng ca mới",
+                    "Bạn được đăng ký tăng ca ngày "
+                            + saved.getOtDate()
+                            + " từ " + saved.getStartTime()
+                            + " đến " + saved.getEndTime(),
+                    NotificationType.OT_REQUEST
+            );
+        }
+
+        return toDTO(saved);
 	}
 
     @Override
@@ -127,6 +143,22 @@ public class OTServiceImpl implements OTService {
         p.setRespondedAt(LocalDateTime.now());
 
         updateRequestStatus(p.getOtRequest());
+        
+        notificationService.createNotification(
+                p.getOtRequest().getManager().getId(),
+                dto.isAccept()
+                        ? "Nhân viên đồng ý tăng ca"
+                        : "Nhân viên từ chối tăng ca",
+                "Nhân viên " + emp.getFullName()
+                        + (dto.isAccept()
+                                ? " đã đồng ý "
+                                : " đã từ chối ")
+                        + "tăng ca ngày "
+                        + p.getOtRequest().getOtDate(),
+                dto.isAccept()
+                        ? NotificationType.OT_APPROVED
+                        : NotificationType.OT_REJECTED
+        );
     }
 
     private void updateRequestStatus(OTRequest ot) {
@@ -256,6 +288,14 @@ public class OTServiceImpl implements OTService {
                 LocalDate date = ot.getOtDate();
 
                 attendanceCalculationService.addOTMinutes(empId, date, otMinutes);
+                
+                notificationService.createNotification(
+                        p.getEmployee().getId(),
+                        "Tăng ca đã được chốt",
+                        "Tăng ca ngày " + ot.getOtDate()
+                                + " đã được ghi nhận vào công",
+                        NotificationType.OT_APPROVED
+                );
             }
         }
 

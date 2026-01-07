@@ -21,6 +21,7 @@ import com.tlu.hrm.entities.*;
 import com.tlu.hrm.enums.DecisionAction;
 import com.tlu.hrm.enums.LeaveStatus;
 import com.tlu.hrm.enums.LeaveType;
+import com.tlu.hrm.enums.NotificationType;
 import com.tlu.hrm.repository.*;
 import com.tlu.hrm.security.CustomUserDetails;
 import com.tlu.hrm.spec.LeaveRequestSpecification;
@@ -38,10 +39,11 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     private final AuditLogService audit;
     private final ApprovalResolverService approvalResolverService;
     private final AttendanceCalculationService attendanceCalculationService;
+    private final NotificationService notificationService;
     
 	public LeaveRequestServiceImpl(LeaveRequestRepository leaveRequestRepository, EmployeeRepository employeeRepo,
 			UserRepository userRepo, AuditLogService audit, ApprovalResolverService approvalResolverService,
-			AttendanceCalculationService attendanceCalculationService) {
+			AttendanceCalculationService attendanceCalculationService, NotificationService notificationService) {
 		super();
 		this.leaveRequestRepository = leaveRequestRepository;
 		this.employeeRepo = employeeRepo;
@@ -49,6 +51,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 		this.audit = audit;
 		this.approvalResolverService = approvalResolverService;
 		this.attendanceCalculationService = attendanceCalculationService;
+		this.notificationService = notificationService;
 	}
 
 	// =====================================================
@@ -140,6 +143,17 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         req.setCreatedAt(LocalDateTime.now());
 
         LeaveRequest saved = leaveRequestRepository.save(req);
+        
+        notificationService.createNotification(
+                saved.getApproverId(), // người duyệt
+                "Có đơn nghỉ phép mới",
+                "Nhân viên " + emp.getFullName()
+                        + " đã gửi đơn nghỉ phép từ "
+                        + saved.getStartDate()
+                        + " đến "
+                        + saved.getEndDate(),
+                NotificationType.LEAVE_REQUEST
+        );
 
         audit.log(userId, "LEAVE_CREATE",
                 "Create leave request id=" + saved.getId());
@@ -299,6 +313,21 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         req.setUpdatedAt(LocalDateTime.now());
 
         LeaveRequest saved = leaveRequestRepository.save(req);
+        
+        notificationService.createNotification(
+                saved.getEmployee().getId(), // nhân viên gửi đơn
+                action == DecisionAction.APPROVE
+                        ? "Đơn nghỉ phép đã được duyệt"
+                        : "Đơn nghỉ phép bị từ chối",
+                action == DecisionAction.APPROVE
+                        ? "Đơn nghỉ phép từ " + saved.getStartDate()
+                                + " đến " + saved.getEndDate() + " đã được duyệt"
+                        : "Đơn nghỉ phép từ " + saved.getStartDate()
+                                + " đến " + saved.getEndDate() + " đã bị từ chối",
+                action == DecisionAction.APPROVE
+                        ? NotificationType.LEAVE_APPROVED
+                        : NotificationType.LEAVE_REJECTED
+        );
 
         if (saved.getStatus() == LeaveStatus.APPROVED) {
             LocalDate d = saved.getStartDate();

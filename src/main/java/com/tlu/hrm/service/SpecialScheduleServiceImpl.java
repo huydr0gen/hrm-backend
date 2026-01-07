@@ -27,6 +27,7 @@ import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.entities.SpecialSchedule;
 import com.tlu.hrm.enums.DecisionAction;
 import com.tlu.hrm.enums.Gender;
+import com.tlu.hrm.enums.NotificationType;
 import com.tlu.hrm.enums.SpecialScheduleStatus;
 import com.tlu.hrm.repository.EmployeeRepository;
 import com.tlu.hrm.repository.SpecialScheduleRepository;
@@ -43,15 +44,17 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
     private final EmployeeRepository employeeRepository;
     private final ApprovalResolverService approvalResolverService;
     private final AttendanceCalculationService attendanceCalculationService;
+    private final NotificationService notificationService;
 
 	public SpecialScheduleServiceImpl(SpecialScheduleRepository repository, EmployeeRepository employeeRepository,
 			ApprovalResolverService approvalResolverService,
-			AttendanceCalculationService attendanceCalculationService) {
+			AttendanceCalculationService attendanceCalculationService, NotificationService notificationService) {
 		super();
 		this.repository = repository;
 		this.employeeRepository = employeeRepository;
 		this.approvalResolverService = approvalResolverService;
 		this.attendanceCalculationService = attendanceCalculationService;
+		this.notificationService = notificationService;
 	}
 
 	// ======================================================
@@ -148,8 +151,21 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         if (overlap) {
             throw new IllegalStateException("Overlapping schedule of same type exists");
         }
+        
+        SpecialSchedule saved = repository.save(ss);
 
-        return toDTO(repository.save(ss));
+        notificationService.createNotification(
+                saved.getApproverId(),
+                "Có lịch đặc thù mới",
+                "Nhân viên " + emp.getFullName()
+                        + " đã tạo lịch đặc thù từ "
+                        + saved.getStartDate()
+                        + " đến "
+                        + saved.getEndDate(),
+                NotificationType.SPECIAL_SCHEDULE_REQUEST
+        );
+
+        return toDTO(saved);
     }
     
     @Override
@@ -367,6 +383,8 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
 
         ss.setDecidedBy(actorUserId);
         ss.setDecidedAt(LocalDateTime.now());
+        
+        SpecialSchedule saved = repository.save(ss);
 
         if (ss.getStatus() == SpecialScheduleStatus.APPROVED) {
             LocalDate d = ss.getStartDate();
@@ -379,7 +397,22 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
             }
         }
 
-        return toDTO(repository.save(ss));
+        notificationService.createNotification(
+        		saved.getEmployee().getId(), // nhân viên
+                action == DecisionAction.APPROVE
+                        ? "Lịch đặc thù đã được duyệt"
+                        : "Lịch đặc thù bị từ chối",
+                action == DecisionAction.APPROVE
+                        ? "Lịch đặc thù từ " + saved.getStartDate()
+                                + " đến " + saved.getEndDate() + " đã được duyệt"
+                        : "Lịch đặc thù từ " + saved.getStartDate()
+                                + " đến " + saved.getEndDate() + " đã bị từ chối",
+                action == DecisionAction.APPROVE
+                        ? NotificationType.SPECIAL_SCHEDULE_APPROVED
+                        : NotificationType.SPECIAL_SCHEDULE_REJECTED
+        );
+        
+        return toDTO(saved);
     }
     
     @Override

@@ -28,6 +28,7 @@ import com.tlu.hrm.entities.Department;
 import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.entities.TimekeepingExplanation;
 import com.tlu.hrm.enums.DecisionAction;
+import com.tlu.hrm.enums.NotificationType;
 import com.tlu.hrm.enums.TimekeepingExplanationStatus;
 import com.tlu.hrm.repository.EmployeeRepository;
 import com.tlu.hrm.repository.TimekeepingExplanationRepository;
@@ -41,15 +42,17 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
     private final EmployeeRepository employeeRepository;
     private final ApprovalResolverService approvalResolverService;
     private final AttendanceCalculationService attendanceCalculationService;
+    private final NotificationService notificationService;
     
 	public TimekeepingExplanationServiceImpl(TimekeepingExplanationRepository repository,
 			EmployeeRepository employeeRepository, ApprovalResolverService approvalResolverService,
-			AttendanceCalculationService attendanceCalculationService) {
+			AttendanceCalculationService attendanceCalculationService, NotificationService notificationService) {
 		super();
 		this.repository = repository;
 		this.employeeRepository = employeeRepository;
 		this.approvalResolverService = approvalResolverService;
 		this.attendanceCalculationService = attendanceCalculationService;
+		this.notificationService = notificationService;
 	}
 
 	// =====================================================
@@ -104,8 +107,18 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
             throw new IllegalArgumentException("Giờ vào phải trước giờ ra");
         }
         
-        repository.save(e);
-        return toDTO(e);
+        TimekeepingExplanation saved = repository.save(e);
+
+        notificationService.createNotification(
+                saved.getApproverId(), // người duyệt
+                "Có giải trình công mới",
+                "Nhân viên " + emp.getFullName()
+                        + " đã gửi giải trình công cho ngày "
+                        + saved.getWorkDate(),
+                NotificationType.EXPLANATION_REQUEST
+        );
+
+        return toDTO(saved);
     }
 
     // =====================================================
@@ -256,7 +269,22 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
             );
         }
 
-        return toDTO(e);
+        TimekeepingExplanation saved = e; // entity đang managed
+
+        notificationService.createNotification(
+                saved.getEmployee().getId(), // nhân viên
+                dto.getAction() == DecisionAction.APPROVE
+                        ? "Giải trình công đã được duyệt"
+                        : "Giải trình công bị từ chối",
+                dto.getAction() == DecisionAction.APPROVE
+                        ? "Giải trình công ngày " + saved.getWorkDate() + " đã được duyệt"
+                        : "Giải trình công ngày " + saved.getWorkDate() + " đã bị từ chối",
+                dto.getAction() == DecisionAction.APPROVE
+                        ? NotificationType.EXPLANATION_APPROVED
+                        : NotificationType.EXPLANATION_REJECTED
+        );
+
+        return toDTO(saved);
     }
 
     // =====================================================
