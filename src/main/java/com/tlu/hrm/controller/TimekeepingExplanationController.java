@@ -91,4 +91,25 @@ public class TimekeepingExplanationController {
     ) {
         return ResponseEntity.ok(service.decideMany(dto));
     }
+    
+	 // =====================================================
+	 // PENDING - HR / MANAGER
+	 // =====================================================
+    @Operation(
+   	     summary = "Người duyệt xem giải trình công cần xử lý",
+   	     description = """
+   	         Áp dụng ApprovalConfig (cá nhân + phòng ban).
+   	
+   	         - Chỉ lấy lịch PENDING
+   	         - Có phân trang
+   	         """
+   	 )
+	 @GetMapping("/pending")
+	 @PreAuthorize("hasAnyRole('HR','MANAGER')")
+	 public ResponseEntity<Page<TimekeepingExplanationResponseDTO>> getPending(
+	         @RequestParam(defaultValue = "0") int page,
+	         @RequestParam(defaultValue = "10") int size
+	 ) {
+	     return ResponseEntity.ok(service.getPending(page, size));
+	 }
 }
