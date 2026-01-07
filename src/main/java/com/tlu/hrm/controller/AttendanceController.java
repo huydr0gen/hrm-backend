@@ -1,9 +1,5 @@
 package com.tlu.hrm.controller;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.YearMonth;
 
 import org.springframework.http.HttpHeaders;
@@ -21,7 +17,6 @@ import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.repository.EmployeeRepository;
 import com.tlu.hrm.security.CustomUserDetails;
 import com.tlu.hrm.service.AttendanceExportService;
-import com.tlu.hrm.service.AttendanceImportHistoryService;
 import com.tlu.hrm.service.AttendanceImportService;
 import com.tlu.hrm.service.AttendanceQueryService;
 
@@ -41,17 +36,14 @@ public class AttendanceController {
     private final AttendanceExportService exportService;
     private final EmployeeRepository employeeRepository;
     private final AttendanceQueryService attendanceQueryService;
-    private final AttendanceImportHistoryService historyService;
     
 	public AttendanceController(AttendanceImportService importService, AttendanceExportService exportService,
-			EmployeeRepository employeeRepository, AttendanceQueryService attendanceQueryService, 
-			AttendanceImportHistoryService historyService) {
+			EmployeeRepository employeeRepository, AttendanceQueryService attendanceQueryService) {
 		super();
 		this.importService = importService;
 		this.exportService = exportService;
 		this.employeeRepository = employeeRepository;
 		this.attendanceQueryService = attendanceQueryService;
-		this.historyService = historyService;
 	}
     
 	// =====================================================
@@ -81,33 +73,14 @@ public class AttendanceController {
                 description = "Tháng chấm công (yyyy-MM). Nếu không truyền, mặc định là tháng hiện tại",
                 example = "2025-09"
             )
-            @RequestParam String month) throws IOException {
+            @RequestParam String month) {
 
-        YearMonth yearMonth = (month == null || month.isBlank()) ? YearMonth.now() : YearMonth.parse(month);
+		YearMonth yearMonth = YearMonth.parse(month);
 
-        String folder = "uploads/attendance/" + yearMonth;
-        Path folderPath = Paths.get(folder);
-        Files.createDirectories(folderPath);
-        
-        String savedFileName = "attendance_" + yearMonth + "_" + System.currentTimeMillis() + ".xlsx";
-        
-        Path savedFilePath = folderPath.resolve(savedFileName);
-        Files.copy(file.getInputStream(), savedFilePath);
-        
-        String filePath = "/" + savedFilePath.toString().replace("\\", "/");
-        
-        Employee emp = getCurrentEmployee();
-        historyService.createHistory(
-                yearMonth.toString(),
-                savedFileName,
-                filePath,
-                emp.getId()
-        );
-        
-        AttendanceImportResultDTO result =
-                importService.importExcel(file, yearMonth);
+	    AttendanceImportResultDTO result =
+	            importService.importExcel(file, yearMonth);
 
-        return ResponseEntity.ok(result);
+	    return ResponseEntity.ok(result);
     }
 
     // =====================================================

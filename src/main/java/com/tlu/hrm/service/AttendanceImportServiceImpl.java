@@ -1,5 +1,9 @@
 package com.tlu.hrm.service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -44,6 +48,28 @@ public class AttendanceImportServiceImpl implements AttendanceImportService {
     public AttendanceImportResultDTO importExcel(
             MultipartFile file,
             YearMonth month) {
+    	
+    	String folder = "uploads/attendance/" + month;
+        Path folderPath = Paths.get(folder);
+
+        try {
+            Files.createDirectories(folderPath);
+        } catch (IOException e) {
+            throw new RuntimeException("Cannot create upload directory", e);
+        }
+
+        String savedFileName =
+                "attendance_" + month + "_" + System.currentTimeMillis() + ".xlsx";
+
+        Path savedFilePath = folderPath.resolve(savedFileName);
+
+        try {
+            Files.copy(file.getInputStream(), savedFilePath);
+        } catch (IOException e) {
+            throw new RuntimeException("Cannot save uploaded file", e);
+        }
+
+        String filePath = "/" + savedFilePath.toString().replace("\\", "/");
     	
         Long currentEmployeeId = ((CustomUserDetails)
                 SecurityContextHolder.getContext()
@@ -141,19 +167,16 @@ public class AttendanceImportServiceImpl implements AttendanceImportService {
                 }
             }
 
-            // =================================================
-            // 3️⃣ GHI LỊCH SỬ IMPORT (CHỈ 1 LẦN / FILE)
-            // =================================================
-            attendanceImportHistoryService.createHistory(
-                    month.toString(),               // ví dụ: 2026-01
-                    file.getOriginalFilename(),      // tên file
-                    null,                            // file path / url (nếu có)
-                    currentEmployeeId               // người import
-            );
-
         } catch (Exception e) {
             throw new RuntimeException("Cannot read excel file", e);
         }
+        
+        attendanceImportHistoryService.createHistory(
+                month.toString(),
+                savedFileName,
+                filePath,
+                currentEmployeeId
+        );
 
         return result;
     }

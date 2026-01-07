@@ -8,7 +8,6 @@ import com.tlu.hrm.dto.BulkDecisionDTO;
 import com.tlu.hrm.dto.BulkDecisionResultDTO;
 import com.tlu.hrm.dto.SpecialScheduleCreateDTO;
 import com.tlu.hrm.dto.SpecialScheduleDecisionDTO;
-import com.tlu.hrm.dto.SpecialScheduleFilterDTO;
 import com.tlu.hrm.dto.SpecialScheduleResponseDTO;
 import com.tlu.hrm.dto.SpecialScheduleUpdateDTO;
 import com.tlu.hrm.service.SpecialScheduleService;
