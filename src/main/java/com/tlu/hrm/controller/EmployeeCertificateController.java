@@ -26,7 +26,7 @@ public class EmployeeCertificateController {
     // =====================================================
 
     @GetMapping
-    @PreAuthorize("hasRole('HR')")
+    @PreAuthorize("hasAuthority('ROLE_HR')")
     public ResponseEntity<?> listAll(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -38,7 +38,7 @@ public class EmployeeCertificateController {
     }
 
     @GetMapping("/search")
-    @PreAuthorize("hasRole('HR')")
+    @PreAuthorize("hasAuthority('ROLE_HR')")
     public ResponseEntity<?> search(
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") int page,
@@ -51,13 +51,13 @@ public class EmployeeCertificateController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('HR')")
+    @PreAuthorize("hasAuthority('ROLE_HR')")
     public ResponseEntity<?> create(@RequestBody EmployeeCertificateCreateDTO dto) {
         return ResponseEntity.ok(service.create(dto));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('HR')")
+    @PreAuthorize("hasAuthority('ROLE_HR')")
     public ResponseEntity<?> update(
             @PathVariable Long id,
             @RequestBody EmployeeCertificateUpdateDTO dto) {
@@ -66,14 +66,14 @@ public class EmployeeCertificateController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('HR')")
+    @PreAuthorize("hasAuthority('ROLE_HR')")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('HR')")
+    @PreAuthorize("hasAuthority('ROLE_HR')")
     public ResponseEntity<?> getDetail(@PathVariable Long id) {
         return ResponseEntity.ok(service.getDetail(id));
     }
@@ -83,7 +83,7 @@ public class EmployeeCertificateController {
     // =====================================================
 
     @GetMapping("/my")
-    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("hasAuthority('ROLE_EMPLOYEE')")
     public ResponseEntity<?> getMyCertificates(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -98,7 +98,7 @@ public class EmployeeCertificateController {
     }
 
     @GetMapping("/my/{id}")
-    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("hasAuthority('ROLE_EMPLOYEE')")
     public ResponseEntity<?> getMyCertificateDetail(@PathVariable Long id) {
 
         CustomUserDetails user =
