@@ -40,6 +40,8 @@ public class UserDTO {
 	    )
     private Long employeeId;
 	
+	private boolean canApprove;
+	
 	@Schema(
 	        description = "Thời điểm tạo user",
 	        example = "2025-12-01T09:00:00"
@@ -86,6 +88,12 @@ public class UserDTO {
 	}
 	public void setEmployeeId(Long employeeId) {
 		this.employeeId = employeeId;
+	}
+	public boolean isCanApprove() {
+		return canApprove;
+	}
+	public void setCanApprove(boolean canApprove) {
+		this.canApprove = canApprove;
 	}
 	public LocalDateTime getCreatedAt() {
 		return createdAt;

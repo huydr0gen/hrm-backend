@@ -97,4 +97,14 @@ public class ApprovalResolverServiceImpl implements ApprovalResolverService {
                 .orElseThrow(() ->
                         new RuntimeException("Chưa cấu hình người duyệt cho nhân viên này"));
     }
+    
+    @Override
+    public boolean hasApprovalPermission(Long approverEmployeeId) {
+
+        return approvalConfigRepository
+                .findByApproverIdAndActiveTrue(approverEmployeeId)
+                .stream()
+                .findAny()
+                .isPresent();
+    }
 }

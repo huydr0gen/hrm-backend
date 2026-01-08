@@ -13,4 +13,6 @@ public interface ApprovalResolverService {
 	Set<Long> getApprovedDepartmentIds(Long approverEmployeeId);
 	
 	String resolveApproverCode(String employeeCode, String departmentCode);
+	
+	boolean hasApprovalPermission(Long approverEmployeeId);
 }
