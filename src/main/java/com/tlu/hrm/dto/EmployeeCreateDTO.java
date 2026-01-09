@@ -8,23 +8,17 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Dữ liệu tạo mới nhân viên")
 public class EmployeeCreateDTO {
-
-	@Schema(
-	        description = "Mã nhân viên",
-	        example = "EMP002"
-	    )
-	private String code;
 	
 	@Schema(
-	        description = "Họ và tên nhân viên",
-	        example = "Trần Thị B"
-	    )
+        description = "Họ và tên nhân viên",
+        example = "Trần Thị B"
+    )
     private String fullName;
 	
 	@Schema(
-	        description = "Ngày sinh",
-	        example = "2000-10-15"
-	    )
+        description = "Ngày sinh",
+        example = "2000-10-15"
+    )
     private LocalDate dateOfBirth;
 	
 	@Schema(
@@ -48,36 +42,22 @@ public class EmployeeCreateDTO {
 	private String address;
 	
 	@Schema(
-		    description = "Cấp bậc / vai trò trong tổ chức (level)",
-		    example = "STAFF"
-		)
+	    description = "Cấp bậc / vai trò trong tổ chức (level)",
+	    example = "STAFF"
+	)
     private String position;
 	
 	@Schema(
-	        description = "Phòng ban",
-	        example = "Kế toán"
-	    )
-	private Long departmentId;
+	    description = "ID phòng ban",
+	    example = "1"
+	)
+	private Long departmentId;    
 	
 	@Schema(
-	        description = "Email liên hệ",
-	        example = "b.tran@company.com"
-	    )
-    private String email;     
-	
-	@Schema(
-	        description = "Số điện thoại",
-	        example = "0912345678"
-	    )
+        description = "Số điện thoại",
+        example = "0912345678"
+    )
     private String phoneNumber;
-
-	public String getCode() {
-		return code;
-	}
-
-	public void setCode(String code) {
-		this.code = code;
-	}
 
 	public String getFullName() {
 		return fullName;
@@ -133,14 +113,6 @@ public class EmployeeCreateDTO {
 
 	public void setDepartmentId(Long departmentId) {
 		this.departmentId = departmentId;
-	}
-
-	public String getEmail() {
-		return email;
-	}
-
-	public void setEmail(String email) {
-		this.email = email;
 	}
 
 	public String getPhoneNumber() {
