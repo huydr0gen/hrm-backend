@@ -20,7 +20,7 @@ public class SalaryImportHistoryController {
 	}
 	
 	@GetMapping
-    @PreAuthorize("hasAnyRole('HR','ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_HR')")
     public ResponseEntity<Page<SalaryImportHistoryResponseDTO>> getByMonth(
             @RequestParam String month,
             @RequestParam(defaultValue = "0") int page,

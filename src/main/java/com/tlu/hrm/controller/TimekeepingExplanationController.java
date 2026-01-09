@@ -34,7 +34,8 @@ public class TimekeepingExplanationController {
     // =====================================================
     @Operation(summary = "Tạo yêu cầu giải trình công")
     @PostMapping
-    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("hasAuthority('ROLE_EMPLOYEE')")
+  //@PreAuthorize("hasAnyAuthority('ROLE_HR','ROLE_EMPLOYEE')")
     public ResponseEntity<TimekeepingExplanationResponseDTO> create(
             @Valid @RequestBody TimekeepingExplanationCreateDTO dto
     ) {
@@ -46,7 +47,7 @@ public class TimekeepingExplanationController {
     // =====================================================
     @Operation(summary = "Danh sách giải trình công (có filter + phân trang)")
     @GetMapping
-    @PreAuthorize("hasAnyRole('HR','MANAGER','EMPLOYEE')")
+    @PreAuthorize("hasAnyAuthority('ROLE_HR', 'ROLE_MANAGER', 'ROLE_EMPLOYEE')")
     public ResponseEntity<Page<TimekeepingExplanationResponseDTO>> getList(
             TimekeepingExplanationFilterDTO filter,
             @RequestParam(defaultValue = "0") int page,
@@ -60,7 +61,7 @@ public class TimekeepingExplanationController {
     // =====================================================
     @Operation(summary = "Chi tiết 1 yêu cầu giải trình công")
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('HR','MANAGER','EMPLOYEE')")
+    @PreAuthorize("hasAnyAuthority('ROLE_HR', 'ROLE_MANAGER', 'ROLE_EMPLOYEE')")
     public ResponseEntity<TimekeepingExplanationResponseDTO> getById(
             @PathVariable Long id
     ) {
@@ -72,7 +73,7 @@ public class TimekeepingExplanationController {
     // =====================================================
     @Operation(summary = "Phê duyệt / từ chối 1 yêu cầu giải trình công")
     @PatchMapping("/{id}/decision")
-    @PreAuthorize("hasAnyRole('HR','MANAGER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_HR', 'ROLE_MANAGER')")
     public ResponseEntity<TimekeepingExplanationResponseDTO> decide(
             @PathVariable Long id,
             @Valid @RequestBody TimekeepingExplanationDecisionDTO dto
@@ -85,7 +86,7 @@ public class TimekeepingExplanationController {
     // =====================================================
     @Operation(summary = "Phê duyệt / từ chối nhiều yêu cầu giải trình công")
     @PatchMapping("/bulk-decision")
-    @PreAuthorize("hasAnyRole('HR','MANAGER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_HR', 'ROLE_MANAGER')")
     public ResponseEntity<BulkDecisionResultDTO> decideMany(
             @Valid @RequestBody BulkDecisionDTO dto
     ) {
@@ -105,7 +106,7 @@ public class TimekeepingExplanationController {
    	         """
    	 )
 	 @GetMapping("/pending")
-	 @PreAuthorize("hasAnyRole('HR','MANAGER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_HR', 'ROLE_MANAGER')")
 	 public ResponseEntity<Page<TimekeepingExplanationResponseDTO>> getPending(
 	         @RequestParam(defaultValue = "0") int page,
 	         @RequestParam(defaultValue = "10") int size

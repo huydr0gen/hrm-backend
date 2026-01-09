@@ -58,7 +58,7 @@ public class EmployeeController {
         @ApiResponse(responseCode = "200", description = "Tạo nhân viên thành công"),
         @ApiResponse(responseCode = "403", description = "Không có quyền HR / ADMIN")
     })
-    @PreAuthorize("hasRole('HR')")
+    @PreAuthorize("hasAuthority('ROLE_HR')")
     @PostMapping
     public ResponseEntity<EmployeeDTO> create(@RequestBody EmployeeCreateDTO dto) {
         return ResponseEntity.ok(employeeService.createEmployee(dto));
@@ -80,7 +80,7 @@ public class EmployeeController {
             - Dùng để hiển thị bảng nhân sự
             """
     )
-    @PreAuthorize("hasRole('HR')")
+    @PreAuthorize("hasAuthority('ROLE_HR')")
     @GetMapping
     public ResponseEntity<Page<EmployeeDTO>> getAll(
             @RequestParam(defaultValue = "0") int page,
@@ -104,7 +104,7 @@ public class EmployeeController {
             - Dùng cho chức năng 'Tạo tài khoản cho nhân viên'
             """
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @GetMapping("/no-user")
     public ResponseEntity<Page<EmployeeDTO>> getWithoutUser(
             @RequestParam(defaultValue = "0") int page,
@@ -124,7 +124,7 @@ public class EmployeeController {
             - HR
             """
     )
-    @PreAuthorize("hasRole('HR')")
+    @PreAuthorize("hasAuthority('ROLE_HR')")
     @GetMapping("/{id:\\d+}")
     public ResponseEntity<EmployeeDTO> getById(@PathVariable Long id) {
         return ResponseEntity.ok(employeeService.getEmployeeById(id));
@@ -149,7 +149,7 @@ public class EmployeeController {
 	        - Nhân viên chỉ xem được thông tin của chính mình
 	        """
 	)
-	@PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("hasAuthority('ROLE_EMPLOYEE')")
 	@GetMapping("/me")
 	public ResponseEntity<EmployeeDTO> getMyProfile() {
 	    return ResponseEntity.ok(employeeService.getMyProfile());
@@ -168,7 +168,7 @@ public class EmployeeController {
             - HR
             """
     )
-    @PreAuthorize("hasRole('HR')")
+    @PreAuthorize("hasAuthority('ROLE_HR')")
     @PutMapping("/{id}")
     public ResponseEntity<EmployeeDTO> update(
             @PathVariable Long id,
@@ -197,23 +197,23 @@ public class EmployeeController {
     }
     
     @Operation(
-    	    summary = "Danh sách nhân viên phòng ban của Manager",
-    	    description = """
-    	        Màn hình: Nhân viên phòng ban
-    	        
-    	        Role:
-    	        - MANAGER
-    	        
-    	        Luồng nghiệp vụ:
-    	        - Manager đăng nhập
-    	        - Hệ thống tự xác định phòng ban từ hồ sơ manager
-    	        - Trả về danh sách nhân viên cùng phòng ban
-    	        
-    	        Ghi chú:
-    	        - Manager không được xem nhân viên phòng ban khác
-    	        """
-    	)
-    @PreAuthorize("hasRole('MANAGER')")
+	    summary = "Danh sách nhân viên phòng ban của Manager",
+	    description = """
+	        Màn hình: Nhân viên phòng ban
+	        
+	        Role:
+	        - MANAGER
+	        
+	        Luồng nghiệp vụ:
+	        - Manager đăng nhập
+	        - Hệ thống tự xác định phòng ban từ hồ sơ manager
+	        - Trả về danh sách nhân viên cùng phòng ban
+	        
+	        Ghi chú:
+	        - Manager không được xem nhân viên phòng ban khác
+	        """
+	)
+    @PreAuthorize("hasAnyAuthority('ROLE_HR','ROLE_MANAGER')")
     @GetMapping("/department/my")
     public ResponseEntity<Page<EmployeeDTO>> getMyDepartmentEmployees(
     		@RequestParam(defaultValue = "0") int page,

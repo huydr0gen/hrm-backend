@@ -63,7 +63,7 @@ public class UserController {
         @ApiResponse(responseCode = "200", description = "Tạo user thành công"),
         @ApiResponse(responseCode = "403", description = "Không có quyền ADMIN")
     })
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     @PostMapping
     public ResponseEntity<UserDTO> createUser(@RequestBody UserCreateDTO dto) {
         return ResponseEntity.ok(mapToDto(userService.createUser(dto)));
@@ -96,7 +96,7 @@ public class UserController {
         @ApiResponse(responseCode = "200", description = "Tạo user từ employee thành công"),
         @ApiResponse(responseCode = "403", description = "Không có quyền ADMIN")
     })
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     @PostMapping("/from-employee/{employeeId}")
     public ResponseEntity<UserDTO> createUserFromEmployee(@PathVariable Long employeeId) {
         User user = userService.createUserFromEmployee(employeeId);
@@ -123,7 +123,7 @@ public class UserController {
             - FE không cần gửi body
             """
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     @PutMapping("/{id}/reset-password")
     public ResponseEntity<UserDTO> resetPassword(@PathVariable Long id) {
         User user = userService.resetPassword(id);
@@ -155,7 +155,7 @@ public class UserController {
 	    @ApiResponse(responseCode = "200", description = "Lấy danh sách user thành công"),
 	    @ApiResponse(responseCode = "403", description = "Không có quyền ADMIN")
 	})
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     @GetMapping
     public ResponseEntity<Page<UserDTO>> getUsers(
             @RequestParam(defaultValue = "0") int page,
@@ -193,7 +193,7 @@ public class UserController {
 	    @ApiResponse(responseCode = "403", description = "Không có quyền ADMIN"),
 	    @ApiResponse(responseCode = "404", description = "User không tồn tại")
 	})
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     @GetMapping("/{id:\\d+}")
     public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
         User user = userService.getUserById(id);
@@ -216,7 +216,7 @@ public class UserController {
             - Không bao gồm thông tin nhân sự
             """
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<UserDTO> updateUser(
             @PathVariable Long id,
@@ -267,7 +267,7 @@ public class UserController {
             - ADMIN
             """
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
@@ -293,7 +293,7 @@ public class UserController {
             ["ADMIN", "HR"]
             """
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     @PutMapping("/{id}/roles")
     public ResponseEntity<UserDTO> assignRoles(
             @PathVariable Long id,
@@ -308,7 +308,7 @@ public class UserController {
     // =====================================================
 
     @Operation(summary = "Kích hoạt user")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     @PutMapping("/{id}/activate")
     public ResponseEntity<Void> activateUser(@PathVariable Long id) {
         userService.activateUser(id);
@@ -316,7 +316,7 @@ public class UserController {
     }
 
     @Operation(summary = "Vô hiệu hóa user")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     @PutMapping("/{id}/deactivate")
     public ResponseEntity<Void> deactivateUser(@PathVariable Long id) {
         userService.deactivateUser(id);
@@ -324,7 +324,7 @@ public class UserController {
     }
 
     @Operation(summary = "Khóa user")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     @PutMapping("/{id}/lock")
     public ResponseEntity<Void> lockUser(@PathVariable Long id) {
         userService.lockUser(id);

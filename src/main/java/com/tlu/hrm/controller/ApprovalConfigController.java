@@ -13,7 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/approval-configs")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 @Tag(
 	    name = "Approval Configuration",
 	    description = "Thiết lập người duyệt cho nhân viên hoặc phòng ban"

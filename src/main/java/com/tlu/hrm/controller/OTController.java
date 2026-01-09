@@ -21,7 +21,7 @@ public class OTController {
 	}
 	
 	@PostMapping
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGER')")
     public ResponseEntity<?> create(@RequestBody OTRequestCreateDTO dto) {
         return ResponseEntity.ok(service.createOT(dto));
     }
@@ -42,7 +42,7 @@ public class OTController {
     }
     
     @GetMapping("/manager")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGER')")
     public ResponseEntity<?> managerOTs(
             @RequestParam(required = false) OTRequestStatus status,
             @RequestParam(defaultValue = "0") int page,
@@ -54,7 +54,7 @@ public class OTController {
     }
 
     @PatchMapping("/{id}/cancel")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGER')")
     public ResponseEntity<?> cancel(@PathVariable Long id) {
         service.cancelOT(id);
         return ResponseEntity.ok().build();

@@ -68,7 +68,7 @@ public class LeaveRequestController {
         @ApiResponse(responseCode = "401", description = "Chưa đăng nhập"),
         @ApiResponse(responseCode = "403", description = "Không có quyền EMPLOYEE")
     })
-    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("hasAuthority('ROLE_EMPLOYEE')")
     @PostMapping
     public ResponseEntity<LeaveRequestDTO> create(
             @RequestBody LeaveRequestCreateDTO dto) {
@@ -93,7 +93,7 @@ public class LeaveRequestController {
         @ApiResponse(responseCode = "401", description = "Chưa đăng nhập"),
         @ApiResponse(responseCode = "403", description = "Không có quyền EMPLOYEE")
     })
-    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("hasAuthority('ROLE_EMPLOYEE')")
     @GetMapping("/my")
     public ResponseEntity<Page<LeaveRequestDTO>> myRequests(
             @RequestParam(defaultValue = "0") int page,
@@ -109,7 +109,7 @@ public class LeaveRequestController {
     @Operation(
         summary = "HR / Admin tìm kiếm và lọc đơn nghỉ",
         description = """
-            Màn hình: Danh sách đơn nghỉ (HR / Admin)
+            Màn hình: Danh sách đơn nghỉ (HR)
 
             Có thể lọc theo:
             - Tên nhân viên
@@ -120,9 +120,9 @@ public class LeaveRequestController {
     )
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Lấy danh sách đơn nghỉ thành công"),
-        @ApiResponse(responseCode = "403", description = "Không có quyền HR / ADMIN")
+        @ApiResponse(responseCode = "403", description = "Không có quyền HR")
     })
-    @PreAuthorize("hasAnyRole('HR','ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_HR')")
     @GetMapping
     public ResponseEntity<Page<LeaveRequestDTO>> filter(
             @RequestParam(required = false) String employeeName,
@@ -155,7 +155,7 @@ public class LeaveRequestController {
         @ApiResponse(responseCode = "403", description = "Không có quyền truy cập"),
         @ApiResponse(responseCode = "404", description = "Không tìm thấy đơn nghỉ")
     })
-    @PreAuthorize("hasAnyRole('EMPLOYEE','MANAGER','HR','ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_HR','ROLE_EMPLOYEE','ROLE_MANAGER')")
     @GetMapping("/{id}")
     public ResponseEntity<LeaveRequestDTO> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
@@ -181,7 +181,7 @@ public class LeaveRequestController {
         @ApiResponse(responseCode = "403", description = "Không có quyền EMPLOYEE"),
         @ApiResponse(responseCode = "404", description = "Không tìm thấy đơn nghỉ")
     })
-    @PreAuthorize("hasRole('EMPLOYEE')")
+    @PreAuthorize("hasAuthority('ROLE_EMPLOYEE')")
     @PutMapping("/{id}")
     public ResponseEntity<LeaveRequestDTO> employeeUpdate(
             @PathVariable Long id,
@@ -209,7 +209,7 @@ public class LeaveRequestController {
         @ApiResponse(responseCode = "400", description = "Đơn đã được xử lý hoặc action không hợp lệ"),
         @ApiResponse(responseCode = "403", description = "Không có quyền MANAGER / HR")
     })
-    @PreAuthorize("hasAnyRole('MANAGER','HR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_MANAGER','ROLE_HR')")
     @PatchMapping("/{id}/decision")
     public ResponseEntity<LeaveRequestDTO> decide(
             @PathVariable Long id,
@@ -237,7 +237,7 @@ public class LeaveRequestController {
         @ApiResponse(responseCode = "200", description = "Xử lý hàng loạt thành công"),
         @ApiResponse(responseCode = "403", description = "Không có quyền MANAGER / HR")
     })
-    @PreAuthorize("hasAnyRole('MANAGER','HR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_MANAGER','ROLE_HR')")
     @PatchMapping("/decision")
     public ResponseEntity<BulkDecisionResultDTO> decideMany(
             @RequestBody BulkDecisionDTO dto) {
@@ -266,7 +266,7 @@ public class LeaveRequestController {
          - Có phân trang
          """
 	 )
-	 @PreAuthorize("hasAnyRole('MANAGER','HR')")
+	 @PreAuthorize("hasAnyAuthority('ROLE_MANAGER','ROLE_HR')")
 	 @GetMapping("/pending")
 	 public ResponseEntity<Page<LeaveRequestDTO>> pendingForApprover(
 	         @RequestParam(defaultValue = "0") int page,

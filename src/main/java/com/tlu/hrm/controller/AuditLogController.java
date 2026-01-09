@@ -22,7 +22,7 @@ public class AuditLogController {
 
 
 
-	@PreAuthorize("hasAnyRole('ADMIN','HR')")
+	@PreAuthorize("hasAnyAuthority('ROLE_HR','ROLE_ADMIN')")
     @GetMapping
     public ResponseEntity<Page<AuditLogDTO>> getLogs(
             @RequestParam(required = false) Long userId,

@@ -57,7 +57,7 @@ public class DepartmentController {
         @ApiResponse(responseCode = "200", description = "Tạo phòng ban thành công"),
         @ApiResponse(responseCode = "403", description = "Không có quyền HR")
     })
-    @PreAuthorize("hasRole('HR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_HR')")
     @PostMapping
     public ResponseEntity<DepartmentDTO> create(
             @RequestBody DepartmentCreateDTO dto) {
@@ -85,7 +85,7 @@ public class DepartmentController {
         @ApiResponse(responseCode = "403", description = "Không có quyền HR"),
         @ApiResponse(responseCode = "404", description = "Không tìm thấy phòng ban")
     })
-    @PreAuthorize("hasRole('HR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_HR')")
     @PutMapping("/{id}")
     public ResponseEntity<DepartmentDTO> update(
             @PathVariable Long id,
@@ -114,7 +114,7 @@ public class DepartmentController {
         @ApiResponse(responseCode = "403", description = "Không có quyền HR"),
         @ApiResponse(responseCode = "404", description = "Không tìm thấy phòng ban")
     })
-    @PreAuthorize("hasRole('HR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_HR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
 
@@ -125,31 +125,31 @@ public class DepartmentController {
     // ================= GET ALL ACTIVE =================
 
     @Operation(
-    	    summary = "Lấy danh sách tất cả phòng ban",
-    	    description = """
-    	        Màn hình:
-    	        - Quản lý phòng ban
-    	        - Xem cơ cấu tổ chức
+	    summary = "Lấy danh sách tất cả phòng ban",
+	    description = """
+	        Màn hình:
+	        - Quản lý phòng ban
+	        - Xem cơ cấu tổ chức
 
-    	        Role:
-    	        - HR
-    	        - ADMIN
-    	        - EMPLOYEE
+	        Role:
+	        - HR
+	        - ADMIN
+	        - EMPLOYEE
 
-    	        Ghi chú:
-    	        - Trả về cả phòng ban đang hoạt động và ngừng hoạt động
-    	        - Có phân trang
-    	        """
-    	)
-    	@ApiResponses({
-    	    @ApiResponse(responseCode = "200", description = "Lấy danh sách phòng ban thành công")
-    	})
-    	@PreAuthorize("hasAnyRole('HR', 'EMPLOYEE')")
-    	@GetMapping
-    	public ResponseEntity<Page<DepartmentDTO>> getAll(
-    	        @RequestParam(defaultValue = "0") int page,
-    	        @RequestParam(defaultValue = "10") int size) {
+	        Ghi chú:
+	        - Trả về cả phòng ban đang hoạt động và ngừng hoạt động
+	        - Có phân trang
+	        """
+	)
+	@ApiResponses({
+	    @ApiResponse(responseCode = "200", description = "Lấy danh sách phòng ban thành công")
+	})
+	@PreAuthorize("hasAnyAuthority('ROLE_HR','ROLE_EMPLOYEE')")
+	@GetMapping
+	public ResponseEntity<Page<DepartmentDTO>> getAll(
+	        @RequestParam(defaultValue = "0") int page,
+	        @RequestParam(defaultValue = "10") int size) {
 
-    	    return ResponseEntity.ok(departmentService.getAll(page, size));
-    	}
+	    return ResponseEntity.ok(departmentService.getAll(page, size));
+	}
 }

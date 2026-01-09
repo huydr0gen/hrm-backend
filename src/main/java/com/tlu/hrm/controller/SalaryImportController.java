@@ -9,7 +9,7 @@ import com.tlu.hrm.service.SalaryImportService;
 
 @RestController
 @RequestMapping("/api/salaries")
-@PreAuthorize("hasRole('HR')")
+@PreAuthorize("hasAuthority('ROLE_HR')")
 public class SalaryImportController {
 
 	private final SalaryImportService importService;

@@ -61,7 +61,7 @@ public class AttendanceController {
             """
     )
     @PostMapping("/import")
-    @PreAuthorize("hasRole('HR')")
+	@PreAuthorize("hasAuthority('ROLE_HR')")
     public ResponseEntity<AttendanceImportResultDTO> importAttendance(
     		@Parameter(
                 description = "File Excel chấm công theo tháng",
@@ -97,7 +97,7 @@ public class AttendanceController {
             """
     )
     @GetMapping("/export")
-    @PreAuthorize("hasRole('HR')")
+	@PreAuthorize("hasAuthority('ROLE_HR')")
     public ResponseEntity<byte[]> exportMonthlyAttendance(
     		@Parameter(
                 description = "Tháng chấm công (yyyy-MM). Nếu không truyền, mặc định là tháng hiện tại",

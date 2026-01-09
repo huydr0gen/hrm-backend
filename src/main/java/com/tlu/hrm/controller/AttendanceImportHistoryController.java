@@ -20,7 +20,7 @@ public class AttendanceImportHistoryController {
 	}
 	
 	@GetMapping
-    @PreAuthorize("hasAnyRole('HR','ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_HR','ROLE_ADMIN')")
     public ResponseEntity<Page<AttendanceImportHistoryResponseDTO>> getByMonth(
             @RequestParam String month,
             @RequestParam(defaultValue = "0") int page,
