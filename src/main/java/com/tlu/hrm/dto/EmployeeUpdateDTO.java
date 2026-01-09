@@ -29,6 +29,13 @@ public class EmployeeUpdateDTO {
 	private Gender gender;
 
 	@Schema(
+	    description = "Số CCCD/CMND của nhân viên (12 số, không trùng)",
+	    example = "001234567890",
+	    nullable = true
+	)
+	private String citizenId;
+	
+	@Schema(
 	    description = "Địa chỉ",
 	    example = "Hà Nội",
 	    nullable = true
@@ -71,6 +78,12 @@ public class EmployeeUpdateDTO {
 	}
 	public void setGender(Gender gender) {
 		this.gender = gender;
+	}
+	public String getCitizenId() {
+		return citizenId;
+	}
+	public void setCitizenId(String citizenId) {
+		this.citizenId = citizenId;
 	}
 	public String getAddress() {
 		return address;

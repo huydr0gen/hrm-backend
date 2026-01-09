@@ -37,6 +37,8 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     
     boolean existsByCitizenId(String citizenId);
     
+    boolean existsByCitizenIdAndIdNot(String citizenId, Long id);
+    
     List<Employee> findAllByStatus(EmployeeStatus status);
     
     long countByStatus(EmployeeStatus status);

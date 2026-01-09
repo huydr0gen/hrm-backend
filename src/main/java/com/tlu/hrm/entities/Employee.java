@@ -39,7 +39,7 @@ public class Employee {
     @Column(name = "gender")
     private Gender gender;
 
-    @Column(name = "citizen_id", length = 20)
+    @Column(name = "citizen_id", length = 20, unique = true)
     private String citizenId;
 
     @Column(name = "address", length = 255)

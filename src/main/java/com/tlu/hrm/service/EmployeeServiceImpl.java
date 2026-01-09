@@ -37,13 +37,11 @@ public class EmployeeServiceImpl implements EmployeeService {
 	public EmployeeDTO createEmployee(EmployeeCreateDTO dto) {
 
 	    // ===== CHECK CITIZEN ID =====
-	    if (dto.getCitizenId() == null || dto.getCitizenId().isBlank()) {
-	        throw new RuntimeException("Citizen ID is required");
-	    }
-
-	    if (employeeRepository.existsByCitizenId(dto.getCitizenId())) {
-	        throw new RuntimeException("Citizen ID already exists");
-	    }
+		if (dto.getCitizenId() != null && !dto.getCitizenId().isBlank()) {
+		    if (employeeRepository.existsByCitizenId(dto.getCitizenId())) {
+		        throw new RuntimeException("Citizen ID already exists");
+		    }
+		}
 
 	    Department department = departmentRepository.findById(dto.getDepartmentId())
 	            .orElseThrow(() -> new RuntimeException("Department not found"));
@@ -141,6 +139,18 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (dto.getGender() != null)
             emp.setGender(dto.getGender());
 
+        if (dto.getCitizenId() != null) {
+
+            if (!dto.getCitizenId().isBlank()) {
+                if (employeeRepository.existsByCitizenIdAndIdNot(dto.getCitizenId(), id)) {
+                    throw new RuntimeException("Citizen ID already exists");
+                }
+                emp.setCitizenId(dto.getCitizenId());
+            } else {
+                emp.setCitizenId(null);
+            }
+        }
+        
         if (dto.getAddress() != null)
             emp.setAddress(dto.getAddress());
         
