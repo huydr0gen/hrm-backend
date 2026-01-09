@@ -2,6 +2,8 @@ package com.tlu.hrm.repository;
 
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -74,4 +76,10 @@ public interface SalaryRecordRepository extends JpaRepository<SalaryRecord, Long
         where s.month = :month and s.year = :year
     """)
     void deleteByMonthAndYear(int month, int year);
+    
+    // Lấy tất cả kỳ lương của 1 nhân viên (phục vụ list tổng)
+    Page<SalaryRecord> findByEmployeeId(Long employeeId, Pageable pageable);
+
+    // Lấy theo tháng + năm (khi filter cụ thể)
+    Page<SalaryRecord> findByEmployeeIdAndMonthAndYear(Long employeeId, Integer month, Integer year, Pageable pageable);
 }
