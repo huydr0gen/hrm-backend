@@ -3,6 +3,8 @@ package com.tlu.hrm.entities;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.tlu.hrm.enums.EmployeeStatus;
 import com.tlu.hrm.enums.Gender;
@@ -66,7 +68,8 @@ public class Employee {
     @JsonBackReference
     private User user;
     
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
     public Employee() {}
