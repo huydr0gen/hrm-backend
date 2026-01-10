@@ -89,6 +89,23 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
                 emp.getDepartment().getId()
         );
 
+        if (dto.getWorkDate() == null) {
+            throw new IllegalArgumentException("Ngày làm việc không được để trống");
+        }
+        
+        if (dto.getProposedCheckIn() != null && dto.getProposedCheckOut() != null
+                && !dto.getProposedCheckIn().isBefore(dto.getProposedCheckOut())) {
+            throw new IllegalArgumentException("Giờ vào phải trước giờ ra");
+        }
+        
+        if (dto.getWorkDate().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Không thể giải trình cho ngày tương lai");
+        }
+        
+        if (dto.getWorkDate().isBefore(emp.getOnboardDate())) {
+            throw new IllegalArgumentException("Không thể giải trình cho ngày trước khi onboard");
+        }
+        
         TimekeepingExplanation e = new TimekeepingExplanation();
         e.setEmployee(emp);
         e.setWorkDate(dto.getWorkDate());
@@ -98,14 +115,6 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
         e.setStatus(TimekeepingExplanationStatus.PENDING);
         e.setApproverId(approverId);
 
-        if (dto.getWorkDate().isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("Không thể giải trình cho ngày tương lai");
-        }
-
-        if (dto.getProposedCheckIn() != null && dto.getProposedCheckOut() != null
-                && !dto.getProposedCheckIn().isBefore(dto.getProposedCheckOut())) {
-            throw new IllegalArgumentException("Giờ vào phải trước giờ ra");
-        }
         
         TimekeepingExplanation saved = repository.save(e);
 
@@ -241,14 +250,24 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
                 .orElseThrow(() -> new RuntimeException("Not found"));
 
         if (e.getStatus() != TimekeepingExplanationStatus.PENDING) {
-            throw new IllegalStateException("Already processed");
+            throw new IllegalStateException("Đơn đã được xử lý");
+        }
+        
+        if (e.getWorkDate().isBefore(e.getEmployee().getOnboardDate())) {
+            throw new RuntimeException("Không thể duyệt giải trình trước ngày onboard");
         }
 
         Employee actor = getCurrentEmployee();
         Long actorUserId = actor.getUser().getId();
 
         if (!actorUserId.equals(e.getApproverId())) {
-            throw new AccessDeniedException("Not approver");
+            throw new AccessDeniedException("Bạn không phải người duyệt");
+        }
+        
+        if (dto.getAction() == DecisionAction.APPROVE) {
+            if (e.getProposedCheckIn() == null && e.getProposedCheckOut() == null) {
+                throw new IllegalArgumentException("Không có giờ đề xuất để duyệt");
+            }
         }
 
         e.setStatus(

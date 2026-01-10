@@ -4,7 +4,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -65,16 +67,42 @@ public class OTServiceImpl implements OTService {
 	    if (!(principal instanceof CustomUserDetails ud)) {
 	        throw new RuntimeException("Cannot resolve current user");
 	    }
+	    
+	    if (dto.getOtDate() == null) {
+	        throw new IllegalArgumentException("Ngày tăng ca không được để trống");
+	    }
+
+	    if (dto.getOtDate().isAfter(LocalDate.now())) {
+	        throw new IllegalArgumentException("Không thể tạo OT cho ngày tương lai");
+	    }
+	    
+	    if (dto.getStartTime() == null || dto.getEndTime() == null) {
+	        throw new IllegalArgumentException("Giờ bắt đầu và kết thúc OT không được để trống");
+	    }
+
+	    if (!dto.getStartTime().isBefore(dto.getEndTime())) {
+	        throw new IllegalArgumentException("Giờ bắt đầu phải trước giờ kết thúc");
+	    }
+	    
+	    if (dto.getEmployeeCodes() == null || dto.getEmployeeCodes().isEmpty()) {
+	        throw new IllegalArgumentException("Danh sách nhân viên OT không được để trống");
+	    }
 
 	    Employee manager = employeeRepo.findByUserId(ud.getId())
 	            .orElseThrow(() -> new RuntimeException("Employee not found"));
 
+	    
 	    OTRequest ot = new OTRequest();
 	    ot.setOtDate(dto.getOtDate());
 	    ot.setStartTime(dto.getStartTime());
 	    ot.setEndTime(dto.getEndTime());
 	    ot.setReason(dto.getReason());
 	    ot.setManager(manager);
+	    
+	    Set<String> uniqueCodes = new HashSet<>(dto.getEmployeeCodes());
+	    if (uniqueCodes.size() != dto.getEmployeeCodes().size()) {
+	        throw new IllegalArgumentException("Danh sách nhân viên bị trùng");
+	    }
 
 	    List<OTParticipant> participants = dto.getEmployeeCodes().stream()
 	            .map(code -> {
@@ -90,6 +118,12 @@ public class OTServiceImpl implements OTService {
 	                            "Employee not in manager department: " + code
 	                    );
 	                }
+	                
+	                if (dto.getOtDate().isBefore(emp.getOnboardDate())) {
+	                    throw new IllegalArgumentException(
+	                        "Nhân viên " + emp.getCode() + " chưa onboard vào ngày OT"
+	                    );
+	                }
 
 	                OTParticipant p = new OTParticipant();
 	                p.setEmployee(emp);
@@ -97,7 +131,7 @@ public class OTServiceImpl implements OTService {
 	                return p;
 	            })
 	            .toList();
-
+	    
 	    ot.setParticipants(participants);
 
 	    OTRequest saved = otRepo.save(ot);
@@ -131,6 +165,10 @@ public class OTServiceImpl implements OTService {
 
         if (!p.getEmployee().getId().equals(emp.getId())) {
             throw new SecurityException("You can only respond to your own OT request");
+        }
+
+        if (p.getStatus() != OTParticipantStatus.PENDING) {
+            throw new IllegalStateException("Bạn đã phản hồi yêu cầu này rồi");
         }
         
         if (dto.isAccept()) {
@@ -184,6 +222,8 @@ public class OTServiceImpl implements OTService {
         } else {
             ot.setStatus(OTRequestStatus.PENDING);
         }
+        
+        otRepo.save(ot);
     }
 
     @Override
@@ -271,6 +311,20 @@ public class OTServiceImpl implements OTService {
         OTRequest ot = otRepo.findById(otRequestId)
                 .orElseThrow(() -> new RuntimeException("OT not found"));
 
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails ud = (CustomUserDetails) auth.getPrincipal();
+
+        Employee manager = employeeRepo.findByUserId(ud.getId())
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+        if (!ot.getManager().getId().equals(manager.getId())) {
+            throw new SecurityException("Bạn không có quyền chốt OT này");
+        }
+        
+        if (ot.getStatus() == OTRequestStatus.COMPLETED) {
+            throw new IllegalStateException("OT đã được chốt trước đó");
+        }
+        
         if (ot.getStatus() != OTRequestStatus.ACCEPTED
             && ot.getStatus() != OTRequestStatus.PARTIALLY_ACCEPTED) {
             throw new IllegalStateException("OT not ready to complete");
@@ -280,6 +334,10 @@ public class OTServiceImpl implements OTService {
                 ot.getStartTime(),
                 ot.getEndTime()
         );
+        
+        if (otMinutes <= 0) {
+            throw new IllegalStateException("Thời gian OT không hợp lệ");
+        }
 
         for (OTParticipant p : ot.getParticipants()) {
             if (p.getStatus() == OTParticipantStatus.ACCEPTED) {

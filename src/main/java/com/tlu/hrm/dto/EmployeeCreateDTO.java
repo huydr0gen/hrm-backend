@@ -51,7 +51,13 @@ public class EmployeeCreateDTO {
 	    description = "ID phòng ban",
 	    example = "1"
 	)
-	private Long departmentId;    
+	private Long departmentId; 
+	
+	@Schema(
+	    description = "Ngày bắt đầu đi làm thực tế",
+	    example = "2026-01-15"
+	)
+	private LocalDate onboardDate;
 	
 	@Schema(
         description = "Số điện thoại",
@@ -113,6 +119,14 @@ public class EmployeeCreateDTO {
 
 	public void setDepartmentId(Long departmentId) {
 		this.departmentId = departmentId;
+	}
+
+	public LocalDate getOnboardDate() {
+		return onboardDate;
+	}
+
+	public void setOnboardDate(LocalDate onboardDate) {
+		this.onboardDate = onboardDate;
 	}
 
 	public String getPhoneNumber() {

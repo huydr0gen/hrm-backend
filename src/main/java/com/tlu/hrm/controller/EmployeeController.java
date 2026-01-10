@@ -185,11 +185,11 @@ public class EmployeeController {
             Màn hình: Quản lý nhân sự
             
             Ghi chú:
-            - Chỉ ADMIN được phép xóa
+            - Chỉ HR được phép xóa
             - Thường dùng khi nhập sai dữ liệu
             """
     )
-    @PreAuthorize("hasRole('HR')")
+    @PreAuthorize("hasAuthority('ROLE_HR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         employeeService.deleteEmployee(id);

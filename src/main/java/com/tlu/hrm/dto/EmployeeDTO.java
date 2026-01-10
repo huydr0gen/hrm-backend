@@ -70,6 +70,12 @@ public class EmployeeDTO {
 	    private String departmentName;
 	    
 	    @Schema(
+    	    description = "Ngày onboard",
+    	    example = "2026-01-15"
+    	)
+    	private LocalDate onboardDate;
+	    
+	    @Schema(
 		        description = "Trạng thái của nhân viên",
 		        example = "ACTIVE"
 		    )
@@ -178,6 +184,14 @@ public class EmployeeDTO {
 
 		public void setDepartmentName(String departmentName) {
 			this.departmentName = departmentName;
+		}
+
+		public LocalDate getOnboardDate() {
+			return onboardDate;
+		}
+
+		public void setOnboardDate(LocalDate onboardDate) {
+			this.onboardDate = onboardDate;
 		}
 
 		public EmployeeStatus getStatus() {

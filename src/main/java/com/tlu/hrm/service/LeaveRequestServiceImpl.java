@@ -95,6 +95,10 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         Employee emp = employeeRepo.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
 
+        if (dto.getStartDate().isBefore(emp.getOnboardDate())) {
+            throw new RuntimeException("Không thể xin nghỉ trước ngày onboard");
+        }
+
         if (dto.getStartDate().isAfter(dto.getEndDate())) {
             throw new IllegalArgumentException("Start date must be before end date");
         }
@@ -220,6 +224,10 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
                 throw new IllegalStateException("Exceed annual leave quota");
             }
         }
+        
+        if (req.getStartDate().isBefore(emp.getOnboardDate())) {
+            throw new RuntimeException("Không thể chỉnh đơn nghỉ về trước ngày onboard");
+        }
 
         req.setUpdatedAt(LocalDateTime.now());
 
@@ -299,6 +307,12 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 
         if (!req.getApproverId().equals(actorId)) {
             throw new SecurityException("You are not assigned approver");
+        }
+        
+        Employee emp = req.getEmployee();
+
+        if (req.getStartDate().isBefore(emp.getOnboardDate())) {
+            throw new RuntimeException("Không thể duyệt đơn nghỉ trước ngày onboard");
         }
 
         req.setStatus(

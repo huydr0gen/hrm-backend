@@ -54,6 +54,9 @@ public class Employee {
     @JoinColumn(name = "department_id", nullable = false)
     private Department department;
     
+    @Column(name = "onboard_date", nullable = false)
+    private LocalDate onboardDate;
+    
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EmployeeStatus status = EmployeeStatus.ACTIVE;
@@ -75,7 +78,7 @@ public class Employee {
     public Employee() {}
 
 	public Employee(Long id, String code, String fullName, LocalDate dateOfBirth, Gender gender, String citizenId,
-			String address, String position, Department department, EmployeeStatus status, String email,
+			String address, String position, Department department, LocalDate onboardDate, EmployeeStatus status, String email,
 			String phoneNumber, User user, LocalDateTime createdAt) {
 		super();
 		this.id = id;
@@ -87,6 +90,7 @@ public class Employee {
 		this.address = address;
 		this.position = position;
 		this.department = department;
+		this.onboardDate = onboardDate;
 		this.status = status;
 		this.email = email;
 		this.phoneNumber = phoneNumber;
@@ -164,6 +168,14 @@ public class Employee {
 
 	public void setDepartment(Department department) {
 		this.department = department;
+	}
+
+	public LocalDate getOnboardDate() {
+		return onboardDate;
+	}
+
+	public void setOnboardDate(LocalDate onboardDate) {
+		this.onboardDate = onboardDate;
 	}
 
 	public EmployeeStatus getStatus() {

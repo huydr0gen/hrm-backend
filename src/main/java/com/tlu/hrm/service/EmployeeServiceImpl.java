@@ -1,5 +1,6 @@
 package com.tlu.hrm.service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -59,6 +60,13 @@ public class EmployeeServiceImpl implements EmployeeService {
 
 	    emp.setPosition(dto.getPosition());
 	    emp.setDepartment(department);
+
+	    if (dto.getOnboardDate() != null) {
+	        emp.setOnboardDate(dto.getOnboardDate());
+	    } else {
+	        emp.setOnboardDate(LocalDate.now());
+	    }
+
 	    emp.setEmail(null);
 	    emp.setPhoneNumber(dto.getPhoneNumber());
 
@@ -161,6 +169,9 @@ public class EmployeeServiceImpl implements EmployeeService {
                     .orElseThrow(() -> new RuntimeException("Department not found"));
             emp.setDepartment(department);
         }
+        
+        if (dto.getOnboardDate() != null)
+            emp.setOnboardDate(dto.getOnboardDate());
 
         if (dto.getPhoneNumber() != null)
             emp.setPhoneNumber(dto.getPhoneNumber());
@@ -244,6 +255,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         dto.setPosition(emp.getPosition());
         dto.setDepartmentId(emp.getDepartment().getId());
         dto.setDepartmentName(emp.getDepartment().getName());
+        dto.setOnboardDate(emp.getOnboardDate());
         dto.setStatus(emp.getStatus());
         dto.setEmail(emp.getEmail());
         dto.setPhoneNumber(emp.getPhoneNumber());

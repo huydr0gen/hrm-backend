@@ -47,18 +47,21 @@ public class AttendanceCalculationServiceImpl implements AttendanceCalculationSe
     @Override
     public void recalculateDaily(Long employeeId, LocalDate date) {
 
+        Employee employee = employeeRepo.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+        
+        if (date.isBefore(employee.getOnboardDate())) {
+        	throw new RuntimeException("Không thể tính công cho ngày trước khi nhân viên onboard");
+        }
+        
         AttendanceRecord record = attendanceRepo
                 .findByEmployeeIdAndWorkDate(employeeId, date)
                 .orElse(null);
-        
-        Employee employee = employeeRepo.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
 
         // =================================================
         // 1️⃣ LEAVE APPROVED → override toàn bộ công
         // =================================================
-        boolean hasApprovedLeave =
-                leaveRepo.existsApprovedOverlap(employeeId, date, date);
+        boolean hasApprovedLeave = leaveRepo.existsApprovedOverlap(employeeId, date, date);
 
         if (hasApprovedLeave) {
 
@@ -78,8 +81,7 @@ public class AttendanceCalculationServiceImpl implements AttendanceCalculationSe
         // =================================================
         // 2️⃣ SPECIAL SCHEDULE APPROVED
         // =================================================
-        List<SpecialSchedule> schedules =
-                specialScheduleRepo.findApprovedSchedulesByEmployeeAndDate(employee, date);
+        List<SpecialSchedule> schedules = specialScheduleRepo.findApprovedSchedulesByEmployeeAndDate(employee, date);
 
         if (!schedules.isEmpty()) {
 
@@ -173,28 +175,48 @@ public class AttendanceCalculationServiceImpl implements AttendanceCalculationSe
     @Override
     public void recalculateMonthly(Long employeeId, YearMonth month) {
 
-        for (int day = 1; day <= month.lengthOfMonth(); day++) {
-            recalculateDaily(employeeId, month.atDay(day));
+        Employee employee = employeeRepo.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+        LocalDate onboardDate = employee.getOnboardDate();
+        LocalDate startOfMonth = month.atDay(1);
+        LocalDate endOfMonth = month.atEndOfMonth();
+
+        // Nếu nhân viên onboard sau tháng này → không tính công
+        if (onboardDate.isAfter(endOfMonth)) {
+            return;
+        }
+
+        // Ngày bắt đầu thực tế để tính công
+        LocalDate actualStart = onboardDate.isAfter(startOfMonth)
+                ? onboardDate
+                : startOfMonth;
+
+        for (LocalDate date = actualStart; !date.isAfter(endOfMonth); date = date.plusDays(1)) {
+            recalculateDaily(employeeId, date);
         }
     }
     
     @Override
     public void addOTMinutes(Long employeeId, LocalDate date, int otMinutes) {
 
+        if (otMinutes <= 0) return;
+
+        Employee employee = employeeRepo.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+        // 🚫 CHẶN OT TRƯỚC ONBOARD
+        if (date.isBefore(employee.getOnboardDate())) {
+        	throw new RuntimeException("Không thể thêm OT cho ngày trước khi nhân viên onboard");
+        }
+
         AttendanceRecord record = attendanceRepo
                 .findByEmployeeIdAndWorkDate(employeeId, date)
                 .orElse(null);
 
-        if (otMinutes <= 0) {
-            return;
-        }
-        
         if (record == null) {
             record = new AttendanceRecord();
-            record.setEmployee(
-                    employeeRepo.findById(employeeId)
-                            .orElseThrow(() -> new RuntimeException("Employee not found"))
-            );
+            record.setEmployee(employee);
             record.setWorkDate(date);
             record.setWorkedMinutes(0);
             record.setPaidMinutes(0);

@@ -12,30 +12,51 @@ import org.springframework.stereotype.Service;
 import com.tlu.hrm.dto.AttendanceDayResponseDTO;
 import com.tlu.hrm.dto.AttendanceMonthlyResponseDTO;
 import com.tlu.hrm.entities.AttendanceRecord;
+import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.repository.AttendanceRecordRepository;
+import com.tlu.hrm.repository.EmployeeRepository;
 import com.tlu.hrm.utils.AttendanceDisplayUtil;
 
 @Service
 public class AttendanceQueryServiceImpl implements AttendanceQueryService {
 
 	private final AttendanceRecordRepository attendanceRepo;
+	private final EmployeeRepository employeeRepo;
 
-	public AttendanceQueryServiceImpl(AttendanceRecordRepository attendanceRepo) {
+	public AttendanceQueryServiceImpl(AttendanceRecordRepository attendanceRepo, EmployeeRepository employeeRepo) {
 		super();
 		this.attendanceRepo = attendanceRepo;
+		this.employeeRepo = employeeRepo;
 	}
 	
 	@Override
-    public AttendanceMonthlyResponseDTO getMonthly(
-            Long employeeId,
-            YearMonth month) {
+    public AttendanceMonthlyResponseDTO getMonthly(Long employeeId, YearMonth month) {
 
-        LocalDate start = month.atDay(1);
-        LocalDate end = month.atEndOfMonth();
+		Employee employee = employeeRepo.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+        LocalDate onboardDate = employee.getOnboardDate();
+        LocalDate startOfMonth = month.atDay(1);
+        LocalDate endOfMonth = month.atEndOfMonth();
+
+        // Nếu chưa onboard trong tháng này
+        if (onboardDate.isAfter(endOfMonth)) {
+            AttendanceMonthlyResponseDTO empty = new AttendanceMonthlyResponseDTO();
+            empty.setDays(new ArrayList<>());
+            empty.setTotalPaidMinutes(0);
+            empty.setTotalWorkingDays(0);
+            empty.setTotalOTMinutes(0);
+            empty.setTotalOTHours(0);
+            return empty;
+        }
+
+        LocalDate actualStart = onboardDate.isAfter(startOfMonth)
+                ? onboardDate
+                : startOfMonth;
 
         List<AttendanceRecord> records =
-                attendanceRepo.findMonthly(employeeId, start, end);
-        
+                attendanceRepo.findMonthly(employeeId, actualStart, endOfMonth);
+
         int totalOTMinutes = records.stream()
                 .map(AttendanceRecord::getOtMinutes)
                 .filter(m -> m != null)
@@ -44,18 +65,17 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
 
         Map<LocalDate, AttendanceRecord> map =
                 records.stream()
-                       .collect(Collectors.toMap(
-                               AttendanceRecord::getWorkDate,
-                               r -> r
-                       ));
+                        .collect(Collectors.toMap(
+                                AttendanceRecord::getWorkDate,
+                                r -> r
+                        ));
 
         List<AttendanceDayResponseDTO> days = new ArrayList<>();
 
         int totalPaidMinutes = 0;
 
-        for (int d = 1; d <= month.lengthOfMonth(); d++) {
+        for (LocalDate date = actualStart; !date.isAfter(endOfMonth); date = date.plusDays(1)) {
 
-            LocalDate date = month.atDay(d);
             AttendanceRecord r = map.get(date);
 
             AttendanceDayResponseDTO dto = new AttendanceDayResponseDTO();
@@ -70,7 +90,6 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
                 int ot = r.getOtMinutes() != null ? r.getOtMinutes() : 0;
                 dto.setOtMinutes(ot);
 
-                // display (giữ logic cũ + thêm OT)
                 dto.setDisplay(
                         AttendanceDisplayUtil.buildDisplay(r)
                 );
@@ -90,9 +109,6 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
         res.setTotalPaidMinutes(totalPaidMinutes);
         res.setTotalWorkingDays(totalPaidMinutes / 480.0);
 
-        // ===============================
-        // OT SUMMARY
-        // ===============================
         res.setTotalOTMinutes(totalOTMinutes);
         res.setTotalOTHours(totalOTMinutes / 60.0);
 

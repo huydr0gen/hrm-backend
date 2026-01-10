@@ -71,6 +71,10 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
                 emp.getId(),
                 emp.getDepartment().getId()
         );
+        
+        if (dto.getStartDate().isBefore(emp.getOnboardDate())) {
+            throw new RuntimeException("Không thể tạo lịch đặc thù trước ngày onboard");
+        }
 
         SpecialSchedule ss = new SpecialSchedule();
         ss.setEmployee(emp);
@@ -282,6 +286,10 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         if (ss.getStatus() != SpecialScheduleStatus.PENDING) {
             throw new IllegalStateException("Only PENDING schedule can be updated");
         }
+        
+        if (dto.getStartDate() != null && dto.getStartDate().isBefore(actor.getOnboardDate())) {
+            throw new RuntimeException("Không thể chỉnh lịch đặc thù về trước ngày onboard");
+        }
 
         switch (ss.getType()) {
 
@@ -290,11 +298,20 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
             }
 
             case CHILD_CARE -> {
+                if (dto.getStartDate() != null) {
+                    ss.setStartDate(dto.getStartDate());
+                }
+                if (dto.getEndDate() != null) {
+                    ss.setEndDate(dto.getEndDate());
+                }
                 applyWorkingTime(ss, dto);
                 validateChildCareWorkingTime(ss);
             }
 
             case ON_SITE -> {
+                if (dto.getStartDate() != null) {
+                    ss.setStartDate(dto.getStartDate());
+                }
                 if (dto.getEndDate() != null) {
                     ss.setEndDate(dto.getEndDate());
                 }
@@ -302,8 +319,12 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
             }
 
             case OTHER -> {
-                ss.setStartDate(dto.getStartDate());
-                ss.setEndDate(dto.getEndDate());
+                if (dto.getStartDate() != null) {
+                    ss.setStartDate(dto.getStartDate());
+                }
+                if (dto.getEndDate() != null) {
+                    ss.setEndDate(dto.getEndDate());
+                }
                 applyWorkingTime(ss, dto);
             }
         }
@@ -366,7 +387,13 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
 
         Employee actor = getCurrentEmployee();
         Long actorUserId = actor.getUser().getId();
+        
+        Employee emp = ss.getEmployee();
 
+        if (ss.getEndDate().isBefore(emp.getOnboardDate())) {
+            throw new RuntimeException("Không thể duyệt lịch đặc thù trước ngày onboard");
+        }
+        
         if (!actorUserId.equals(ss.getApproverId())) {
             throw new AccessDeniedException("You are not the approver");
         }
