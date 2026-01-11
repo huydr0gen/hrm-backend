@@ -3,6 +3,7 @@ package com.tlu.hrm.dto;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.tlu.hrm.enums.LeaveDuration;
 import com.tlu.hrm.enums.LeaveStatus;
 import com.tlu.hrm.enums.LeaveType;
 
@@ -34,6 +35,9 @@ public class LeaveRequestDTO {
 
     @Schema(description = "Loại nghỉ phép", example = "ANNUAL")
     private LeaveType type;
+    
+    @Schema(description = "Thời lượng nghỉ", example = "FULL_DAY")
+    private LeaveDuration duration;
 
     @Schema(description = "Ngày bắt đầu nghỉ", example = "2025-12-20")
     private LocalDate startDate;
@@ -124,6 +128,14 @@ public class LeaveRequestDTO {
 
 	public void setType(LeaveType type) {
 		this.type = type;
+	}
+
+	public LeaveDuration getDuration() {
+		return duration;
+	}
+
+	public void setDuration(LeaveDuration duration) {
+		this.duration = duration;
 	}
 
 	public LocalDate getStartDate() {

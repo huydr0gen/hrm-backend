@@ -9,16 +9,16 @@ public class LeaveRequestDecisionDTO {
 
 	// APPROVE hoặc REJECT
 	@Schema(
-	        description = "Hành động xử lý đơn",
-	        example = "APPROVE"
-	    )
+        description = "Hành động xử lý đơn",
+        example = "APPROVE"
+    )
     private DecisionAction action;
 
     // Ghi chú của HR/Manager
 	@Schema(
-	        description = "Ghi chú của Manager / HR",
-	        example = "Đồng ý cho nghỉ"
-	    )
+        description = "Ghi chú của Manager / HR",
+        example = "Đồng ý cho nghỉ"
+    )
     private String managerNote;
 
     

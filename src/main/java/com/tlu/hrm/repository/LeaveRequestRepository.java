@@ -84,4 +84,18 @@ JpaSpecificationExecutor<LeaveRequest> {
             @Param("type") LeaveType type,
             @Param("statuses") List<LeaveStatus> statuses
     );
+    
+    List<LeaveRequest> findByEmployeeIdAndStatusIn(Long employeeId, List<LeaveStatus> statuses);
+    
+    @Query("""
+	    SELECT lr
+	    FROM LeaveRequest lr
+	    WHERE lr.employee.id = :employeeId
+	      AND lr.status = 'APPROVED'
+	      AND :date BETWEEN lr.startDate AND lr.endDate
+	""")
+	List<LeaveRequest> findApprovedLeavesForDate(
+	    @Param("employeeId") Long employeeId,
+	    @Param("date") LocalDate date
+	);
 }

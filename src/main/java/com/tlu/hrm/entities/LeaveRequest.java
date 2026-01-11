@@ -3,6 +3,7 @@ package com.tlu.hrm.entities;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.tlu.hrm.enums.LeaveDuration;
 import com.tlu.hrm.enums.LeaveStatus;
 import com.tlu.hrm.enums.LeaveType;
 
@@ -21,17 +22,26 @@ public class LeaveRequest {
     private Employee employee;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private LeaveType type;
 
+    @Column(nullable = false)
     private LocalDate startDate;
 
+    @Column(nullable = false)
     private LocalDate endDate;
 
+    @Column(nullable = false)
     private String reason;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private LeaveStatus status = LeaveStatus.PENDING;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private LeaveDuration duration;
+    
     // 🔑 NGƯỜI DUYỆT ĐƯỢC RESOLVE KHI CREATE
     @Column(name = "approver_id", nullable = false)
     private Long approverId;
@@ -45,8 +55,18 @@ public class LeaveRequest {
     @Column(name = "decided_at")
     private LocalDateTime decidedAt;
 
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
 
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
+    
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+    
     private LocalDateTime updatedAt;
 
 	public Long getId() {
@@ -71,6 +91,14 @@ public class LeaveRequest {
 
 	public void setType(LeaveType type) {
 		this.type = type;
+	}
+
+	public LeaveDuration getDuration() {
+		return duration;
+	}
+
+	public void setDuration(LeaveDuration duration) {
+		this.duration = duration;
 	}
 
 	public LocalDate getStartDate() {

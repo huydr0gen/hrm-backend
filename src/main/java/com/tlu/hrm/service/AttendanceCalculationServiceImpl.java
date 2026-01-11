@@ -9,8 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.tlu.hrm.entities.AttendanceRecord;
 import com.tlu.hrm.entities.Employee;
+import com.tlu.hrm.entities.LeaveRequest;
 import com.tlu.hrm.entities.SpecialSchedule;
 import com.tlu.hrm.enums.AttendanceWorkType;
+import com.tlu.hrm.enums.LeaveDuration;
 import com.tlu.hrm.enums.SpecialScheduleType;
 import com.tlu.hrm.repository.AttendanceRecordRepository;
 import com.tlu.hrm.repository.EmployeeRepository;
@@ -61,19 +63,42 @@ public class AttendanceCalculationServiceImpl implements AttendanceCalculationSe
         // =================================================
         // 1️⃣ LEAVE APPROVED → override toàn bộ công
         // =================================================
-        boolean hasApprovedLeave = leaveRepo.existsApprovedOverlap(employeeId, date, date);
+        List<LeaveRequest> leaves = leaveRepo.findApprovedLeavesForDate(employeeId, date);
 
-        if (hasApprovedLeave) {
+        if (!leaves.isEmpty()) {
 
             if (record == null) {
                 record = new AttendanceRecord();
                 record.setEmployee(employee);
                 record.setWorkDate(date);
-                // employee PHẢI được set từ nơi tạo record ban đầu
             }
 
-            record.setPaidMinutes(FULL_DAY_MINUTES);
-            record.setWorkType(AttendanceWorkType.FULL_DAY);
+            int paidMinutes = 0;
+
+            boolean hasMorning = false;
+            boolean hasAfternoon = false;
+            boolean hasFullDay = false;
+
+            for (LeaveRequest lr : leaves) {
+                if (lr.getDuration() == null || lr.getDuration() == LeaveDuration.FULL_DAY) {
+                    hasFullDay = true;
+                } else if (lr.getDuration() == LeaveDuration.MORNING) {
+                    hasMorning = true;
+                } else if (lr.getDuration() == LeaveDuration.AFTERNOON) {
+                    hasAfternoon = true;
+                }
+            }
+
+            if (hasFullDay || (hasMorning && hasAfternoon)) {
+                paidMinutes = FULL_DAY_MINUTES;
+                record.setWorkType(AttendanceWorkType.FULL_DAY);
+            } else {
+                paidMinutes = HALF_DAY_MINUTES;
+                record.setWorkType(AttendanceWorkType.HALF_DAY);
+            }
+
+            record.setPaidMinutes(paidMinutes);
+            record.setWorkedMinutes(0);
             attendanceRepo.save(record);
             return;
         }
@@ -103,8 +128,14 @@ public class AttendanceCalculationServiceImpl implements AttendanceCalculationSe
                         : 0;
 
                 if (workedMinutes >= requiredMinutes) {
-                    record.setPaidMinutes(FULL_DAY_MINUTES); // vẫn tính 8h
+                    // ĐI ĐỦ 7h → tính đủ 8h công
+                    record.setPaidMinutes(FULL_DAY_MINUTES);
                     record.setWorkType(AttendanceWorkType.FULL_DAY);
+                    record.setWorkedMinutes(0);
+                } else if (workedMinutes >= HALF_DAY_MINUTES) {
+                    // chưa đủ 7h nhưng >= 4h → nửa ngày
+                    record.setPaidMinutes(HALF_DAY_MINUTES);
+                    record.setWorkType(AttendanceWorkType.HALF_DAY);
                 } else {
                     record.setPaidMinutes(0);
                     record.setWorkType(AttendanceWorkType.ABSENT);
@@ -117,6 +148,7 @@ public class AttendanceCalculationServiceImpl implements AttendanceCalculationSe
             // Các loại lịch đặc thù khác → giữ logic cũ
             record.setPaidMinutes(FULL_DAY_MINUTES);
             record.setWorkType(AttendanceWorkType.FULL_DAY);
+            record.setWorkedMinutes(0);
             attendanceRepo.save(record);
             return;
         }
@@ -137,6 +169,7 @@ public class AttendanceCalculationServiceImpl implements AttendanceCalculationSe
             // Với đồ án: giải trình hợp lệ → tính đủ công
             record.setPaidMinutes(FULL_DAY_MINUTES);
             record.setWorkType(AttendanceWorkType.FULL_DAY);
+            record.setWorkedMinutes(0);
             attendanceRepo.save(record);
             return;
         }
@@ -157,9 +190,11 @@ public class AttendanceCalculationServiceImpl implements AttendanceCalculationSe
 
         if (workedMinutes >= FULL_DAY_MINUTES) {
             record.setPaidMinutes(FULL_DAY_MINUTES);
+            record.setWorkedMinutes(0);
             record.setWorkType(AttendanceWorkType.FULL_DAY);
         } else if (workedMinutes >= HALF_DAY_MINUTES) {
             record.setPaidMinutes(HALF_DAY_MINUTES);
+            record.setWorkedMinutes(0);
             record.setWorkType(AttendanceWorkType.HALF_DAY);
         } else {
             record.setPaidMinutes(0);
