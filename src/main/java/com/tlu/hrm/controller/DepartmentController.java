@@ -133,7 +133,6 @@ public class DepartmentController {
 
 	        Role:
 	        - HR
-	        - ADMIN
 	        - EMPLOYEE
 
 	        Ghi chú:

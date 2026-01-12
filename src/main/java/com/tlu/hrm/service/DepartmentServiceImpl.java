@@ -10,15 +10,18 @@ import com.tlu.hrm.dto.DepartmentDTO;
 import com.tlu.hrm.dto.DepartmentUpdateDTO;
 import com.tlu.hrm.entities.Department;
 import com.tlu.hrm.repository.DepartmentRepository;
+import com.tlu.hrm.repository.EmployeeRepository;
 
 @Service
 public class DepartmentServiceImpl implements DepartmentService{
 
 	private final DepartmentRepository departmentRepository;
+	private final EmployeeRepository employeeRepository;
 
-	public DepartmentServiceImpl(DepartmentRepository departmentRepository) {
+	public DepartmentServiceImpl(DepartmentRepository departmentRepository, EmployeeRepository employeeRepository) {
 		super();
 		this.departmentRepository = departmentRepository;
+		this.employeeRepository = employeeRepository;
 	}
 	
 	// ================= CREATE =================
@@ -60,6 +63,14 @@ public class DepartmentServiceImpl implements DepartmentService{
         }
 
         if (dto.getActive() != null) {
+            if (!dto.getActive()) {
+                boolean hasEmployees = employeeRepository.existsByDepartmentId(id);
+                if (hasEmployees) {
+                    throw new IllegalStateException(
+                        "Không thể vô hiệu hóa phòng ban vì vẫn còn nhân viên đang thuộc phòng ban này"
+                    );
+                }
+            }
             department.setActive(dto.getActive());
         }
 
@@ -71,8 +82,15 @@ public class DepartmentServiceImpl implements DepartmentService{
     public void delete(Long id) {
 
         Department department = departmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Department not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng ban"));
 
+        boolean hasEmployees = employeeRepository.existsByDepartmentId(id);
+        if (hasEmployees) {
+            throw new IllegalStateException(
+                "Không thể vô hiệu hóa phòng ban vì vẫn còn nhân viên đang thuộc phòng ban này"
+            );
+        }
+        
         department.setActive(false);
         departmentRepository.save(department);
     }
