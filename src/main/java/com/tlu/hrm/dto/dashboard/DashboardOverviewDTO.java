@@ -23,10 +23,10 @@ public class DashboardOverviewDTO {
 	public DashboardOverviewDTO() {
 		super();
 	}
-	
+
 	public DashboardOverviewDTO(String month, long totalEmployees, long activeEmployees, long inactiveEmployees,
-			long lockedEmployees, long totalDepartments, AttendanceStatsDTO attendance, OtStatsDTO overtime,
-			SalaryStatsDTO salary) {
+			long lockedEmployees, long totalDepartments, long activeDepartments, long inactiveDepartments,
+			AttendanceStatsDTO attendance, OtStatsDTO overtime, SalaryStatsDTO salary) {
 		super();
 		this.month = month;
 		this.totalEmployees = totalEmployees;
@@ -34,6 +34,8 @@ public class DashboardOverviewDTO {
 		this.inactiveEmployees = inactiveEmployees;
 		this.lockedEmployees = lockedEmployees;
 		this.totalDepartments = totalDepartments;
+		this.activeDepartments = activeDepartments;
+		this.inactiveDepartments = inactiveDepartments;
 		this.attendance = attendance;
 		this.overtime = overtime;
 		this.salary = salary;
@@ -87,6 +89,22 @@ public class DashboardOverviewDTO {
 		this.totalDepartments = totalDepartments;
 	}
 
+	public long getActiveDepartments() {
+		return activeDepartments;
+	}
+
+	public void setActiveDepartments(long activeDepartments) {
+		this.activeDepartments = activeDepartments;
+	}
+
+	public long getInactiveDepartments() {
+		return inactiveDepartments;
+	}
+
+	public void setInactiveDepartments(long inactiveDepartments) {
+		this.inactiveDepartments = inactiveDepartments;
+	}
+
 	public AttendanceStatsDTO getAttendance() {
 		return attendance;
 	}
@@ -110,6 +128,7 @@ public class DashboardOverviewDTO {
 	public void setSalary(SalaryStatsDTO salary) {
 		this.salary = salary;
 	}
-
+	
+	
 	
 }

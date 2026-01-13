@@ -37,6 +37,15 @@ public class DashboardServiceImpl implements DashboardService {
     public DashboardOverviewDTO getOverview(YearMonth month) {
 
         String monthStr = month.toString();
+        
+        // ===== Employee stats =====
+        long active = employeeRepo.countByStatus(EmployeeStatus.ACTIVE);
+
+        long inactive = employeeRepo.countByStatus(EmployeeStatus.INACTIVE);
+
+        long locked = employeeRepo.countByStatus(EmployeeStatus.LOCKED);
+
+        long totalEmployees = active + inactive + locked;
 
         // ===== Attendance =====
         Integer workingDays =
@@ -53,11 +62,11 @@ public class DashboardServiceImpl implements DashboardService {
                         monthStr,
                         LocalTime.of(8, 0)
                 );
-
+        
         double lateRate =
-                (workingDays == null || workingDays == 0)
-                        ? 0.0
-                        : lateCount * 100.0 / workingDays;
+        	    (totalEmployees == 0)
+        	        ? 0.0
+        	        : lateEmployees * 100.0 / totalEmployees;
 
         AttendanceStatsDTO attendance =
                 new AttendanceStatsDTO(
@@ -89,29 +98,20 @@ public class DashboardServiceImpl implements DashboardService {
                         salaryRecordRepo.avgTotalSalary(m, y)
                 );
 
-        // ===== Employee stats =====
-        long active =
-                employeeRepo.countByStatus(EmployeeStatus.ACTIVE);
-
-        long inactive =
-                employeeRepo.countByStatus(EmployeeStatus.INACTIVE);
-
-        long locked =
-                employeeRepo.countByStatus(EmployeeStatus.LOCKED);
-
-        long totalEmployees = active + inactive;
-
         // ===== Department stats =====
-        long totalDepartments =
-                departmentRepo.count();
+        long totalDepartments = departmentRepo.count();
+        long activeDepartments = departmentRepo.countByActiveTrue();
+        long inactiveDepartments = departmentRepo.countByActiveFalse();
 
         return new DashboardOverviewDTO(
-                monthStr,
+        		monthStr,
                 totalEmployees,
                 active,
                 inactive,
                 locked,
                 totalDepartments,
+                activeDepartments,
+                inactiveDepartments,
                 attendance,
                 overtime,
                 salary

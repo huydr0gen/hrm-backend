@@ -21,4 +21,8 @@ public interface DepartmentRepository extends JpaRepository<Department, Long> {
         WHERE d.code LIKE 'DEP%'
     """)
     String findMaxDepartmentCode();
+    
+    long countByActiveTrue();
+    
+    long countByActiveFalse();
 }
