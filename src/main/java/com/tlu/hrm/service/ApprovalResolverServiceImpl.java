@@ -98,13 +98,24 @@ public class ApprovalResolverServiceImpl implements ApprovalResolverService {
                         new RuntimeException("Chưa cấu hình người duyệt cho nhân viên này"));
     }
     
+//    @Override
+//    public boolean hasApprovalPermission(Long approverEmployeeId) {
+//
+//        return approvalConfigRepository
+//                .findByApproverIdAndActiveTrue(approverEmployeeId)
+//                .stream()
+//                .findAny()
+//                .isPresent();
+//    }
+    
     @Override
     public boolean hasApprovalPermission(Long approverEmployeeId) {
+        var list = approvalConfigRepository.findByApproverIdAndActiveTrue(approverEmployeeId);
 
-        return approvalConfigRepository
-                .findByApproverIdAndActiveTrue(approverEmployeeId)
-                .stream()
-                .findAny()
-                .isPresent();
+        System.out.println("=== DEBUG APPROVER CHECK ===");
+        System.out.println("Approver ID = " + approverEmployeeId);
+        System.out.println("Found rows = " + list.size());
+
+        return !list.isEmpty();
     }
 }
