@@ -355,25 +355,12 @@ public class UserController {
         User user = userService.getUserByUsername(username);
 
         UserDTO dto = mapToDto(user);
-
-//        if (user.getEmployee() != null) {
-//            boolean canApprove = approvalResolverService.hasApprovalPermission(user.getEmployee().getId());
-//            dto.setCanApprove(canApprove);
-//        } else {
-//            dto.setCanApprove(false);
-//        }
         
         if (user.getEmployee() != null) {
             Long empId = user.getEmployee().getId();
-            System.out.println("=== DEBUG /me ===");
-            System.out.println("Employee ID from logged-in user = " + empId);
-
             boolean canApprove = approvalResolverService.hasApprovalPermission(empId);
-            System.out.println("canApprove result = " + canApprove);
-
             dto.setCanApprove(canApprove);
         } else {
-            System.out.println("User has no employee linked!");
             dto.setCanApprove(false);
         }
 
