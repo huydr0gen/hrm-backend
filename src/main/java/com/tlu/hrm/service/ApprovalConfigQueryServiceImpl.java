@@ -66,12 +66,10 @@ public class ApprovalConfigQueryServiceImpl implements ApprovalConfigQueryServic
 	                dto.setDepartmentCode(dept.getCode());
 	                dto.setDepartmentName(dept.getName());
 	            } else {
+	            	dto.setDepartmentId(null);
+	                dto.setDepartmentCode(cfg.getTargetCode());
 	                dto.setDepartmentName("[DEPARTMENT NOT FOUND]");
 	            }
-
-	            dto.setDepartmentId(dept.getId());
-	            dto.setDepartmentCode(dept.getCode());
-	            dto.setDepartmentName(dept.getName());
 
 	            // ===== APPROVER =====
 	            Employee approver = employeeRepository
@@ -120,13 +118,18 @@ public class ApprovalConfigQueryServiceImpl implements ApprovalConfigQueryServic
 
 	            // ===== TARGET EMPLOYEE =====
 	            Employee emp = employeeRepository
-	                    .findByCode(cfg.getTargetCode())
-	                    .orElseThrow(() ->
-	                            new RuntimeException("Employee not found"));
+	            	    .findByCode(cfg.getTargetCode())
+	            	    .orElse(null);
 
-	            dto.setEmployeeId(emp.getId());
-	            dto.setEmployeeCode(emp.getCode());
-	            dto.setEmployeeName(emp.getFullName());
+            	if (emp != null) {
+            	    dto.setEmployeeId(emp.getId());
+            	    dto.setEmployeeCode(emp.getCode());
+            	    dto.setEmployeeName(emp.getFullName());
+            	} else {
+            	    dto.setEmployeeId(null);
+            	    dto.setEmployeeCode(cfg.getTargetCode());
+            	    dto.setEmployeeName("[EMPLOYEE NOT FOUND]");
+            	}
 
 	            // ===== APPROVER =====
 	            Employee approver = employeeRepository
@@ -138,6 +141,8 @@ public class ApprovalConfigQueryServiceImpl implements ApprovalConfigQueryServic
 	                dto.setApproverCode(approver.getCode());
 	                dto.setApproverName(approver.getFullName());
 	            } else {
+	            	dto.setApproverId(null);
+	                dto.setApproverCode(cfg.getApproverCode());
 	                dto.setApproverName("[APPROVER NOT FOUND]");
 	            }
 

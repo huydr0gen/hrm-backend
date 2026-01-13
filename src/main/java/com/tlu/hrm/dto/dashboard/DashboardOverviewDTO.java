@@ -12,6 +12,8 @@ public class DashboardOverviewDTO {
 
     // ===== Department stats =====
     private long totalDepartments;
+    private long activeDepartments;
+    private long inactiveDepartments;
 
     // ===== Existing stats =====
     private AttendanceStatsDTO attendance;
