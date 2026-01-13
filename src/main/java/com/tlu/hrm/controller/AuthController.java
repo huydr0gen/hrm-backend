@@ -159,15 +159,27 @@ public class AuthController {
     }
 
     // BUILD RESPONSE -----------------------------------------------------------------
-    private LoginResponse buildResponse(User user, String accessToken, String refreshToken) {
-        LoginResponse res = new LoginResponse();
-        res.setAccessToken(accessToken);
-        res.setRefreshToken(refreshToken);
-        res.setUsername(user.getUsername());
-        res.setRoles(user.getRoles().stream().map(r -> r.getName()).collect(Collectors.toSet()));
-        res.setStatus(user.getStatus());
-        res.setLastLogin(user.getLastLogin());
-        return res;
-    }
+	private LoginResponse buildResponse(User user, String accessToken, String refreshToken) {
+	    LoginResponse res = new LoginResponse();
+	    res.setAccessToken(accessToken);
+	    res.setRefreshToken(refreshToken);
+	    res.setUsername(user.getUsername());
+
+	    var roles = user.getRoles()
+	        .stream()
+	        .map(r -> r.getName())
+	        .collect(Collectors.toSet());
+
+	    res.setRoles(roles);
+	    res.setStatus(user.getStatus());
+	    res.setLastLogin(user.getLastLogin());
+
+	    // ================== FLAGS FOR FE ==================
+	    res.setAdmin(roles.contains("ADMIN"));
+	    res.setHR(roles.contains("HR"));
+	    res.setManager(roles.contains("MANAGER"));
+
+	    return res;
+	}
 
 }

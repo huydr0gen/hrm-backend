@@ -3,6 +3,7 @@ package com.tlu.hrm.dto;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.tlu.hrm.enums.UserStatus;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -11,40 +12,64 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public class LoginResponse {
 	
 	@Schema(
-	        description = "Access token dùng để gọi các API bảo mật",
-	        example = "eyJhbGciOiJIUzI1NiJ9.xxx.yyy"
-	        )
-	private String accessToken;
-	
-	@Schema(
-	        description = "Refresh token dùng để lấy access token mới khi hết hạn",
-	        example = "eyJhbGciOiJIUzI1NiJ9.aaa.bbb"
-	        )
+        description = "Access token dùng để gọi các API bảo mật",
+        example = "eyJhbGciOiJIUzI1NiJ9.xxx.yyy"
+    )
+    private String accessToken;
+
+    @Schema(
+        description = "Refresh token dùng để lấy access token mới khi hết hạn",
+        example = "eyJhbGciOiJIUzI1NiJ9.aaa.bbb"
+    )
     private String refreshToken;
-	
-	@Schema(
-	        description = "Username của người dùng",
-	        example = "admin"
-	        )
+
+    @Schema(
+        description = "Username của người dùng",
+        example = "admin"
+    )
     private String username;
-	
-	@Schema(
-	        description = "Danh sách role của người dùng",
-	        example = "[\"ADMIN\", \"HR\"]"
-	        )
+
+    @Schema(
+        description = "Danh sách role của người dùng",
+        example = "[\"ADMIN\", \"HR\"]"
+    )
     private Set<String> roles;
-	
-	@Schema(
-	        description = "Trạng thái tài khoản",
-	        example = "ACTIVE"
-	        )
+
+    @Schema(
+        description = "Trạng thái tài khoản",
+        example = "ACTIVE"
+    )
     private UserStatus status;
-	
-	@Schema(
-	        description = "Thời điểm đăng nhập gần nhất",
-	        example = "2025-12-15T10:30:00"
-	        )
+
+    @Schema(
+        description = "Thời điểm đăng nhập gần nhất",
+        example = "2025-12-15T10:30:00"
+    )
     private LocalDateTime lastLogin;
+
+    // ================== FLAGS FOR FE ==================
+
+    @Schema(
+        description = "User có role ADMIN hay không (dùng để dựng menu và phân quyền FE)",
+        example = "true"
+    )
+    @JsonProperty("isAdmin")
+    private boolean admin;
+
+    @Schema(
+        description = "User có role HR hay không (dùng để dựng menu và phân quyền FE)",
+        example = "false"
+    )
+    @JsonProperty("isHR")
+    private boolean hr;
+
+    @Schema(
+        description = "User có role MANAGER hay không (dùng để dựng menu và phân quyền FE)",
+        example = "true"
+    )
+    @JsonProperty("isManager")
+    private boolean manager;
+	    
 	public String getAccessToken() {
 		return accessToken;
 	}
@@ -80,6 +105,24 @@ public class LoginResponse {
 	}
 	public void setLastLogin(LocalDateTime lastLogin) {
 		this.lastLogin = lastLogin;
+	}
+	public boolean isAdmin() {
+		return admin;
+	}
+	public void setAdmin(boolean admin) {
+		this.admin = admin;
+	}
+	public boolean isHR() {
+		return hr;
+	}
+	public void setHR(boolean hr) {
+		this.hr = hr;
+	}
+	public boolean isManager() {
+		return manager;
+	}
+	public void setManager(boolean manager) {
+		this.manager = manager;
 	}
 
 }
