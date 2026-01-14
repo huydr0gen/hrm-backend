@@ -76,4 +76,18 @@ extends JpaRepository<SpecialSchedule, Long>, JpaSpecificationExecutor<SpecialSc
             @Param("employee") Employee employee,
             @Param("date") LocalDate date
     );
+    
+    @Query("""
+	    SELECT s
+	    FROM SpecialSchedule s
+	    WHERE s.employee.id = :employeeId
+	      AND s.status = 'APPROVED'
+	      AND s.startDate <= :end
+	      AND s.endDate >= :start
+	""")
+	List<SpecialSchedule> findApprovedByEmployeeAndMonth(
+	        @Param("employeeId") Long employeeId,
+	        @Param("start") LocalDate start,
+	        @Param("end") LocalDate end
+	);
 }

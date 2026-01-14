@@ -2,6 +2,7 @@ package com.tlu.hrm.dto;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 public class AttendanceDayResponseDTO {
 
@@ -18,6 +19,9 @@ public class AttendanceDayResponseDTO {
     // ===== DISPLAY FIELDS =====
     private String display;     // "p:8", "p:4 x:4"
     private String color;       // optional: FULL / HALF / OFF
+    
+    private List<SpecialScheduleResponseDTO> specialSchedules;
+    
 	public LocalDate getDate() {
 		return date;
 	}
@@ -65,6 +69,12 @@ public class AttendanceDayResponseDTO {
 	}
 	public void setColor(String color) {
 		this.color = color;
+	}
+	public List<SpecialScheduleResponseDTO> getSpecialSchedules() {
+		return specialSchedules;
+	}
+	public void setSpecialSchedules(List<SpecialScheduleResponseDTO> specialSchedules) {
+		this.specialSchedules = specialSchedules;
 	}
 
     

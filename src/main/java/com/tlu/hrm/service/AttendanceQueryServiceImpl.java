@@ -3,6 +3,8 @@ package com.tlu.hrm.service;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -11,10 +13,13 @@ import org.springframework.stereotype.Service;
 
 import com.tlu.hrm.dto.AttendanceDayResponseDTO;
 import com.tlu.hrm.dto.AttendanceMonthlyResponseDTO;
+import com.tlu.hrm.dto.SpecialScheduleResponseDTO;
 import com.tlu.hrm.entities.AttendanceRecord;
 import com.tlu.hrm.entities.Employee;
+import com.tlu.hrm.entities.SpecialSchedule;
 import com.tlu.hrm.repository.AttendanceRecordRepository;
 import com.tlu.hrm.repository.EmployeeRepository;
+import com.tlu.hrm.repository.SpecialScheduleRepository;
 import com.tlu.hrm.utils.AttendanceDisplayUtil;
 
 @Service
@@ -22,11 +27,16 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
 
 	private final AttendanceRecordRepository attendanceRepo;
 	private final EmployeeRepository employeeRepo;
+	private final SpecialScheduleRepository specialScheduleRepo;
 
-	public AttendanceQueryServiceImpl(AttendanceRecordRepository attendanceRepo, EmployeeRepository employeeRepo) {
+	public AttendanceQueryServiceImpl(
+			AttendanceRecordRepository attendanceRepo, 
+			EmployeeRepository employeeRepo,
+			SpecialScheduleRepository specialScheduleRepo) {
 		super();
 		this.attendanceRepo = attendanceRepo;
 		this.employeeRepo = employeeRepo;
+		this.specialScheduleRepo = specialScheduleRepo;
 	}
 	
 	@Override
@@ -36,6 +46,11 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
 
         LocalDate onboardDate = employee.getOnboardDate();
+        
+        if (onboardDate == null) {
+            throw new IllegalStateException("Employee onboardDate is null");
+        }
+        
         LocalDate startOfMonth = month.atDay(1);
         LocalDate endOfMonth = month.atEndOfMonth();
 
@@ -64,11 +79,37 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
                 .sum();
 
         Map<LocalDate, AttendanceRecord> map =
-                records.stream()
-                        .collect(Collectors.toMap(
-                                AttendanceRecord::getWorkDate,
-                                r -> r
-                        ));
+        	    records.stream()
+        	        .collect(Collectors.toMap(
+        	            AttendanceRecord::getWorkDate,
+        	            r -> r,
+        	            (a, b) -> a 
+        	        ));
+        
+        List<SpecialSchedule> schedules =
+        	    specialScheduleRepo.findApprovedByEmployeeAndMonth(
+        	        employeeId,
+        	        actualStart,
+        	        endOfMonth
+        	    );
+        
+        Map<LocalDate, List<SpecialSchedule>> scheduleMap = new HashMap<>();
+
+        for (SpecialSchedule s : schedules) {
+            LocalDate start = s.getStartDate().isBefore(actualStart)
+                    ? actualStart
+                    : s.getStartDate();
+
+            LocalDate end = s.getEndDate().isAfter(endOfMonth)
+                    ? endOfMonth
+                    : s.getEndDate();
+
+            for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+                scheduleMap
+                        .computeIfAbsent(d, k -> new ArrayList<>())
+                        .add(s);
+            }
+        }
 
         List<AttendanceDayResponseDTO> days = new ArrayList<>();
 
@@ -98,6 +139,19 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
                     totalPaidMinutes += r.getPaidMinutes();
                 }
             }
+            
+            List<SpecialSchedule> daySchedules = scheduleMap.get(date);
+
+            if (daySchedules != null) {
+                List<SpecialScheduleResponseDTO> dtoList =
+                        daySchedules.stream()
+                                .map(this::toSpecialScheduleDTO)
+                                .collect(Collectors.toList());
+
+                dto.setSpecialSchedules(dtoList);
+            } else {
+                dto.setSpecialSchedules(Collections.emptyList());
+            }
 
             days.add(dto);
         }
@@ -113,5 +167,34 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
         res.setTotalOTHours(totalOTMinutes / 60.0);
 
         return res;
+    }
+	
+	// =========================
+    // Mapper
+    // =========================
+    private SpecialScheduleResponseDTO toSpecialScheduleDTO(SpecialSchedule s) {
+        SpecialScheduleResponseDTO dto = new SpecialScheduleResponseDTO();
+
+        dto.setId(s.getId());
+
+        dto.setStartDate(s.getStartDate());
+        dto.setEndDate(s.getEndDate());
+        dto.setMorningStart(s.getMorningStart());
+        dto.setMorningEnd(s.getMorningEnd());
+        dto.setAfternoonStart(s.getAfternoonStart());
+        dto.setAfternoonEnd(s.getAfternoonEnd());
+
+        dto.setProjectCode(s.getProjectCode());
+        dto.setProjectName(s.getProjectName());
+        dto.setManagerCode(s.getOnsiteManagerCode());
+        dto.setManagerName(s.getOnsiteManagerName());
+
+        dto.setType(s.getType());
+        dto.setReason(s.getReason());
+        dto.setStatus(s.getStatus());
+
+        dto.setCreatedAt(s.getCreatedAt());
+
+        return dto;
     }
 }
