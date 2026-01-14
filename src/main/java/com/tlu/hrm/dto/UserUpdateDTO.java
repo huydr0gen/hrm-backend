@@ -22,13 +22,6 @@ public class UserUpdateDTO {
 	        nullable = true
 	    )
     private Set<String> roleNames;
-	
-	@Schema(
-	        description = "Trạng thái tài khoản",
-	        example = "ACTIVE",
-	        nullable = true
-	    )
-    private UserStatus status; 
     
 	public String getPassword() {
 		return password;
@@ -41,12 +34,6 @@ public class UserUpdateDTO {
 	}
 	public void setRoleNames(Set<String> roleNames) {
 		this.roleNames = roleNames;
-	}
-	public UserStatus getStatus() {
-		return status;
-	}
-	public void setStatus(UserStatus status) {
-		this.status = status;
 	}
 	
 	

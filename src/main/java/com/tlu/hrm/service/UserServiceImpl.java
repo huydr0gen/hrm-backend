@@ -145,10 +145,6 @@ public class UserServiceImpl implements UserService {
             user.setRoles(roles);
         }
 
-        if (dto.getStatus() != null) {
-            user.setStatus(dto.getStatus());
-        }
-
         User saved = userRepository.save(user);
 
         // ⭐ LOG
@@ -249,6 +245,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public void activateUser(Long id) {
         User user = getUserById(id);
+
+        if (user.getStatus() == UserStatus.ACTIVE) {
+            throw new RuntimeException("User is already ACTIVE");
+        }
+
         user.setStatus(UserStatus.ACTIVE);
         userRepository.save(user);
 
@@ -258,6 +259,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deactivateUser(Long id) {
         User user = getUserById(id);
+
+        if (user.getStatus() == UserStatus.INACTIVE) {
+            throw new RuntimeException("User is already INACTIVE");
+        }
+
         user.setStatus(UserStatus.INACTIVE);
         userRepository.save(user);
 
@@ -267,6 +273,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public void lockUser(Long id) {
         User user = getUserById(id);
+
+        if (user.getStatus() == UserStatus.LOCKED) {
+            throw new RuntimeException("User is already LOCKED");
+        }
+
         user.setStatus(UserStatus.LOCKED);
         userRepository.save(user);
 
@@ -290,7 +301,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public Page<User> getUsers(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return userRepository.findAll(pageable);
+        return userRepository.findAllSortedByStatusAndTime(pageable);
     }
 
     @Override
