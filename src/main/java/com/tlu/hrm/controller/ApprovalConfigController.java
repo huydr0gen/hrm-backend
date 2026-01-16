@@ -28,15 +28,22 @@ public class ApprovalConfigController {
 	}
 	
 	@Operation(
-        summary = "Thiết lập hoặc cập nhật người duyệt",
-        description = """
-            Cho phép ADMIN thiết lập hoặc thay đổi người duyệt.
-            
-            - Có thể thiết lập cho **cá nhân (EMPLOYEE)** hoặc **phòng ban (DEPARTMENT)**
-            - Áp dụng cho **tất cả các loại đơn**
-            - Nếu cấu hình đã tồn tại thì hệ thống sẽ **cập nhật người duyệt**
-            """
-    )
+	    summary = "Tạo hoặc cập nhật cấu hình người duyệt",
+	    description = """
+	        Cho phép ADMIN tạo mới hoặc cập nhật cấu hình người duyệt cho nhân viên hoặc phòng ban.
+
+	        Quy ước xử lý:
+	        - Nếu **không có id** → hệ thống sẽ tạo mới cấu hình
+	        - Nếu **có id** → hệ thống sẽ cập nhật cấu hình tương ứng
+	        - Một nhân viên hoặc một phòng ban chỉ được có **một người duyệt duy nhất**
+	        - Nếu tạo mới mà target đã có người duyệt → hệ thống sẽ báo lỗi
+	        - Nếu cập nhật và đổi target sang đối tượng đã có cấu hình → hệ thống sẽ báo lỗi
+
+	        Áp dụng cho:
+	        - Cá nhân (EMPLOYEE)
+	        - Phòng ban (DEPARTMENT)
+	        """
+	)
 	@PostMapping
     public ResponseEntity<ApprovalConfigDTO> createOrUpdate(
             @RequestBody ApprovalConfigCreateDTO dto) {

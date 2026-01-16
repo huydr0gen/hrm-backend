@@ -20,6 +20,11 @@ public interface ApprovalConfigRepository extends JpaRepository<ApprovalConfig, 
     );
 
     List<ApprovalConfig> findByApproverIdAndActiveTrue(Long approverId);
+    
+    boolean existsByTargetTypeAndTargetIdAndActiveTrue(
+            ApprovalTargetType targetType,
+            Long targetId
+    );
 
     // ===== UI / UX (CODE BASED) =====
     Optional<ApprovalConfig>

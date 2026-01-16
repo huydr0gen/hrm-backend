@@ -33,16 +33,18 @@ public class ApprovalConfigQueryController {
     // GET – PHÒNG BAN
     // =====================================================
 
-    @Operation(
-        summary = "Danh sách người duyệt theo phòng ban",
-        description = """
-            Trả về danh sách cấu hình người duyệt theo phòng ban.
-            
-            - Chỉ lấy cấu hình active
-            - Có phân trang
-            - Sắp xếp theo thời gian thiết lập mới nhất
-            """
-    )
+	@Operation(
+	    summary = "Danh sách cấu hình người duyệt theo phòng ban",
+	    description = """
+	        Trả về danh sách cấu hình người duyệt theo phòng ban.
+
+	        Quy ước:
+	        - Mỗi phòng ban chỉ có một người duyệt duy nhất
+	        - Chỉ trả về các cấu hình đang active
+	        - Có phân trang
+	        - Sắp xếp theo thời gian thiết lập mới nhất
+	        """
+	)
     @GetMapping("/departments")
     public ResponseEntity<Page<DepartmentApprovalViewDTO>>
     getDepartmentApprovals(
@@ -62,14 +64,17 @@ public class ApprovalConfigQueryController {
     // =====================================================
 
     @Operation(
-        summary = "Danh sách người duyệt cá nhân (mới nhất trước)",
-        description = """
-            Trả về danh sách các nhân viên đã được thiết lập người duyệt cá nhân.
-            
-            - Có phân trang
-            - Sắp xếp theo createdAt giảm dần
-            """
-    )
+	    summary = "Danh sách cấu hình người duyệt cá nhân",
+	    description = """
+	        Trả về danh sách các nhân viên đã được thiết lập người duyệt cá nhân.
+
+	        Quy ước:
+	        - Mỗi nhân viên chỉ có một người duyệt duy nhất
+	        - Chỉ trả về các cấu hình đang active
+	        - Có phân trang
+	        - Sắp xếp theo thời gian thiết lập mới nhất
+	        """
+	)
     @GetMapping("/personal")
     public ResponseEntity<Page<PersonalApprovalViewDTO>>
     getPersonalApprovals(

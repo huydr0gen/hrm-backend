@@ -36,90 +36,134 @@ public class ApprovalConfigServiceImpl implements ApprovalConfigService {
 	}
 
 	@Override
-    public ApprovalConfigDTO createOrUpdate(ApprovalConfigCreateDTO dto) {
+	public ApprovalConfigDTO createOrUpdate(ApprovalConfigCreateDTO dto) {
 
-        if (dto.getTargetType() == null
-                || dto.getTargetCode() == null
-                || dto.getApproverCode() == null) {
-            throw new RuntimeException("Thiếu dữ liệu thiết lập người duyệt");
-        }
+	    if (dto.getTargetType() == null
+	            || dto.getTargetCode() == null
+	            || dto.getApproverCode() == null) {
+	        throw new RuntimeException("Thiếu dữ liệu thiết lập người duyệt");
+	    }
 
-        // =====================================================
-        // Resolve TARGET (CODE → ID)
-        // =====================================================
-        Long targetId;
-        String targetName;
+	    // =====================================================
+	    // Resolve TARGET (CODE → ID)
+	    // =====================================================
+	    Long targetId;
+	    String targetName;
 
-        if (dto.getTargetType() == ApprovalTargetType.EMPLOYEE) {
-            Employee emp = employeeRepository.findByCode(dto.getTargetCode())
-                    .orElseThrow(() -> new RuntimeException("Target employee not found"));
-            targetId = emp.getId();
-            targetName = emp.getFullName();
+	    if (dto.getTargetType() == ApprovalTargetType.EMPLOYEE) {
+	        Employee emp = employeeRepository.findByCode(dto.getTargetCode())
+	                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên"));
+	        targetId = emp.getId();
+	        targetName = emp.getFullName();
+	    } else {
+	        Department dept = departmentRepository.findByCode(dto.getTargetCode())
+	                .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng ban"));
+	        targetId = dept.getId();
+	        targetName = dept.getName();
+	    }
 
-        } else {
-            Department dept = departmentRepository.findByCode(dto.getTargetCode())
-                    .orElseThrow(() -> new RuntimeException("Target department not found"));
-            targetId = dept.getId();
-            targetName = dept.getName();
-        }
+	    // =====================================================
+	    // Resolve APPROVER (CODE → ID)
+	    // =====================================================
+	    Employee approver = employeeRepository.findByCode(dto.getApproverCode())
+	            .orElseThrow(() -> new RuntimeException("Không tìm thấy người duyệt"));
 
-        // =====================================================
-        // Resolve APPROVER (CODE → ID)
-        // =====================================================
-        Employee approver = employeeRepository.findByCode(dto.getApproverCode())
-                .orElseThrow(() -> new RuntimeException("Approver not found"));
+	    Long approverId = approver.getId();
 
-        Long approverId = approver.getId();
+	    ApprovalConfig config;
+	    String oldApproverCode = null;
+	    String action;
 
-        // =====================================================
-        // Find existing config by LOGIC (targetType + targetId)
-        // =====================================================
-        ApprovalConfig config = approvalConfigRepository
-                .findByTargetTypeAndTargetIdAndActiveTrue(
-                        dto.getTargetType(),
-                        targetId
-                )
-                .orElse(null);
+	    // =====================================================
+	    // CREATE
+	    // =====================================================
+	    if (dto.getId() == null) {
 
-        String oldApproverCode = null;
-        String action;
+	        boolean existed = approvalConfigRepository
+	                .existsByTargetTypeAndTargetIdAndActiveTrue(
+	                        dto.getTargetType(),
+	                        targetId
+	                );
 
-        if (config == null) {
-            // ===== CREATE =====
-            config = new ApprovalConfig(
-                    dto.getTargetType(),
-                    targetId,
-                    approverId,
-                    dto.getTargetCode(),
-                    dto.getApproverCode()
-            );
-            action = "APPROVAL_CONFIG_CREATE";
-        } else {
-            // ===== UPDATE =====
-            oldApproverCode = config.getApproverCode();
-            config.setApproverId(approverId);
-            config.setApproverCode(dto.getApproverCode());
-            action = "APPROVAL_CONFIG_UPDATE";
-        }
+	        if (existed) {
+	        	throw new RuntimeException(
+	        		    String.format("%s [%s] đã có người duyệt rồi",
+	        		        dto.getTargetType().name(),
+	        		        dto.getTargetCode()
+	        		    )
+	        		);
+	        }
 
-        ApprovalConfig saved = approvalConfigRepository.save(config);
+	        config = new ApprovalConfig(
+	                dto.getTargetType(),
+	                targetId,
+	                approverId,
+	                dto.getTargetCode(),
+	                dto.getApproverCode()
+	        );
 
-        // =====================================================
-        // AUDIT LOG
-        // =====================================================
-        AuditLog log = new AuditLog();
-        log.setUserId(getCurrentUserId());
-        log.setAction(action);
-        log.setDetails(buildAuditDetails(
-                dto.getTargetType().name(),
-                dto.getTargetCode(),
-                oldApproverCode,
-                dto.getApproverCode()
-        ));
-        auditLogRepository.save(log);
+	        action = "APPROVAL_CONFIG_CREATE";
+	    }
 
-        return mapToDTO(saved, targetName, approver.getFullName());
-    }
+	    // =====================================================
+	    // UPDATE
+	    // =====================================================
+	    else {
+
+	        config = approvalConfigRepository.findById(dto.getId())
+	                .orElseThrow(() -> new RuntimeException("Không tìm thấy cấu hình người duyệt"));
+
+	        // Nếu đổi target thì phải check trùng
+	        boolean isTargetChanged =
+	                !config.getTargetType().equals(dto.getTargetType())
+	                        || !config.getTargetId().equals(targetId);
+
+	        if (isTargetChanged) {
+	            boolean existed = approvalConfigRepository
+	                    .existsByTargetTypeAndTargetIdAndActiveTrue(
+	                            dto.getTargetType(),
+	                            targetId
+	                    );
+
+	            if (existed) {
+	            	throw new RuntimeException(
+	            		    String.format("%s [%s] đã có người duyệt rồi",
+	            		        dto.getTargetType().name(),
+	            		        dto.getTargetCode()
+	            		    )
+	            		);
+	            }
+	        }
+
+	        oldApproverCode = config.getApproverCode();
+
+	        config.setTargetType(dto.getTargetType());
+	        config.setTargetId(targetId);
+	        config.setTargetCode(dto.getTargetCode());
+	        config.setApproverId(approverId);
+	        config.setApproverCode(dto.getApproverCode());
+
+	        action = "APPROVAL_CONFIG_UPDATE";
+	    }
+
+	    ApprovalConfig saved = approvalConfigRepository.save(config);
+
+	    // =====================================================
+	    // AUDIT LOG
+	    // =====================================================
+	    AuditLog log = new AuditLog();
+	    log.setUserId(getCurrentUserId());
+	    log.setAction(action);
+	    log.setDetails(buildAuditDetails(
+	            dto.getTargetType().name(),
+	            dto.getTargetCode(),
+	            oldApproverCode,
+	            dto.getApproverCode()
+	    ));
+	    auditLogRepository.save(log);
+
+	    return mapToDTO(saved, targetName, approver.getFullName());
+	}
 
     // =====================================================
     // DTO MAPPER

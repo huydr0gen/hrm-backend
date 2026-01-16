@@ -4,14 +4,16 @@ import com.tlu.hrm.enums.ApprovalTargetType;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(
-    description = "Loại đối tượng được thiết lập người duyệt",
-    example = "DEPARTMENT",
-    allowableValues = {"EMPLOYEE", "DEPARTMENT"}
-)
+@Schema(description = "Dữ liệu tạo/cập nhật cấu hình người duyệt")
 public class ApprovalConfigCreateDTO {
 
 	@Schema(
+        description = "ID cấu hình (null = tạo mới, có = cập nhật)",
+        example = "10"
+    )
+    private Long id;
+
+    @Schema(
         description = "Loại đối tượng được thiết lập người duyệt",
         example = "DEPARTMENT",
         allowableValues = {"EMPLOYEE", "DEPARTMENT"}
@@ -29,6 +31,14 @@ public class ApprovalConfigCreateDTO {
         example = "EMP003"
     )
     private String approverCode;
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
 
 	public ApprovalTargetType getTargetType() {
 		return targetType;
@@ -53,7 +63,6 @@ public class ApprovalConfigCreateDTO {
 	public void setApproverCode(String approverCode) {
 		this.approverCode = approverCode;
 	}
-	
     
     
 }
