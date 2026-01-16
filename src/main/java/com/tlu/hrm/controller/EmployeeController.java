@@ -73,7 +73,6 @@ public class EmployeeController {
             Màn hình: Danh sách nhân viên
             
             Role:
-            - ADMIN
             - HR
             
             Ghi chú cho FE:

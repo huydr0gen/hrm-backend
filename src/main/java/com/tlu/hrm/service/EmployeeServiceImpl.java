@@ -104,7 +104,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     public Page<EmployeeDTO> getAllEmployees(int page, int size) {
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<Employee> employees = employeeRepository.findAll(pageable);
+        Page<Employee> employees = employeeRepository.findAllSortedByStatusAndCodeNumeric(pageable);
 
         List<EmployeeDTO> dtos = employees.getContent()
                 .stream()

@@ -44,4 +44,16 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     List<Employee> findAllByStatus(EmployeeStatus status);
     
     long countByStatus(EmployeeStatus status);
+    
+    @Query(value = """
+	    SELECT * FROM employees e
+	    ORDER BY
+	      CASE
+	        WHEN e.status = 'ACTIVE' THEN 1
+	        WHEN e.status = 'INACTIVE' THEN 2
+	        WHEN e.status = 'LOCKED' THEN 3
+	      END,
+	      CAST(SUBSTRING(e.code, 4) AS UNSIGNED) DESC
+	""", nativeQuery = true)
+	Page<Employee> findAllSortedByStatusAndCodeNumeric(Pageable pageable);
 }
