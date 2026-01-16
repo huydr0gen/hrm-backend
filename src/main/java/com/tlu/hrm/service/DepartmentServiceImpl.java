@@ -101,7 +101,8 @@ public class DepartmentServiceImpl implements DepartmentService{
 
         Pageable pageable = PageRequest.of(page, size);
 
-        return departmentRepository.findAll(pageable)
+        return departmentRepository
+                .findAllSortedByActiveAndCodeNumeric(pageable)
                 .map(this::mapToDTO);
     }
 

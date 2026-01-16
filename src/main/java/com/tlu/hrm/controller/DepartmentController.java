@@ -122,7 +122,7 @@ public class DepartmentController {
         return ResponseEntity.noContent().build();
     }
 
-    // ================= GET ALL ACTIVE =================
+    // ================= GET ALL =================
 
     @Operation(
 	    summary = "Lấy danh sách tất cả phòng ban",

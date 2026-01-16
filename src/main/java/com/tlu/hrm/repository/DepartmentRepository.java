@@ -2,6 +2,8 @@ package com.tlu.hrm.repository;
 
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -25,4 +27,20 @@ public interface DepartmentRepository extends JpaRepository<Department, Long> {
     long countByActiveTrue();
     
     long countByActiveFalse();
+    
+    @Query(
+	    value = """
+	        SELECT *
+	        FROM departments d
+	        ORDER BY
+	          CASE
+	            WHEN d.active = true THEN 1
+	            ELSE 2
+	          END,
+	          CAST(SUBSTR(d.code, 4) AS INTEGER) ASC
+	    """,
+	    countQuery = "SELECT COUNT(*) FROM departments",
+	    nativeQuery = true
+	)
+	Page<Department> findAllSortedByActiveAndCodeNumeric(Pageable pageable);
 }
