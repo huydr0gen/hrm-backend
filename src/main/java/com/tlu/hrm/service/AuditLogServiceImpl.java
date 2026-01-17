@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.tlu.hrm.dto.AuditLogDTO;
@@ -35,7 +36,7 @@ public class AuditLogServiceImpl implements AuditLogService {
     @Override
     public Page<AuditLogDTO> getLogs(Long userId, String action, String startDate, String endDate, int page, int size) {
 
-        PageRequest pageable = PageRequest.of(page, size);
+    	PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
         LocalDateTime start = (startDate != null) ? LocalDate.parse(startDate).atStartOfDay() : null;
         LocalDateTime end = (endDate != null) ? LocalDate.parse(endDate).atTime(23, 59, 59) : null;

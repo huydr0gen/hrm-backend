@@ -1,0 +1,2 @@
+ALTER TABLE audit_logs
+ALTER COLUMN created_at DROP DEFAULT;
