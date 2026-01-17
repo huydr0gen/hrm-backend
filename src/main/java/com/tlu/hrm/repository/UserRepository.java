@@ -31,4 +31,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	      END DESC
 	""")
 	Page<User> findAllSortedByStatusAndTime(Pageable pageable);
+	
+	Optional<User> findByEmployee_Id(Long employeeId);
 }

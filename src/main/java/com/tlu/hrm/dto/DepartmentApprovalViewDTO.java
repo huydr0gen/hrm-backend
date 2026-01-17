@@ -6,7 +6,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(
     name = "DepartmentApprovalViewDTO",
-    description = "Thông tin cấu hình người duyệt theo phòng ban"
+    description = """
+        Thông tin cấu hình người duyệt theo phòng ban.
+
+        Dữ liệu trả về đã được xử lý để phục vụ hiển thị UI,
+        bao gồm cả thông tin logic và thông tin hiển thị.
+        """
 )
 public class DepartmentApprovalViewDTO {
 	@Schema(
@@ -44,6 +49,20 @@ public class DepartmentApprovalViewDTO {
         example = "Nguyễn Văn A"
     )
     private String approverName;
+    
+    @Schema(
+        description = """
+            Chuỗi hiển thị người duyệt.
+
+            Format:
+            username - EMPxxx - Full Name
+
+            Ví dụ:
+            quanglm - EMP005 - Lê Minh Quang
+            """,
+        example = "quanglm - EMP005 - Lê Minh Quang"
+    )
+    private String approverDisplay;
 
     @Schema(
         description = "Thời điểm thiết lập hoặc cập nhật người duyệt",
@@ -97,6 +116,14 @@ public class DepartmentApprovalViewDTO {
 
 	public void setApproverName(String approverName) {
 		this.approverName = approverName;
+	}
+	
+	public String getApproverDisplay() {
+		return approverDisplay;
+	}
+
+	public void setApproverDisplay(String approverDisplay) {
+		this.approverDisplay = approverDisplay;
 	}
 
 	public LocalDateTime getCreatedAt() {

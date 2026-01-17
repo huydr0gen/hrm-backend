@@ -10,11 +10,13 @@ import com.tlu.hrm.entities.ApprovalConfig;
 import com.tlu.hrm.entities.AuditLog;
 import com.tlu.hrm.entities.Department;
 import com.tlu.hrm.entities.Employee;
+import com.tlu.hrm.entities.User;
 import com.tlu.hrm.enums.ApprovalTargetType;
 import com.tlu.hrm.repository.ApprovalConfigRepository;
 import com.tlu.hrm.repository.AuditLogRepository;
 import com.tlu.hrm.repository.DepartmentRepository;
 import com.tlu.hrm.repository.EmployeeRepository;
+import com.tlu.hrm.repository.UserRepository;
 import com.tlu.hrm.security.CustomUserDetails;
 
 @Service
@@ -24,15 +26,17 @@ public class ApprovalConfigServiceImpl implements ApprovalConfigService {
 	private final AuditLogRepository auditLogRepository;
 	private final EmployeeRepository employeeRepository;
 	private final DepartmentRepository departmentRepository;
+	private final UserRepository userRepository;
 
 	public ApprovalConfigServiceImpl(ApprovalConfigRepository approvalConfigRepository,
 			AuditLogRepository auditLogRepository, EmployeeRepository employeeRepository,
-			DepartmentRepository departmentRepository) {
+			DepartmentRepository departmentRepository, UserRepository userRepository) {
 		super();
 		this.approvalConfigRepository = approvalConfigRepository;
 		this.auditLogRepository = auditLogRepository;
 		this.employeeRepository = employeeRepository;
 		this.departmentRepository = departmentRepository;
+		this.userRepository = userRepository;
 	}
 
 	@Override
@@ -69,6 +73,33 @@ public class ApprovalConfigServiceImpl implements ApprovalConfigService {
 	            .orElseThrow(() -> new RuntimeException("Không tìm thấy người duyệt"));
 
 	    Long approverId = approver.getId();
+
+	    // =====================================================
+	    // ROLE VALIDATION (ONLY FOR PERSONAL)
+	    // =====================================================
+	    if (dto.getTargetType() == ApprovalTargetType.EMPLOYEE) {
+
+	        User targetUser = userRepository.findByEmployee_Id(targetId)
+	                .orElseThrow(() -> new RuntimeException("Không tìm thấy user của nhân viên cần duyệt"));
+
+	        User approverUser = userRepository.findByEmployee_Id(approverId)
+	                .orElseThrow(() -> new RuntimeException("Không tìm thấy user của người duyệt"));
+
+	        boolean targetIsManager = hasRole(targetUser, "MANAGER");
+
+	        boolean approverHasManager = hasRole(approverUser, "MANAGER");
+	        boolean approverHasHr = hasRole(approverUser, "HR");
+
+	        if (targetIsManager) {
+	            if (!(approverHasManager && approverHasHr)) {
+	                throw new RuntimeException("Người duyệt phải có cả role MANAGER và HR");
+	            }
+	        } else {
+	            if (!(approverHasManager || approverHasHr)) {
+	                throw new RuntimeException("Người duyệt phải là MANAGER hoặc HR");
+	            }
+	        }
+	    }
 
 	    ApprovalConfig config;
 	    String oldApproverCode = null;
@@ -113,7 +144,6 @@ public class ApprovalConfigServiceImpl implements ApprovalConfigService {
 	        config = approvalConfigRepository.findById(dto.getId())
 	                .orElseThrow(() -> new RuntimeException("Không tìm thấy cấu hình người duyệt"));
 
-	        // Nếu đổi target thì phải check trùng
 	        boolean isTargetChanged =
 	                !config.getTargetType().equals(dto.getTargetType())
 	                        || !config.getTargetId().equals(targetId);
@@ -162,26 +192,92 @@ public class ApprovalConfigServiceImpl implements ApprovalConfigService {
 	    ));
 	    auditLogRepository.save(log);
 
-	    return mapToDTO(saved, targetName, approver.getFullName());
+	    return mapToDTO(saved);
 	}
+
+    // =====================================================
+    // ROLE CHECK HELPER
+    // =====================================================
+    private boolean hasRole(User user, String roleName) {
+        return user.getRoles().stream()
+                .anyMatch(r -> r.getName().equalsIgnoreCase(roleName));
+    }
 
     // =====================================================
     // DTO MAPPER
     // =====================================================
-    private ApprovalConfigDTO mapToDTO(
-            ApprovalConfig config,
-            String targetName,
-            String approverName
-    ) {
+    private ApprovalConfigDTO mapToDTO(ApprovalConfig config) {
         ApprovalConfigDTO dto = new ApprovalConfigDTO();
         dto.setId(config.getId());
         dto.setTargetType(config.getTargetType());
         dto.setTargetCode(config.getTargetCode());
-        dto.setTargetName(targetName);
         dto.setApproverCode(config.getApproverCode());
-        dto.setApproverName(approverName);
         dto.setActive(config.isActive());
+
+        // ===== TARGET =====
+        if (config.getTargetType() == ApprovalTargetType.EMPLOYEE) {
+            Employee targetEmp = employeeRepository
+                    .findByCode(config.getTargetCode())
+                    .orElse(null);
+
+            if (targetEmp != null) {
+                dto.setTargetName(targetEmp.getFullName());
+
+                User targetUser = userRepository
+                        .findByEmployee_Id(targetEmp.getId())
+                        .orElse(null);
+
+                if (targetUser != null) {
+                    dto.setTargetDisplay(
+                            buildDisplay(
+                                    targetUser.getUsername(),
+                                    targetEmp.getCode(),
+                                    targetEmp.getFullName()
+                            )
+                    );
+                }
+            }
+        } else {
+            Department dept = departmentRepository
+                    .findByCode(config.getTargetCode())
+                    .orElse(null);
+
+            if (dept != null) {
+                dto.setTargetName(dept.getName());
+            }
+        }
+
+        // ===== APPROVER =====
+        Employee approverEmp = employeeRepository
+                .findByCode(config.getApproverCode())
+                .orElse(null);
+
+        if (approverEmp != null) {
+            dto.setApproverName(approverEmp.getFullName());
+
+            User approverUser = userRepository
+                    .findByEmployee_Id(approverEmp.getId())
+                    .orElse(null);
+
+            if (approverUser != null) {
+                dto.setApproverDisplay(
+                        buildDisplay(
+                                approverUser.getUsername(),
+                                approverEmp.getCode(),
+                                approverEmp.getFullName()
+                        )
+                );
+            }
+        }
+
         return dto;
+    }
+
+    // =====================================================
+    // DISPLAY BUILDER
+    // =====================================================
+    private String buildDisplay(String username, String code, String fullName) {
+        return String.format("%s - %s - %s", username, code, fullName);
     }
 
     private String buildAuditDetails(

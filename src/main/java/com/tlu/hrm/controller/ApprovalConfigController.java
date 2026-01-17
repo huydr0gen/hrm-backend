@@ -33,11 +33,15 @@ public class ApprovalConfigController {
 	        Cho phép ADMIN tạo mới hoặc cập nhật cấu hình người duyệt cho nhân viên hoặc phòng ban.
 
 	        Quy ước xử lý:
-	        - Nếu **không có id** → hệ thống sẽ tạo mới cấu hình
-	        - Nếu **có id** → hệ thống sẽ cập nhật cấu hình tương ứng
-	        - Một nhân viên hoặc một phòng ban chỉ được có **một người duyệt duy nhất**
+	        - Nếu không có id → hệ thống sẽ tạo mới cấu hình
+	        - Nếu có id → hệ thống sẽ cập nhật cấu hình tương ứng
+	        - Một nhân viên hoặc một phòng ban chỉ được có một người duyệt duy nhất
 	        - Nếu tạo mới mà target đã có người duyệt → hệ thống sẽ báo lỗi
 	        - Nếu cập nhật và đổi target sang đối tượng đã có cấu hình → hệ thống sẽ báo lỗi
+
+	        Quy tắc riêng cho thiết lập cá nhân (EMPLOYEE):
+	        - Nếu người cần duyệt có role MANAGER → người duyệt bắt buộc phải có cả 2 role: MANAGER và HR
+	        - Nếu người cần duyệt là nhân viên thường → người duyệt chỉ cần có MANAGER hoặc HR
 
 	        Áp dụng cho:
 	        - Cá nhân (EMPLOYEE)

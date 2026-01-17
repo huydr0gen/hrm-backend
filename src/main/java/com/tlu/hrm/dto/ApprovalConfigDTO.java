@@ -4,7 +4,17 @@ import com.tlu.hrm.enums.ApprovalTargetType;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Thông tin cấu hình người duyệt")
+@Schema(
+    name = "ApprovalConfigDTO",
+    description = """
+        Thông tin cấu hình người duyệt.
+
+        Dữ liệu trả về đã được xử lý để phục vụ hiển thị UI:
+        - Có thông tin logic (id, targetId, approverId)
+        - Có thông tin hiển thị (name, code, display)
+        - Không yêu cầu frontend phải ghép chuỗi
+        """
+)
 public class ApprovalConfigDTO {
 
 	@Schema(
@@ -51,6 +61,22 @@ public class ApprovalConfigDTO {
         example = "Nguyễn Văn B / Phòng Công nghệ thông tin"
     )
     private String targetName;
+    
+    @Schema(
+        description = """
+            Chuỗi hiển thị đối tượng áp dụng.
+
+            Format:
+            - Cá nhân: username - EMPxxx - Full Name
+            - Phòng ban: departmentCode - departmentName
+
+            Ví dụ:
+            - quanglm - EMP005 - Lê Minh Quang
+            - IT - Phòng Công nghệ thông tin
+            """,
+        example = "quanglm - EMP005 - Lê Minh Quang"
+    )
+    private String targetDisplay;
 
     // =====================================================
     // APPROVER INFO (UI / UX)
@@ -68,6 +94,21 @@ public class ApprovalConfigDTO {
     )
     private String approverName;
 
+    @Schema(
+        description = """
+            Chuỗi hiển thị người duyệt.
+
+            Format:
+            username - EMPxxx - Full Name
+
+            Ví dụ:
+            quanglm - EMP003 - Nguyễn Văn A
+            """,
+        example = "quanglm - EMP003 - Nguyễn Văn A"
+    )
+    private String approverDisplay;
+    
+    
     // =====================================================
     // STATUS
     // =====================================================
@@ -140,6 +181,22 @@ public class ApprovalConfigDTO {
 
 	public void setApproverName(String approverName) {
 		this.approverName = approverName;
+	}
+	
+	public String getApproverDisplay() {
+		return approverDisplay;
+	}
+
+	public void setApproverDisplay(String approverDisplay) {
+		this.approverDisplay = approverDisplay;
+	}
+
+	public String getTargetDisplay() {
+		return targetDisplay;
+	}
+
+	public void setTargetDisplay(String targetDisplay) {
+		this.targetDisplay = targetDisplay;
 	}
 
 	public boolean isActive() {

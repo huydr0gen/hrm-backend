@@ -34,17 +34,25 @@ public class ApprovalConfigQueryController {
     // =====================================================
 
 	@Operation(
-	    summary = "Danh sách cấu hình người duyệt theo phòng ban",
-	    description = """
-	        Trả về danh sách cấu hình người duyệt theo phòng ban.
+        summary = "Danh sách cấu hình người duyệt theo phòng ban",
+        description = """
+            Trả về danh sách cấu hình người duyệt áp dụng cho phòng ban.
 
-	        Quy ước:
-	        - Mỗi phòng ban chỉ có một người duyệt duy nhất
-	        - Chỉ trả về các cấu hình đang active
-	        - Có phân trang
-	        - Sắp xếp theo thời gian thiết lập mới nhất
-	        """
-	)
+            Quy ước nghiệp vụ:
+            - Mỗi phòng ban chỉ có tối đa 1 người duyệt
+            - Một người có thể duyệt cho nhiều phòng ban
+            - Người duyệt phải có role HR hoặc MANAGER
+            - Không được chọn chính mình làm người duyệt
+
+            Quy ước hiển thị:
+            - Người duyệt được trả về dưới dạng chuỗi hiển thị:
+              `username - EMPxxx - Full Name`
+
+            Phân trang:
+            - Có phân trang
+            - Sắp xếp theo createdAt giảm dần (mới nhất trước)
+            """
+    )
     @GetMapping("/departments")
     public ResponseEntity<Page<DepartmentApprovalViewDTO>>
     getDepartmentApprovals(
@@ -63,18 +71,30 @@ public class ApprovalConfigQueryController {
     // GET – CÁ NHÂN
     // =====================================================
 
-    @Operation(
-	    summary = "Danh sách cấu hình người duyệt cá nhân",
-	    description = """
-	        Trả về danh sách các nhân viên đã được thiết lập người duyệt cá nhân.
+	@Operation(
+        summary = "Danh sách cấu hình người duyệt cá nhân",
+        description = """
+            Trả về danh sách các nhân viên đã được thiết lập người duyệt riêng.
 
-	        Quy ước:
-	        - Mỗi nhân viên chỉ có một người duyệt duy nhất
-	        - Chỉ trả về các cấu hình đang active
-	        - Có phân trang
-	        - Sắp xếp theo thời gian thiết lập mới nhất
-	        """
-	)
+            Quy ước nghiệp vụ:
+            - Mỗi nhân viên chỉ có tối đa 1 người duyệt
+            - Một người có thể duyệt cho nhiều nhân viên
+            - Có thể duyệt đồng thời cả phòng ban và cá nhân
+            - Không được chọn chính mình làm người duyệt
+
+            Quy ước phân quyền:
+            - Nếu nhân viên cần duyệt là MANAGER → người duyệt phải có cả role MANAGER và HR
+            - Nếu là nhân viên thường → người duyệt phải có MANAGER hoặc HR
+
+            Quy ước hiển thị:
+            - Người duyệt và người được duyệt đều được trả về dưới dạng:
+              `username - EMPxxx - Full Name`
+
+            Phân trang:
+            - Có phân trang
+            - Sắp xếp theo createdAt giảm dần (mới nhất trước)
+            """
+    )
     @GetMapping("/personal")
     public ResponseEntity<Page<PersonalApprovalViewDTO>>
     getPersonalApprovals(

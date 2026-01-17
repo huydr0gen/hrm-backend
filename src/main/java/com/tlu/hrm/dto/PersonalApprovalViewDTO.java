@@ -6,7 +6,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(
     name = "PersonalApprovalViewDTO",
-    description = "Thông tin cấu hình người duyệt cho cá nhân nhân viên"
+    description = """
+        Thông tin cấu hình người duyệt cho cá nhân nhân viên.
+
+        Dữ liệu trả về đã được xử lý để phục vụ hiển thị UI,
+        bao gồm cả thông tin logic và thông tin hiển thị.
+        """
 )
 public class PersonalApprovalViewDTO {
 
@@ -29,6 +34,20 @@ public class PersonalApprovalViewDTO {
 	    private String employeeName;
 
 	    @Schema(
+            description = """
+                Chuỗi hiển thị nhân viên được duyệt.
+
+                Format:
+                username - EMPxxx - Full Name
+
+                Ví dụ:
+                quanglm - EMP010 - Nguyễn Văn B
+                """,
+            example = "quanglm - EMP010 - Nguyễn Văn B"
+        )
+	    private String employeeDisplay;
+
+	    @Schema(
 	        description = "ID của người duyệt",
 	        example = "3"
 	    )
@@ -45,6 +64,20 @@ public class PersonalApprovalViewDTO {
 	        example = "Nguyễn Văn A"
 	    )
 	    private String approverName;
+	    
+	    @Schema(
+            description = """
+                Chuỗi hiển thị người duyệt.
+
+                Format:
+                username - EMPxxx - Full Name
+
+                Ví dụ:
+                quanglm - EMP003 - Nguyễn Văn A
+                """,
+            example = "quanglm - EMP003 - Nguyễn Văn A"
+        )
+	    private String approverDisplay;
 
 	    @Schema(
 	        description = "Thời điểm thiết lập hoặc cập nhật người duyệt",
@@ -98,6 +131,22 @@ public class PersonalApprovalViewDTO {
 
 		public void setApproverName(String approverName) {
 			this.approverName = approverName;
+		}
+
+		public String getEmployeeDisplay() {
+			return employeeDisplay;
+		}
+
+		public void setEmployeeDisplay(String employeeDisplay) {
+			this.employeeDisplay = employeeDisplay;
+		}
+
+		public String getApproverDisplay() {
+			return approverDisplay;
+		}
+
+		public void setApproverDisplay(String approverDisplay) {
+			this.approverDisplay = approverDisplay;
 		}
 
 		public LocalDateTime getCreatedAt() {
