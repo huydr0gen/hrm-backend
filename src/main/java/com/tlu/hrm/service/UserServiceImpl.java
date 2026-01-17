@@ -255,7 +255,8 @@ public class UserServiceImpl implements UserService {
         }
 
         if (user.getEmployee() != null) {
-            Employee emp = user.getEmployee();
+            Long empId = user.getEmployee().getId();
+            Employee emp = employeeRepository.findById(empId).orElseThrow();
             emp.setStatus(EmployeeStatus.ACTIVE);
             employeeRepository.save(emp);
         }
@@ -274,7 +275,8 @@ public class UserServiceImpl implements UserService {
         }
 
         if (user.getEmployee() != null) {
-            Employee emp = user.getEmployee();
+            Long empId = user.getEmployee().getId();
+            Employee emp = employeeRepository.findById(empId).orElseThrow();
             emp.setStatus(EmployeeStatus.INACTIVE);
             employeeRepository.save(emp);
         }
@@ -292,9 +294,9 @@ public class UserServiceImpl implements UserService {
             userRepository.save(user);
         }
 
-        // 🔁 Luôn sync employee (kể cả khi user đã locked từ trước)
         if (user.getEmployee() != null) {
-            Employee emp = user.getEmployee();
+            Long empId = user.getEmployee().getId();
+            Employee emp = employeeRepository.findById(empId).orElseThrow();
             emp.setStatus(EmployeeStatus.LOCKED);
             employeeRepository.save(emp);
         }
