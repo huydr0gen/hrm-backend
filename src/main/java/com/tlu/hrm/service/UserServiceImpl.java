@@ -247,13 +247,12 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void activateUser(Long id) {
-    	User user = getUserById(id);
+        User user = getUserById(id);
 
-        if (user.getStatus() == UserStatus.ACTIVE) {
-            throw new RuntimeException("User is already ACTIVE");
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            user.setStatus(UserStatus.ACTIVE);
+            userRepository.save(user);
         }
-
-        user.setStatus(UserStatus.ACTIVE);
 
         if (user.getEmployee() != null) {
             Employee emp = user.getEmployee();
@@ -261,21 +260,18 @@ public class UserServiceImpl implements UserService {
             employeeRepository.save(emp);
         }
 
-        userRepository.save(user);
-
         auditLogService.log(id, "ACTIVATE_USER", "Activated");
     }
 
     @Override
     @Transactional
     public void deactivateUser(Long id) {
-    	User user = getUserById(id);
+        User user = getUserById(id);
 
-        if (user.getStatus() == UserStatus.INACTIVE) {
-            throw new RuntimeException("User is already INACTIVE");
+        if (user.getStatus() != UserStatus.INACTIVE) {
+            user.setStatus(UserStatus.INACTIVE);
+            userRepository.save(user);
         }
-
-        user.setStatus(UserStatus.INACTIVE);
 
         if (user.getEmployee() != null) {
             Employee emp = user.getEmployee();
@@ -283,30 +279,25 @@ public class UserServiceImpl implements UserService {
             employeeRepository.save(emp);
         }
 
-        userRepository.save(user);
-
         auditLogService.log(id, "DEACTIVATE_USER", "Deactivated");
     }
 
     @Override
     @Transactional
     public void lockUser(Long id) {
-    	User user = getUserById(id);
+        User user = getUserById(id);
 
-        if (user.getStatus() == UserStatus.LOCKED) {
-            throw new RuntimeException("User is already LOCKED");
+        if (user.getStatus() != UserStatus.LOCKED) {
+            user.setStatus(UserStatus.LOCKED);
+            userRepository.save(user);
         }
 
-        user.setStatus(UserStatus.LOCKED);
-
-        // 🔁 Sync employee status
+        // 🔁 Luôn sync employee (kể cả khi user đã locked từ trước)
         if (user.getEmployee() != null) {
             Employee emp = user.getEmployee();
             emp.setStatus(EmployeeStatus.LOCKED);
             employeeRepository.save(emp);
         }
-
-        userRepository.save(user);
 
         auditLogService.log(id, "LOCK_USER", "Account locked");
     }
