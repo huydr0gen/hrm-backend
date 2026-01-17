@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.tlu.hrm.config.CompanyConfig;
 import com.tlu.hrm.dto.ChangePasswordDTO;
@@ -19,6 +20,7 @@ import com.tlu.hrm.dto.UserUpdateDTO;
 import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.entities.Role;
 import com.tlu.hrm.entities.User;
+import com.tlu.hrm.enums.EmployeeStatus;
 import com.tlu.hrm.enums.UserStatus;
 import com.tlu.hrm.repository.EmployeeRepository;
 import com.tlu.hrm.repository.RoleRepository;
@@ -243,42 +245,67 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void activateUser(Long id) {
-        User user = getUserById(id);
+    	User user = getUserById(id);
 
         if (user.getStatus() == UserStatus.ACTIVE) {
             throw new RuntimeException("User is already ACTIVE");
         }
 
         user.setStatus(UserStatus.ACTIVE);
+
+        if (user.getEmployee() != null) {
+            Employee emp = user.getEmployee();
+            emp.setStatus(EmployeeStatus.ACTIVE);
+            employeeRepository.save(emp);
+        }
+
         userRepository.save(user);
 
         auditLogService.log(id, "ACTIVATE_USER", "Activated");
     }
 
     @Override
+    @Transactional
     public void deactivateUser(Long id) {
-        User user = getUserById(id);
+    	User user = getUserById(id);
 
         if (user.getStatus() == UserStatus.INACTIVE) {
             throw new RuntimeException("User is already INACTIVE");
         }
 
         user.setStatus(UserStatus.INACTIVE);
+
+        if (user.getEmployee() != null) {
+            Employee emp = user.getEmployee();
+            emp.setStatus(EmployeeStatus.INACTIVE);
+            employeeRepository.save(emp);
+        }
+
         userRepository.save(user);
 
         auditLogService.log(id, "DEACTIVATE_USER", "Deactivated");
     }
 
     @Override
+    @Transactional
     public void lockUser(Long id) {
-        User user = getUserById(id);
+    	User user = getUserById(id);
 
         if (user.getStatus() == UserStatus.LOCKED) {
             throw new RuntimeException("User is already LOCKED");
         }
 
         user.setStatus(UserStatus.LOCKED);
+
+        // 🔁 Sync employee status
+        if (user.getEmployee() != null) {
+            Employee emp = user.getEmployee();
+            emp.setStatus(EmployeeStatus.LOCKED);
+            employeeRepository.save(emp);
+        }
+
         userRepository.save(user);
 
         auditLogService.log(id, "LOCK_USER", "Account locked");
