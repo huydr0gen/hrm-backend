@@ -24,12 +24,9 @@ public class LeaveRequest {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private LeaveType type;
-
+    
     @Column(nullable = false)
-    private LocalDate startDate;
-
-    @Column(nullable = false)
-    private LocalDate endDate;
+    private LocalDate leaveDate;
 
     @Column(nullable = false)
     private String reason;
@@ -55,8 +52,11 @@ public class LeaveRequest {
     @Column(name = "decided_at")
     private LocalDateTime decidedAt;
 
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
+    
+    private LocalDateTime updatedAt;
+    
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -66,8 +66,6 @@ public class LeaveRequest {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
-    
-    private LocalDateTime updatedAt;
 
 	public Long getId() {
 		return id;
@@ -101,20 +99,12 @@ public class LeaveRequest {
 		this.duration = duration;
 	}
 
-	public LocalDate getStartDate() {
-		return startDate;
+	public LocalDate getLeaveDate() {
+		return leaveDate;
 	}
 
-	public void setStartDate(LocalDate startDate) {
-		this.startDate = startDate;
-	}
-
-	public LocalDate getEndDate() {
-		return endDate;
-	}
-
-	public void setEndDate(LocalDate endDate) {
-		this.endDate = endDate;
+	public void setLeaveDate(LocalDate leaveDate) {
+		this.leaveDate = leaveDate;
 	}
 
 	public String getReason() {

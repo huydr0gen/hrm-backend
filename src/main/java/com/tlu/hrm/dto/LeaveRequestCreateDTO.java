@@ -16,26 +16,21 @@ public class LeaveRequestCreateDTO {
 	@Schema(description = "Thời lượng nghỉ", example = "FULL_DAY")
 	private LeaveDuration duration;
 
-    @Schema(description = "Ngày bắt đầu nghỉ", example = "2025-12-20")
-    private LocalDate startDate;
-
-    @Schema(description = "Ngày kết thúc nghỉ", example = "2025-12-22")
-    private LocalDate endDate;
+	@Schema(description = "Ngày nghỉ", example = "2025-12-20")
+	private LocalDate leaveDate;
 
     @Schema(description = "Lý do xin nghỉ", example = "Về quê có việc")
     private String reason;
-    
+
 	public LeaveRequestCreateDTO() {
 		super();
 	}
 
-	public LeaveRequestCreateDTO(LeaveType type, LeaveDuration duration, LocalDate startDate, LocalDate endDate,
-			String reason) {
+	public LeaveRequestCreateDTO(LeaveType type, LeaveDuration duration, LocalDate leaveDate, String reason) {
 		super();
 		this.type = type;
 		this.duration = duration;
-		this.startDate = startDate;
-		this.endDate = endDate;
+		this.leaveDate = leaveDate;
 		this.reason = reason;
 	}
 
@@ -55,20 +50,12 @@ public class LeaveRequestCreateDTO {
 		this.duration = duration;
 	}
 
-	public LocalDate getStartDate() {
-		return startDate;
+	public LocalDate getLeaveDate() {
+		return leaveDate;
 	}
 
-	public void setStartDate(LocalDate startDate) {
-		this.startDate = startDate;
-	}
-
-	public LocalDate getEndDate() {
-		return endDate;
-	}
-
-	public void setEndDate(LocalDate endDate) {
-		this.endDate = endDate;
+	public void setLeaveDate(LocalDate leaveDate) {
+		this.leaveDate = leaveDate;
 	}
 
 	public String getReason() {
@@ -78,7 +65,7 @@ public class LeaveRequestCreateDTO {
 	public void setReason(String reason) {
 		this.reason = reason;
 	}
-	
-	
+    
+    
     
 }

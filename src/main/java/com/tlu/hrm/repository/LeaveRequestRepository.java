@@ -18,38 +18,34 @@ JpaSpecificationExecutor<LeaveRequest> {
 	// =====================================================
     // Check overlap với đơn APPROVED
     // =====================================================
-    @Query("""
-        select count(lr) > 0
-        from LeaveRequest lr
-        where lr.employee.id = :employeeId
-          and lr.status = 'APPROVED'
-          and lr.startDate <= :endDate
-          and lr.endDate >= :startDate
-    """)
-    boolean existsApprovedOverlap(
-            @Param("employeeId") Long employeeId,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate
-    );
+	@Query("""
+	    select count(lr) > 0
+	    from LeaveRequest lr
+	    where lr.employee.id = :employeeId
+	      and lr.status = 'APPROVED'
+	      and lr.leaveDate = :leaveDate
+	""")
+	boolean existsApprovedOverlap(
+	        @Param("employeeId") Long employeeId,
+	        @Param("leaveDate") LocalDate leaveDate
+	);
 
     // =====================================================
     // Check overlap (exclude current request – update)
     // =====================================================
-    @Query("""
-        select count(lr) > 0
-        from LeaveRequest lr
-        where lr.employee.id = :employeeId
-          and lr.id <> :excludeId
-          and lr.status = 'APPROVED'
-          and lr.startDate <= :endDate
-          and lr.endDate >= :startDate
-    """)
-    boolean existsApprovedOverlapExclude(
-            @Param("employeeId") Long employeeId,
-            @Param("excludeId") Long excludeId,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate
-    );
+	@Query("""
+	    select count(lr) > 0
+	    from LeaveRequest lr
+	    where lr.employee.id = :employeeId
+	      and lr.id <> :excludeId
+	      and lr.status = 'APPROVED'
+	      and lr.leaveDate = :leaveDate
+	""")
+	boolean existsApprovedOverlapExclude(
+	        @Param("employeeId") Long employeeId,
+	        @Param("excludeId") Long excludeId,
+	        @Param("leaveDate") LocalDate leaveDate
+	);
 
     // =====================================================
     // Lấy danh sách đơn để tính quota (CREATE)
@@ -92,7 +88,7 @@ JpaSpecificationExecutor<LeaveRequest> {
 	    FROM LeaveRequest lr
 	    WHERE lr.employee.id = :employeeId
 	      AND lr.status = 'APPROVED'
-	      AND :date BETWEEN lr.startDate AND lr.endDate
+	      AND lr.leaveDate = :date
 	""")
 	List<LeaveRequest> findApprovedLeavesForDate(
 	    @Param("employeeId") Long employeeId,

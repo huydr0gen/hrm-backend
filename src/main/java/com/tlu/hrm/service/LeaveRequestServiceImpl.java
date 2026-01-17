@@ -2,7 +2,6 @@ package com.tlu.hrm.service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -78,7 +77,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 
         throw new RuntimeException("Cannot resolve current user id");
     }
-    
+
     private double getDurationValue(LeaveDuration duration) {
         if (duration == null) return 1.0;
         return switch (duration) {
@@ -86,47 +85,14 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             case MORNING, AFTERNOON -> 0.5;
         };
     }
-    
-    private double calculateLeaveAmount(LocalDate start, LocalDate end, LeaveDuration duration) {
-        long days = ChronoUnit.DAYS.between(start, end) + 1;
-        return days * getDurationValue(duration);
-    }
-    
-    private boolean isOverlap(LeaveRequest a, LocalDate newStart, LocalDate newEnd, LeaveDuration newDuration) {
 
-        LocalDate start = a.getStartDate().isAfter(newStart) ? a.getStartDate() : newStart;
-        LocalDate end = a.getEndDate().isBefore(newEnd) ? a.getEndDate() : newEnd;
-
-        if (start.isAfter(end)) return false; // không giao ngày
-
-        LeaveDuration oldDur = a.getDuration() != null ? a.getDuration() : LeaveDuration.FULL_DAY;
-        LeaveDuration newDur = newDuration != null ? newDuration : LeaveDuration.FULL_DAY;
-
-        if (oldDur == LeaveDuration.FULL_DAY || newDur == LeaveDuration.FULL_DAY) {
-            return true;
+    private boolean hasOverlap(Long employeeId, Long excludeId, LocalDate leaveDate) {
+        if (excludeId == null) {
+            return leaveRequestRepository.existsApprovedOverlap(employeeId, leaveDate);
         }
-
-        return oldDur == newDur;
+        return leaveRequestRepository.existsApprovedOverlapExclude(employeeId, excludeId, leaveDate);
     }
-    
-    private boolean hasOverlap(Long employeeId, Long excludeId, LocalDate start, LocalDate end, LeaveDuration duration) {
 
-        List<LeaveRequest> existing = leaveRequestRepository.findByEmployeeIdAndStatusIn(
-                employeeId,
-                List.of(LeaveStatus.APPROVED, LeaveStatus.PENDING)
-        );
-
-        for (LeaveRequest lr : existing) {
-            if (excludeId != null && lr.getId().equals(excludeId)) continue;
-
-            if (isOverlap(lr, start, end, duration)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-    
     private double calculateUsedQuota(Long employeeId, Long excludeId) {
         List<LeaveRequest> list;
 
@@ -146,13 +112,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         }
 
         return list.stream()
-                .mapToDouble(lr ->
-                        calculateLeaveAmount(
-                                lr.getStartDate(),
-                                lr.getEndDate(),
-                                lr.getDuration()
-                        )
-                )
+                .mapToDouble(lr -> getDurationValue(lr.getDuration()))
                 .sum();
     }
 
@@ -164,38 +124,27 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     @Transactional
     public LeaveRequestDTO createRequest(LeaveRequestCreateDTO dto) {
 
-    	Long userId = getCurrentUserId();
+        Long userId = getCurrentUserId();
 
         Employee emp = employeeRepo.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
 
-        if (dto.getStartDate().isBefore(emp.getOnboardDate())) {
+        if (dto.getLeaveDate().isBefore(emp.getOnboardDate())) {
             throw new RuntimeException("Không thể xin nghỉ trước ngày onboard");
-        }
-
-        if (dto.getStartDate().isAfter(dto.getEndDate())) {
-            throw new IllegalArgumentException("Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc");
         }
 
         boolean overlap = hasOverlap(
                 emp.getId(),
                 null,
-                dto.getStartDate(),
-                dto.getEndDate(),
-                dto.getDuration()
+                dto.getLeaveDate()
         );
         if (overlap) {
-            throw new IllegalStateException("Đơn nghỉ bị trùng thời gian");
+            throw new IllegalStateException("Đơn nghỉ bị trùng ngày");
         }
 
         if (dto.getType() == LeaveType.ANNUAL) {
-
             double used = calculateUsedQuota(emp.getId(), null);
-            double newAmount = calculateLeaveAmount(
-                    dto.getStartDate(),
-                    dto.getEndDate(),
-                    dto.getDuration()
-            );
+            double newAmount = getDurationValue(dto.getDuration());
 
             if (used + newAmount > ANNUAL_LEAVE_QUOTA) {
                 throw new IllegalStateException("Vượt quá số ngày phép năm cho phép");
@@ -211,8 +160,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         req.setEmployee(emp);
         req.setType(dto.getType());
         req.setDuration(dto.getDuration());
-        req.setStartDate(dto.getStartDate());
-        req.setEndDate(dto.getEndDate());
+        req.setLeaveDate(dto.getLeaveDate());
         req.setReason(dto.getReason());
         req.setStatus(LeaveStatus.PENDING);
         req.setApproverId(approverId);
@@ -223,10 +171,8 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
                 saved.getApproverId(),
                 "Có đơn nghỉ phép mới",
                 "Nhân viên " + emp.getFullName()
-                        + " đã gửi đơn nghỉ phép từ "
-                        + saved.getStartDate()
-                        + " đến "
-                        + saved.getEndDate(),
+                        + " đã gửi đơn nghỉ phép ngày "
+                        + saved.getLeaveDate(),
                 NotificationType.LEAVE_REQUEST
         );
 
@@ -244,7 +190,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     @Transactional
     public LeaveRequestDTO employeeUpdate(Long id, LeaveRequestUpdateDTO dto, Long userId) {
 
-    	LeaveRequest req = leaveRequestRepository.findById(id)
+        LeaveRequest req = leaveRequestRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Leave request not found"));
 
         if (req.getStatus() != LeaveStatus.PENDING) {
@@ -260,37 +206,26 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 
         if (dto.getType() != null) req.setType(dto.getType());
         if (dto.getDuration() != null) req.setDuration(dto.getDuration());
-        if (dto.getStartDate() != null) req.setStartDate(dto.getStartDate());
-        if (dto.getEndDate() != null) req.setEndDate(dto.getEndDate());
+        if (dto.getLeaveDate() != null) req.setLeaveDate(dto.getLeaveDate());
         if (dto.getReason() != null) req.setReason(dto.getReason());
 
-        if (req.getStartDate().isAfter(req.getEndDate())) {
-            throw new IllegalArgumentException("Start date must be before end date");
-        }
-
-        if (req.getStartDate().isBefore(emp.getOnboardDate())) {
+        if (req.getLeaveDate().isBefore(emp.getOnboardDate())) {
             throw new RuntimeException("Không thể chỉnh đơn nghỉ về trước ngày onboard");
         }
 
         boolean overlap = hasOverlap(
                 emp.getId(),
                 req.getId(),
-                req.getStartDate(),
-                req.getEndDate(),
-                req.getDuration()
+                req.getLeaveDate()
         );
         if (overlap) {
-            throw new IllegalStateException("Đơn nghỉ bị trùng thời gian");
+            throw new IllegalStateException("Đơn nghỉ bị trùng ngày");
         }
 
         if (req.getType() == LeaveType.ANNUAL) {
 
             double used = calculateUsedQuota(emp.getId(), req.getId());
-            double newAmount = calculateLeaveAmount(
-                    req.getStartDate(),
-                    req.getEndDate(),
-                    req.getDuration()
-            );
+            double newAmount = getDurationValue(req.getDuration());
 
             if (used + newAmount > ANNUAL_LEAVE_QUOTA) {
                 throw new IllegalStateException("Vượt quá số ngày phép năm cho phép");
@@ -305,7 +240,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         return toDTO(saved);
     }
 
-    // =====================================================
+ // =====================================================
     // GET / FILTER
     // =====================================================
 
@@ -374,10 +309,10 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         if (!req.getApproverId().equals(actorId)) {
             throw new SecurityException("You are not assigned approver");
         }
-        
+
         Employee emp = req.getEmployee();
 
-        if (req.getStartDate().isBefore(emp.getOnboardDate())) {
+        if (req.getLeaveDate().isBefore(emp.getOnboardDate())) {
             throw new RuntimeException("Không thể duyệt đơn nghỉ trước ngày onboard");
         }
 
@@ -393,36 +328,32 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         req.setUpdatedAt(LocalDateTime.now());
 
         LeaveRequest saved = leaveRequestRepository.save(req);
-        
+
         notificationService.createNotification(
-                saved.getEmployee().getId(), // nhân viên gửi đơn
+                saved.getEmployee().getId(),
                 action == DecisionAction.APPROVE
                         ? "Đơn nghỉ phép đã được duyệt"
                         : "Đơn nghỉ phép bị từ chối",
                 action == DecisionAction.APPROVE
-                        ? "Đơn nghỉ phép từ " + saved.getStartDate()
-                                + " đến " + saved.getEndDate() + " đã được duyệt"
-                        : "Đơn nghỉ phép từ " + saved.getStartDate()
-                                + " đến " + saved.getEndDate() + " đã bị từ chối",
+                        ? "Đơn nghỉ phép ngày " + saved.getLeaveDate() + " đã được duyệt"
+                        : "Đơn nghỉ phép ngày " + saved.getLeaveDate() + " đã bị từ chối",
                 action == DecisionAction.APPROVE
                         ? NotificationType.LEAVE_APPROVED
                         : NotificationType.LEAVE_REJECTED
         );
 
         if (saved.getStatus() == LeaveStatus.APPROVED) {
-            LocalDate d = saved.getStartDate();
-            while (!d.isAfter(saved.getEndDate())) {
-                attendanceCalculationService.recalculateDaily(
-                        saved.getEmployee().getId(), d);
-                d = d.plusDays(1);
-            }
+            attendanceCalculationService.recalculateDaily(
+                    saved.getEmployee().getId(),
+                    saved.getLeaveDate()
+            );
         }
 
         audit.log(actorId, "LEAVE_DECIDE",
-        	    action == DecisionAction.APPROVE
-        	        ? "Duyệt đơn nghỉ phép, mã đơn = " + id
-        	        : "Từ chối đơn nghỉ phép, mã đơn = " + id
-        	);
+                action == DecisionAction.APPROVE
+                        ? "Duyệt đơn nghỉ phép, mã đơn = " + id
+                        : "Từ chối đơn nghỉ phép, mã đơn = " + id
+        );
 
         return toDTO(saved);
     }
@@ -449,10 +380,10 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         }
 
         audit.log(actorId, "LEAVE_DECIDE_BULK",
-        	    action == DecisionAction.APPROVE
-        	        ? "Duyệt hàng loạt đơn nghỉ phép: " + ids
-        	        : "Từ chối hàng loạt đơn nghỉ phép: " + ids
-        	);
+                action == DecisionAction.APPROVE
+                        ? "Duyệt hàng loạt đơn nghỉ phép: " + ids
+                        : "Từ chối hàng loạt đơn nghỉ phép: " + ids
+        );
 
         return new BulkDecisionResultDTO(success, failed);
     }
@@ -508,8 +439,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         dto.setApproverId(req.getApproverId());
         dto.setType(req.getType());
         dto.setDuration(req.getDuration());
-        dto.setStartDate(req.getStartDate());
-        dto.setEndDate(req.getEndDate());
+        dto.setLeaveDate(req.getLeaveDate());
         dto.setReason(req.getReason());
         dto.setStatus(req.getStatus());
         dto.setManagerNote(req.getManagerNote());

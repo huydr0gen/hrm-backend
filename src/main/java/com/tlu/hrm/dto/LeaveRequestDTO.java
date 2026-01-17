@@ -38,12 +38,9 @@ public class LeaveRequestDTO {
     
     @Schema(description = "Thời lượng nghỉ", example = "FULL_DAY")
     private LeaveDuration duration;
-
-    @Schema(description = "Ngày bắt đầu nghỉ", example = "2025-12-20")
-    private LocalDate startDate;
-
-    @Schema(description = "Ngày kết thúc nghỉ", example = "2025-12-22")
-    private LocalDate endDate;
+    
+    @Schema(description = "Ngày nghỉ", example = "2025-12-20")
+    private LocalDate leaveDate;
 
     @Schema(description = "Lý do xin nghỉ", example = "Nghỉ việc gia đình")
     private String reason;
@@ -138,20 +135,12 @@ public class LeaveRequestDTO {
 		this.duration = duration;
 	}
 
-	public LocalDate getStartDate() {
-		return startDate;
+	public LocalDate getLeaveDate() {
+		return leaveDate;
 	}
 
-	public void setStartDate(LocalDate startDate) {
-		this.startDate = startDate;
-	}
-
-	public LocalDate getEndDate() {
-		return endDate;
-	}
-
-	public void setEndDate(LocalDate endDate) {
-		this.endDate = endDate;
+	public void setLeaveDate(LocalDate leaveDate) {
+		this.leaveDate = leaveDate;
 	}
 
 	public String getReason() {

@@ -24,19 +24,12 @@ public class LeaveRequestUpdateDTO {
     )
     private LeaveDuration duration;
     
-	@Schema(
-        description = "Ngày bắt đầu nghỉ (chỉ cho phép update khi đơn đang PENDING)",
-        example = "2025-12-21",
-        nullable = true
-    )
-    private LocalDate startDate;
-
     @Schema(
-        description = "Ngày kết thúc nghỉ (chỉ cho phép update khi đơn đang PENDING)",
-        example = "2025-12-23",
-        nullable = true
-    )
-    private LocalDate endDate;
+	    description = "Ngày nghỉ (chỉ cho phép update khi đơn đang PENDING)",
+	    example = "2025-12-21",
+	    nullable = true
+	)
+	private LocalDate leaveDate;
 
     @Schema(
         description = "Lý do xin nghỉ (chỉ cho phép update khi đơn đang PENDING)",
@@ -65,20 +58,12 @@ public class LeaveRequestUpdateDTO {
 		this.duration = duration;
 	}
 
-	public LocalDate getStartDate() {
-		return startDate;
+	public LocalDate getLeaveDate() {
+		return leaveDate;
 	}
 
-	public void setStartDate(LocalDate startDate) {
-		this.startDate = startDate;
-	}
-
-	public LocalDate getEndDate() {
-		return endDate;
-	}
-
-	public void setEndDate(LocalDate endDate) {
-		this.endDate = endDate;
+	public void setLeaveDate(LocalDate leaveDate) {
+		this.leaveDate = leaveDate;
 	}
 
 	public String getReason() {
