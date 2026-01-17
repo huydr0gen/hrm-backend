@@ -69,6 +69,12 @@ public class LoginResponse {
     )
     @JsonProperty("isManager")
     private boolean manager;
+    
+    @Schema(
+	    description = "User có quyền duyệt hay không",
+	    example = "true"
+	)
+	private boolean canApprove;
 	    
 	public String getAccessToken() {
 		return accessToken;
@@ -123,6 +129,14 @@ public class LoginResponse {
 	}
 	public void setManager(boolean manager) {
 		this.manager = manager;
+	}
+	
+	public boolean isCanApprove() {
+	    return canApprove;
+	}
+
+	public void setCanApprove(boolean canApprove) {
+	    this.canApprove = canApprove;
 	}
 
 }

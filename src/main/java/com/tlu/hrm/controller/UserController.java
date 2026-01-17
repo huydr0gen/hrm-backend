@@ -5,7 +5,6 @@ import com.tlu.hrm.dto.UserCreateDTO;
 import com.tlu.hrm.dto.UserDTO;
 import com.tlu.hrm.dto.UserUpdateDTO;
 import com.tlu.hrm.entities.User;
-import com.tlu.hrm.service.ApprovalResolverService;
 import com.tlu.hrm.service.UserService;
 
 import org.springframework.data.domain.Page;
@@ -31,12 +30,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class UserController {
 
     private final UserService userService;
-    private final ApprovalResolverService approvalResolverService;
 
-    public UserController(UserService userService, ApprovalResolverService approvalResolverService) {
+    public UserController(UserService userService) {
 		super();
 		this.userService = userService;
-		this.approvalResolverService = approvalResolverService;
 	}
     
  // =====================================================
@@ -355,14 +352,6 @@ public class UserController {
         User user = userService.getUserByUsername(username);
 
         UserDTO dto = mapToDto(user);
-        
-        if (user.getEmployee() != null) {
-            Long empId = user.getEmployee().getId();
-            boolean canApprove = approvalResolverService.hasApprovalPermission(empId);
-            dto.setCanApprove(canApprove);
-        } else {
-            dto.setCanApprove(false);
-        }
 
         return ResponseEntity.ok(dto);
     }

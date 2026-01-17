@@ -19,6 +19,7 @@ import com.tlu.hrm.entities.User;
 import com.tlu.hrm.enums.UserStatus;
 import com.tlu.hrm.repository.UserRepository;
 import com.tlu.hrm.security.JwtProvider;
+import com.tlu.hrm.service.ApprovalResolverService;
 import com.tlu.hrm.service.AuditLogService;
 import com.tlu.hrm.service.UserService;
 
@@ -43,15 +44,19 @@ public class AuthController {
     private final UserService userService;
     
     private final AuditLogService auditLogService;
+    
+    private final ApprovalResolverService approvalResolverService;
 
 	public AuthController(AuthenticationManager authenticationManager, JwtProvider jwtProvider,
-			UserRepository userRepository, UserService userService, AuditLogService auditLogService) {
+			UserRepository userRepository, UserService userService, AuditLogService auditLogService,
+			ApprovalResolverService approvalResolverService) {
 		super();
 		this.authenticationManager = authenticationManager;
 		this.jwtProvider = jwtProvider;
 		this.userRepository = userRepository;
 		this.userService = userService;
 		this.auditLogService = auditLogService;
+		this.approvalResolverService = approvalResolverService;
 	}
 
 	// LOGIN -----------------------------------------------------------------------
@@ -179,6 +184,15 @@ public class AuthController {
 	    res.setHR(roles.contains("HR"));
 	    res.setManager(roles.contains("MANAGER"));
 
+	    boolean canApprove = false;
+
+	    if (user.getEmployee() != null) {
+	        Long empId = user.getEmployee().getId();
+	        canApprove = approvalResolverService.hasApprovalPermission(empId);
+	    }
+
+	    res.setCanApprove(canApprove);
+	    
 	    return res;
 	}
 
