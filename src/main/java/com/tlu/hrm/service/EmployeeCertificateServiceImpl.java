@@ -1,16 +1,22 @@
 package com.tlu.hrm.service;
 
+import java.time.LocalDate;
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.tlu.hrm.dto.EmployeeCertificateCreateDTO;
 import com.tlu.hrm.dto.EmployeeCertificateResponseDTO;
 import com.tlu.hrm.dto.EmployeeCertificateUpdateDTO;
 import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.entities.EmployeeCertificate;
+import com.tlu.hrm.enums.CertificateStatus;
 import com.tlu.hrm.repository.EmployeeCertificateRepository;
 import com.tlu.hrm.repository.EmployeeRepository;
 
@@ -31,35 +37,22 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
     // HR
     // =====================================================
 
-    @Override
+	@Override
     public EmployeeCertificateResponseDTO create(EmployeeCertificateCreateDTO dto) {
 
-    	Employee employee;
+        Employee employee;
 
-        //Ưu tiên empCode (khóa nghiệp vụ)
         if (dto.getEmpCode() != null && !dto.getEmpCode().isBlank()) {
-
             employee = employeeRepo.findByCode(dto.getEmpCode())
                     .orElseThrow(() ->
-                            new RuntimeException(
-                                    "Employee not found with code: " + dto.getEmpCode()
-                            )
+                            new RuntimeException("Employee not found with code: " + dto.getEmpCode())
                     );
-
-        }
-        //Fallback employeeId (legacy / nội bộ)
-        else if (dto.getEmployeeId() != null) {
-
+        } else if (dto.getEmployeeId() != null) {
             employee = employeeRepo.findById(dto.getEmployeeId())
                     .orElseThrow(() ->
-                            new RuntimeException(
-                                    "Employee not found with id: " + dto.getEmployeeId()
-                            )
+                            new RuntimeException("Employee not found with id: " + dto.getEmployeeId())
                     );
-
-        }
-        //Không truyền gì → lỗi rõ ràng
-        else {
+        } else {
             throw new RuntimeException("empCode or employeeId is required");
         }
 
@@ -70,6 +63,8 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
         cert.setIssuedDate(dto.getIssuedDate());
         cert.setExpiredDate(dto.getExpiredDate());
         cert.setNote(dto.getNote());
+
+        updateStatusByExpiredDate(cert);
 
         return toDTO(certificateRepo.save(cert));
     }
@@ -85,6 +80,8 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
         cert.setIssuedDate(dto.getIssuedDate());
         cert.setExpiredDate(dto.getExpiredDate());
         cert.setNote(dto.getNote());
+
+        updateStatusByExpiredDate(cert);
 
         return toDTO(certificateRepo.save(cert));
     }
@@ -124,6 +121,28 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
     }
 
     // =====================================================
+    // FILTER BY STATUS
+    // =====================================================
+
+    public Page<EmployeeCertificateResponseDTO> listByStatus(
+            CertificateStatus status, int page, int size, String sort) {
+
+        Pageable pageable = PageRequest.of(page, size, parseSort(sort));
+
+        return certificateRepo.findByStatus(status, pageable)
+                .map(this::toDTO);
+    }
+
+    public Page<EmployeeCertificateResponseDTO> listByEmployeeAndStatus(
+            Long employeeId, CertificateStatus status, int page, int size) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        return certificateRepo.findByEmployeeIdAndStatus(employeeId, status, pageable)
+                .map(this::toDTO);
+    }
+
+    // =====================================================
     // EMPLOYEE
     // =====================================================
 
@@ -156,11 +175,7 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
 
         return toDTO(cert);
     }
-
-    // =====================================================
-    // OLD – KHÔNG DÙNG Ở FE
-    // =====================================================
-
+    
     @Override
     public Page<EmployeeCertificateResponseDTO> getByEmployee(
             Long employeeId, int page, int size) {
@@ -172,8 +187,31 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
     }
 
     // =====================================================
+    // AUTO EXPIRE (CRONJOB)
+    // =====================================================
+
+    @Scheduled(cron = "0 0 0 * * ?") // chạy mỗi ngày lúc 00:00
+    @Transactional
+    public void autoExpireCertificates() {
+        List<EmployeeCertificate> list = certificateRepo.findCertificatesToExpire();
+        for (EmployeeCertificate c : list) {
+            c.setStatus(CertificateStatus.EXPIRED);
+        }
+        certificateRepo.saveAll(list);
+    }
+
+    // =====================================================
     // COMMON
     // =====================================================
+
+    private void updateStatusByExpiredDate(EmployeeCertificate cert) {
+        if (cert.getExpiredDate() != null
+                && cert.getExpiredDate().isBefore(LocalDate.now())) {
+            cert.setStatus(CertificateStatus.EXPIRED);
+        } else {
+            cert.setStatus(CertificateStatus.ACTIVE);
+        }
+    }
 
     private Sort parseSort(String sort) {
         String[] arr = sort.split(",");
@@ -194,6 +232,7 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
         dto.setIssuer(c.getIssuer());
         dto.setIssuedDate(c.getIssuedDate());
         dto.setExpiredDate(c.getExpiredDate());
+        dto.setStatus(c.getStatus()); // QUAN TRỌNG
         dto.setNote(c.getNote());
         return dto;
     }

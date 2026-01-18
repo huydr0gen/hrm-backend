@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import com.tlu.hrm.dto.EmployeeCertificateCreateDTO;
 import com.tlu.hrm.dto.EmployeeCertificateResponseDTO;
 import com.tlu.hrm.dto.EmployeeCertificateUpdateDTO;
+import com.tlu.hrm.enums.CertificateStatus;
 
 public interface EmployeeCertificateService {
 
@@ -36,5 +37,12 @@ public interface EmployeeCertificateService {
 
     Page<EmployeeCertificateResponseDTO> getByEmployee(
             Long employeeId, int page, int size
+    );
+    
+    Page<EmployeeCertificateResponseDTO> listByStatus(
+            CertificateStatus status,
+            int page,
+            int size,
+            String sort
     );
 }

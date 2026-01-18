@@ -1,5 +1,7 @@
 package com.tlu.hrm.repository;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -7,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.tlu.hrm.entities.EmployeeCertificate;
+import com.tlu.hrm.enums.CertificateStatus;
 
 public interface EmployeeCertificateRepository extends JpaRepository<EmployeeCertificate, Long> {
 
@@ -24,4 +27,20 @@ public interface EmployeeCertificateRepository extends JpaRepository<EmployeeCer
             @Param("keyword") String keyword,
             Pageable pageable
     );
+    
+    Page<EmployeeCertificate> findByStatus(CertificateStatus status, Pageable pageable);
+    
+    Page<EmployeeCertificate> findByEmployeeIdAndStatus(
+	    Long employeeId,
+	    CertificateStatus status,
+	    Pageable pageable
+	);
+    
+    @Query("""
+	    SELECT c FROM EmployeeCertificate c
+	    WHERE c.status = 'ACTIVE'
+	      AND c.expiredDate IS NOT NULL
+	      AND c.expiredDate < CURRENT_DATE
+	""")
+	List<EmployeeCertificate> findCertificatesToExpire();
 }

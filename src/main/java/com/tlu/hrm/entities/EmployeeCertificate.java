@@ -3,6 +3,8 @@ package com.tlu.hrm.entities;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.tlu.hrm.enums.CertificateStatus;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -23,6 +25,10 @@ public class EmployeeCertificate {
     private String name;        // Tên bằng cấp
 
     private String issuer;      // Đơn vị cấp
+    
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CertificateStatus status = CertificateStatus.ACTIVE;
 
     private LocalDate issuedDate;
 
@@ -38,6 +44,9 @@ public class EmployeeCertificate {
     @PrePersist
     public void prePersist() {
         createdAt = LocalDateTime.now();
+        if (status == null) {
+            status = CertificateStatus.ACTIVE;
+        }
     }
 
     @PreUpdate
@@ -49,13 +58,15 @@ public class EmployeeCertificate {
 		super();
 	}
 
-	public EmployeeCertificate(Long id, Employee employee, String name, String issuer, LocalDate issuedDate,
-			LocalDate expiredDate, String note, LocalDateTime createdAt, LocalDateTime updatedAt) {
+	public EmployeeCertificate(Long id, Employee employee, String name, String issuer, CertificateStatus status,
+			LocalDate issuedDate, LocalDate expiredDate, String note, LocalDateTime createdAt,
+			LocalDateTime updatedAt) {
 		super();
 		this.id = id;
 		this.employee = employee;
 		this.name = name;
 		this.issuer = issuer;
+		this.status = status;
 		this.issuedDate = issuedDate;
 		this.expiredDate = expiredDate;
 		this.note = note;
@@ -93,6 +104,14 @@ public class EmployeeCertificate {
 
 	public void setIssuer(String issuer) {
 		this.issuer = issuer;
+	}
+
+	public CertificateStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(CertificateStatus status) {
+		this.status = status;
 	}
 
 	public LocalDate getIssuedDate() {

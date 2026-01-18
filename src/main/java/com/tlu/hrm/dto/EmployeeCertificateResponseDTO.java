@@ -2,6 +2,8 @@ package com.tlu.hrm.dto;
 
 import java.time.LocalDate;
 
+import com.tlu.hrm.enums.CertificateStatus;
+
 public class EmployeeCertificateResponseDTO {
 
 	private Long id;
@@ -12,6 +14,8 @@ public class EmployeeCertificateResponseDTO {
     private String issuer;
     private LocalDate issuedDate;
     private LocalDate expiredDate;
+    
+    private CertificateStatus status;
     private String note;
 	public Long getId() {
 		return id;
@@ -54,6 +58,12 @@ public class EmployeeCertificateResponseDTO {
 	}
 	public void setExpiredDate(LocalDate expiredDate) {
 		this.expiredDate = expiredDate;
+	}
+	public CertificateStatus getStatus() {
+		return status;
+	}
+	public void setStatus(CertificateStatus status) {
+		this.status = status;
 	}
 	public String getNote() {
 		return note;
