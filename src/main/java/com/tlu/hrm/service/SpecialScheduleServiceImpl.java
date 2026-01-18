@@ -67,14 +67,20 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
 
         Employee emp = getCurrentEmployee();
 
+        if (emp.getOnboardDate() != null && dto.getStartDate().isBefore(emp.getOnboardDate())) {
+            throw new RuntimeException("Không thể tạo lịch đặc thù trước ngày onboard");
+        }
+        
         Long approverId = approvalResolverService.resolveApproverId(
                 emp.getId(),
                 emp.getDepartment().getId()
         );
         
-        if (dto.getStartDate().isBefore(emp.getOnboardDate())) {
-            throw new RuntimeException("Không thể tạo lịch đặc thù trước ngày onboard");
-        }
+        if (approverId.equals(emp.getId())) {
+            throw new RuntimeException(
+                "Bạn không thể tự duyệt đơn của chính mình. Vui lòng liên hệ HR/Admin để được gán người duyệt."
+            );
+        }       
 
         SpecialSchedule ss = new SpecialSchedule();
         ss.setEmployee(emp);
@@ -389,13 +395,17 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         Long actorUserId = actor.getUser().getId();
         
         Employee emp = ss.getEmployee();
-
-        if (ss.getEndDate().isBefore(emp.getOnboardDate())) {
-            throw new RuntimeException("Không thể duyệt lịch đặc thù trước ngày onboard");
-        }
         
         if (!actorUserId.equals(ss.getApproverId())) {
             throw new AccessDeniedException("You are not the approver");
+        }
+        
+        if (ss.getEmployee().getId().equals(actor.getId())) {
+            throw new AccessDeniedException("Bạn không thể tự duyệt lịch của chính mình");
+        }
+        
+        if (emp.getOnboardDate() != null && ss.getEndDate().isBefore(emp.getOnboardDate())) {
+            throw new RuntimeException("Không thể duyệt lịch đặc thù trước ngày onboard");
         }
 
         if (ss.getStatus() != SpecialScheduleStatus.PENDING) {

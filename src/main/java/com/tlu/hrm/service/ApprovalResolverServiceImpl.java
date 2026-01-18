@@ -23,28 +23,37 @@ public class ApprovalResolverServiceImpl implements ApprovalResolverService {
     // CORE – ID BASED (CHO NGHIỆP VỤ)
     // =====================================================
 
-    @Override
-    public Long resolveApproverId(Long employeeId, Long departmentId) {
+	@Override
+	public Long resolveApproverId(Long employeeId, Long departmentId) {
 
-        return approvalConfigRepository
-                .findByTargetTypeAndTargetIdAndActiveTrue(
-                        ApprovalTargetType.EMPLOYEE,
-                        employeeId
-                )
-                .map(ApprovalConfig::getApproverId)
+	    Long approverId = approvalConfigRepository
+	            .findByTargetTypeAndTargetIdAndActiveTrue(
+	                    ApprovalTargetType.EMPLOYEE,
+	                    employeeId
+	            )
+	            .map(ApprovalConfig::getApproverId)
 
-                .or(() ->
-                        approvalConfigRepository
-                                .findByTargetTypeAndTargetIdAndActiveTrue(
-                                        ApprovalTargetType.DEPARTMENT,
-                                        departmentId
-                                )
-                                .map(ApprovalConfig::getApproverId)
-                )
+	            .or(() ->
+	                    approvalConfigRepository
+	                            .findByTargetTypeAndTargetIdAndActiveTrue(
+	                                    ApprovalTargetType.DEPARTMENT,
+	                                    departmentId
+	                            )
+	                            .map(ApprovalConfig::getApproverId)
+	            )
 
-                .orElseThrow(() ->
-                        new RuntimeException("Chưa cấu hình người duyệt cho nhân viên này"));
-    }
+	            .orElseThrow(() ->
+	                    new RuntimeException("Bạn chưa được gán người duyệt. Vui lòng liên hệ HR/Admin để cấu hình.")
+	            );
+
+	    if (approverId.equals(employeeId)) {
+	        throw new RuntimeException(
+	            "Bạn không thể tự duyệt đơn của chính mình. Vui lòng liên hệ HR/Admin để được gán người duyệt."
+	        );
+	    }
+
+	    return approverId;
+	}
 
     @Override
     public Set<Long> getApprovedEmployeeIds(Long approverEmployeeId) {

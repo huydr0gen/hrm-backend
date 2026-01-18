@@ -63,7 +63,7 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
         CustomUserDetails ud = (CustomUserDetails) auth.getPrincipal();
 
         return employeeRepository.findByUserId(ud.getId())
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên"));
     }
 
     private Set<String> getRoles() {
@@ -83,12 +83,22 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
             TimekeepingExplanationCreateDTO dto) {
 
         Employee emp = getCurrentEmployee();
+        
+        if (emp.getDepartment() == null) {
+            throw new RuntimeException("Nhân viên chưa được gán phòng ban");
+        }
 
         Long approverId = approvalResolverService.resolveApproverId(
                 emp.getId(),
                 emp.getDepartment().getId()
         );
-
+        
+        if (approverId.equals(emp.getId())) {
+            throw new RuntimeException(
+                "Bạn không thể tự duyệt đơn của chính mình. Vui lòng liên hệ HR/Admin để được gán người duyệt."
+            );
+        }
+        
         if (dto.getWorkDate() == null) {
             throw new IllegalArgumentException("Ngày làm việc không được để trống");
         }
@@ -102,7 +112,7 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
             throw new IllegalArgumentException("Không thể giải trình cho ngày tương lai");
         }
         
-        if (dto.getWorkDate().isBefore(emp.getOnboardDate())) {
+        if (emp.getOnboardDate() != null && dto.getWorkDate().isBefore(emp.getOnboardDate())) {
             throw new IllegalArgumentException("Không thể giải trình cho ngày trước khi onboard");
         }
         
@@ -154,24 +164,29 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
              approvalResolverService.getApprovedDepartmentIds(approverEmployeeId);
 
      // EMPLOYEE thường: chỉ thấy đơn của mình
-     if (roles.contains("ROLE_EMPLOYEE")) {
-         approvedEmployeeIds = Set.of(actor.getId());
-         approvedDepartmentIds = Set.of();
-     }
+     boolean isOnlyEmployee =
+    	        roles.contains("ROLE_EMPLOYEE")
+    	        && !roles.contains("ROLE_MANAGER")
+    	        && !roles.contains("ROLE_HR");
 
-        Pageable pageable = PageRequest.of(
-                page, size, Sort.by("createdAt").descending()
-        );
+	if (isOnlyEmployee) {
+	    approvedEmployeeIds = Set.of(actor.getId());
+	    approvedDepartmentIds = Set.of();
+	}
 
-        Specification<TimekeepingExplanation> spec =
-                TimekeepingExplanationSpecification.buildForApprover(
-                        filter,
-                        approvedEmployeeIds,
-                        approvedDepartmentIds
-                );
+    Pageable pageable = PageRequest.of(
+            page, size, Sort.by("createdAt").descending()
+    );
 
-        return repository.findAll(spec, pageable)
-                .map(this::toDTO);
+    Specification<TimekeepingExplanation> spec =
+            TimekeepingExplanationSpecification.buildForApprover(
+                    filter,
+                    approvedEmployeeIds,
+                    approvedDepartmentIds
+            );
+
+    return repository.findAll(spec, pageable)
+            .map(this::toDTO);
     }
     
     @Override
@@ -181,7 +196,7 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
         Set<String> roles = getRoles();
 
         if (!roles.contains("ROLE_HR") && !roles.contains("ROLE_MANAGER")) {
-            throw new AccessDeniedException("No permission");
+            throw new AccessDeniedException("Bạn không có quyền truy cập");
         }
 
         Long approverEmployeeId = actor.getId();
@@ -217,7 +232,7 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
     public TimekeepingExplanationResponseDTO getById(Long id) {
 
         TimekeepingExplanation e = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giải trình"));
 
         Employee actor = getCurrentEmployee();
         Set<String> roles = getRoles();
@@ -225,13 +240,17 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
         boolean canView =
                 roles.contains("ROLE_HR")
                 || e.getEmployee().getId().equals(actor.getId())
-                || (roles.contains("ROLE_MANAGER")
+                || (
+                    roles.contains("ROLE_MANAGER")
+                    && e.getEmployee().getDepartment() != null
+                    && actor.getDepartment() != null
                     && e.getEmployee().getDepartment().getId()
-                       .equals(actor.getDepartment().getId()))
+                           .equals(actor.getDepartment().getId())
+                )
                 || actor.getUser().getId().equals(e.getApproverId());
 
         if (!canView) {
-            throw new AccessDeniedException("No permission");
+            throw new AccessDeniedException("Bạn không có quyền truy cập");
         }
 
         return toDTO(e);
@@ -247,13 +266,13 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
             TimekeepingExplanationDecisionDTO dto) {
 
         TimekeepingExplanation e = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy giải trình"));
 
         if (e.getStatus() != TimekeepingExplanationStatus.PENDING) {
             throw new IllegalStateException("Đơn đã được xử lý");
         }
         
-        if (e.getWorkDate().isBefore(e.getEmployee().getOnboardDate())) {
+        if (e.getEmployee().getOnboardDate() != null && e.getWorkDate().isBefore(e.getEmployee().getOnboardDate())) {
             throw new RuntimeException("Không thể duyệt giải trình trước ngày onboard");
         }
 
@@ -262,6 +281,10 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
 
         if (!actorUserId.equals(e.getApproverId())) {
             throw new AccessDeniedException("Bạn không phải người duyệt");
+        }
+        
+        if (e.getEmployee().getId().equals(actor.getId())) {
+            throw new AccessDeniedException("Bạn không thể tự duyệt giải trình của chính mình");
         }
         
         if (dto.getAction() == DecisionAction.APPROVE) {
@@ -342,14 +365,15 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
 
         Employee emp = e.getEmployee();
         Department dept = emp.getDepartment();
+        if (dept != null) {
+            dto.setDepartmentId(dept.getId());
+            dto.setDepartmentName(dept.getName());
+        }
 
         dto.setId(e.getId());
         dto.setEmployeeId(emp.getId());
         dto.setEmployeeCode(emp.getCode());
         dto.setEmployeeName(emp.getFullName());
-
-        dto.setDepartmentId(dept.getId());
-        dto.setDepartmentName(dept.getName());
 
         dto.setWorkDate(e.getWorkDate());
         dto.setOriginalCheckIn(e.getOriginalCheckIn());

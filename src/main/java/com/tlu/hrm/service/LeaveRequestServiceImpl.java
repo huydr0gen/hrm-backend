@@ -155,6 +155,12 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
                 emp.getId(),
                 emp.getDepartment().getId()
         );
+        
+        if (approverId == null || approverId.equals(emp.getId())) {
+            throw new RuntimeException(
+                "Bạn không thể tự duyệt đơn của chính mình. Vui lòng liên hệ HR/Admin để được gán người duyệt."
+            );
+        }
 
         LeaveRequest req = new LeaveRequest();
         req.setEmployee(emp);
@@ -308,6 +314,10 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 
         if (!req.getApproverId().equals(actorId)) {
             throw new SecurityException("You are not assigned approver");
+        }
+        
+        if (req.getEmployee().getId().equals(actorId)) {
+            throw new SecurityException("Bạn không thể tự duyệt đơn của chính mình");
         }
 
         Employee emp = req.getEmployee();
