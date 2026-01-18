@@ -8,7 +8,7 @@ public class AttendanceDisplayUtil {
 
     public static String buildDisplay(AttendanceRecord r) {
 
-        if (r == null || r.getPaidMinutes() == null) {
+    	if (r == null || r.getPaidMinutes() == null || r.getWorkType() == null) {
             return "";
         }
 
@@ -16,19 +16,33 @@ public class AttendanceDisplayUtil {
 
         int paid = r.getPaidMinutes();
         int otMinutes = r.getOtMinutes() != null ? r.getOtMinutes() : 0;
+        int hours = paid / 60;
 
-        // ===== PAID / ABSENT =====
-        if (paid >= FULL_DAY_MINUTES) {
-            sb.append("x:8");
-        } else if (paid > 0) {
-            int x = paid / 60;
-            int p = (FULL_DAY_MINUTES - paid) / 60;
-            sb.append("x:").append(x).append(" p:").append(p);
-        } else {
-            sb.append("p:8");
+        switch (r.getWorkType()) {
+
+            case FULL_DAY:
+                sb.append("x:8");
+                break;
+
+            case HALF_DAY:
+            case PARTIAL:
+                sb.append("x:").append(hours);
+                break;
+
+            case LEAVE:
+                if (hours == 0) {
+                    sb.append("p:8");
+                } else {
+                    sb.append("x:").append(hours)
+                      .append(" p:").append(8 - hours);
+                }
+                break;
+
+            default:
+                // ABSENT, SPECIAL_OFF, UNPAID → không hiển thị gì
+                return "";
         }
 
-        // ===== OT =====
         if (otMinutes > 0) {
             sb.append(" ot:").append(otMinutes / 60);
         }

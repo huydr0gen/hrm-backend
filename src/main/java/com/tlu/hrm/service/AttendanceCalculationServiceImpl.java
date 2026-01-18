@@ -13,6 +13,7 @@ import com.tlu.hrm.entities.LeaveRequest;
 import com.tlu.hrm.entities.SpecialSchedule;
 import com.tlu.hrm.enums.AttendanceWorkType;
 import com.tlu.hrm.enums.LeaveDuration;
+import com.tlu.hrm.enums.LeaveType;
 import com.tlu.hrm.enums.SpecialScheduleType;
 import com.tlu.hrm.repository.AttendanceRecordRepository;
 import com.tlu.hrm.repository.EmployeeRepository;
@@ -73,32 +74,48 @@ public class AttendanceCalculationServiceImpl implements AttendanceCalculationSe
                 record.setWorkDate(date);
             }
 
-            int paidMinutes = 0;
-
-            boolean hasMorning = false;
-            boolean hasAfternoon = false;
-            boolean hasFullDay = false;
+            boolean paidMorning = false;
+            boolean paidAfternoon = false;
+            boolean paidFullDay = false;
+            boolean hasPaidLeave = false;
 
             for (LeaveRequest lr : leaves) {
-                if (lr.getDuration() == null || lr.getDuration() == LeaveDuration.FULL_DAY) {
-                    hasFullDay = true;
-                } else if (lr.getDuration() == LeaveDuration.MORNING) {
-                    hasMorning = true;
-                } else if (lr.getDuration() == LeaveDuration.AFTERNOON) {
-                    hasAfternoon = true;
+
+                boolean isPaid = lr.getType() != LeaveType.UNPAID;
+
+                if (isPaid) {
+                    hasPaidLeave = true;
+
+                    if (lr.getDuration() == null || lr.getDuration() == LeaveDuration.FULL_DAY) {
+                        paidFullDay = true;
+                    } else if (lr.getDuration() == LeaveDuration.MORNING) {
+                        paidMorning = true;
+                    } else if (lr.getDuration() == LeaveDuration.AFTERNOON) {
+                        paidAfternoon = true;
+                    }
                 }
             }
 
-            if (hasFullDay || (hasMorning && hasAfternoon)) {
-                paidMinutes = FULL_DAY_MINUTES;
-                record.setWorkType(AttendanceWorkType.FULL_DAY);
+            if (!hasPaidLeave) {
+                // Chỉ có nghỉ không lương → không hiển thị gì
+                record.setPaidMinutes(0);
+                record.setWorkedMinutes(0);
+                record.setWorkType(AttendanceWorkType.ABSENT);
             } else {
-                paidMinutes = HALF_DAY_MINUTES;
-                record.setWorkType(AttendanceWorkType.HALF_DAY);
+                if (paidFullDay || (paidMorning && paidAfternoon)) {
+                    // Nghỉ phép cả ngày
+                    record.setPaidMinutes(FULL_DAY_MINUTES);
+                    record.setWorkedMinutes(0);
+                } else {
+                    // Nghỉ phép nửa ngày → còn lại là đi làm
+                    record.setPaidMinutes(HALF_DAY_MINUTES);
+                    record.setWorkedMinutes(HALF_DAY_MINUTES);
+                }
+
+                // Đánh dấu đây là nghỉ phép
+                record.setWorkType(AttendanceWorkType.LEAVE);
             }
 
-            record.setPaidMinutes(paidMinutes);
-            record.setWorkedMinutes(0);
             attendanceRepo.save(record);
             return;
         }
@@ -196,6 +213,10 @@ public class AttendanceCalculationServiceImpl implements AttendanceCalculationSe
             record.setPaidMinutes(HALF_DAY_MINUTES);
             record.setWorkedMinutes(0);
             record.setWorkType(AttendanceWorkType.HALF_DAY);
+        } else if (workedMinutes > 0) {
+            record.setPaidMinutes(workedMinutes);
+            record.setWorkedMinutes(0);
+            record.setWorkType(AttendanceWorkType.PARTIAL);
         } else {
             record.setPaidMinutes(0);
             record.setWorkType(AttendanceWorkType.ABSENT);
