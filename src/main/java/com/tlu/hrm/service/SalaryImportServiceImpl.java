@@ -8,6 +8,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.tlu.hrm.dto.SalaryImportResultDTO;
@@ -21,14 +22,18 @@ public class SalaryImportServiceImpl implements SalaryImportService {
 
 	private final EmployeeRepository employeeRepo;
     private final SalaryRecordRepository salaryRepo;
+    private final SalaryImportHistoryService historyService;
     
-	public SalaryImportServiceImpl(EmployeeRepository employeeRepo, SalaryRecordRepository salaryRepo) {
+	public SalaryImportServiceImpl(EmployeeRepository employeeRepo, SalaryRecordRepository salaryRepo,
+			SalaryImportHistoryService historyService) {
 		super();
 		this.employeeRepo = employeeRepo;
 		this.salaryRepo = salaryRepo;
+		this.historyService = historyService;
 	}
     
 	@Override
+	@Transactional
     public SalaryImportResultDTO importExcel(MultipartFile file, int month, int year) {
 
         SalaryImportResultDTO result = new SalaryImportResultDTO();
@@ -56,6 +61,10 @@ public class SalaryImportServiceImpl implements SalaryImportService {
                     if (salaryRepo.existsByEmployeeIdAndMonthAndYear(
                             emp.getId(), month, year)) {
                         throw new RuntimeException("Đã có lương tháng này");
+                    }
+                    
+                    if (month < 1 || month > 12) {
+                        throw new IllegalArgumentException("Tháng không hợp lệ");
                     }
 
                     SalaryRecord r = new SalaryRecord();
@@ -86,6 +95,20 @@ public class SalaryImportServiceImpl implements SalaryImportService {
             throw new RuntimeException("Import Excel thất bại", e);
         }
 
+        if (result.getSuccessCount() > 0) {
+            String monthStr = year + "-" + String.format("%02d", month);
+
+            String fileName = file.getOriginalFilename() != null
+                    ? file.getOriginalFilename()
+                    : "unknown.xlsx";
+
+            historyService.createHistory(
+                    monthStr,
+                    fileName,
+                    "/uploads/" + fileName
+            );
+        }
+        
         return result;
     }
 

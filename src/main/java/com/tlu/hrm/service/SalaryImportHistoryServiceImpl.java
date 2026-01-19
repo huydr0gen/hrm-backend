@@ -3,6 +3,8 @@ package com.tlu.hrm.service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +13,7 @@ import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.entities.SalaryImportHistory;
 import com.tlu.hrm.repository.EmployeeRepository;
 import com.tlu.hrm.repository.SalaryImportHistoryRepository;
+import com.tlu.hrm.security.CustomUserDetails;
 
 @Service
 @Transactional
@@ -42,7 +45,9 @@ public class SalaryImportHistoryServiceImpl implements SalaryImportHistoryServic
     }
 
     @Override
-    public void createHistory(String month, String fileName, String filePath, Long createdById) {
+    public void createHistory(String month, String fileName, String filePath) {
+
+        Long createdById = getCurrentEmployeeId();
 
         Employee creator = employeeRepo.findById(createdById)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
@@ -56,10 +61,19 @@ public class SalaryImportHistoryServiceImpl implements SalaryImportHistoryServic
         historyRepo.save(h);
     }
 
+    private Long getCurrentEmployeeId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails ud = (CustomUserDetails) auth.getPrincipal();
+
+        Employee emp = employeeRepo.findByUserId(ud.getId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên"));
+
+        return emp.getId();
+    }
+
     private SalaryImportHistoryResponseDTO toDTO(SalaryImportHistory h) {
 
-        SalaryImportHistoryResponseDTO dto =
-                new SalaryImportHistoryResponseDTO();
+        SalaryImportHistoryResponseDTO dto = new SalaryImportHistoryResponseDTO();
 
         dto.setId(h.getId());
         dto.setMonth(h.getMonth());
