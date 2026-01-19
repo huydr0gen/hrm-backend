@@ -16,9 +16,14 @@ import com.tlu.hrm.dto.AttendanceMonthlyResponseDTO;
 import com.tlu.hrm.dto.SpecialScheduleResponseDTO;
 import com.tlu.hrm.entities.AttendanceRecord;
 import com.tlu.hrm.entities.Employee;
+import com.tlu.hrm.entities.LeaveRequest;
 import com.tlu.hrm.entities.SpecialSchedule;
+import com.tlu.hrm.enums.LeaveDuration;
+import com.tlu.hrm.enums.LeaveStatus;
+import com.tlu.hrm.enums.LeaveType;
 import com.tlu.hrm.repository.AttendanceRecordRepository;
 import com.tlu.hrm.repository.EmployeeRepository;
+import com.tlu.hrm.repository.LeaveRequestRepository;
 import com.tlu.hrm.repository.SpecialScheduleRepository;
 import com.tlu.hrm.utils.AttendanceDisplayUtil;
 
@@ -28,15 +33,18 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
 	private final AttendanceRecordRepository attendanceRepo;
 	private final EmployeeRepository employeeRepo;
 	private final SpecialScheduleRepository specialScheduleRepo;
+	private final LeaveRequestRepository leaveRequestRepository;
 
 	public AttendanceQueryServiceImpl(
 			AttendanceRecordRepository attendanceRepo, 
 			EmployeeRepository employeeRepo,
-			SpecialScheduleRepository specialScheduleRepo) {
+			SpecialScheduleRepository specialScheduleRepo,
+			LeaveRequestRepository leaveRequestRepository) {
 		super();
 		this.attendanceRepo = attendanceRepo;
 		this.employeeRepo = employeeRepo;
 		this.specialScheduleRepo = specialScheduleRepo;
+		this.leaveRequestRepository = leaveRequestRepository;
 	}
 	
 	@Override
@@ -62,6 +70,9 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
             empty.setTotalWorkingDays(0);
             empty.setTotalOTMinutes(0);
             empty.setTotalOTHours(0);
+            empty.setAnnualLeaveQuota(0);
+            empty.setAnnualLeaveUsed(0);
+            empty.setAnnualLeaveRemaining(0);
             return empty;
         }
 
@@ -165,9 +176,83 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
 
         res.setTotalOTMinutes(totalOTMinutes);
         res.setTotalOTHours(totalOTMinutes / 60.0);
+        
+        int year = month.getYear();
+        LocalDate asOfDate = month.atEndOfMonth();
+
+        double quota = getCurrentQuota(employee, asOfDate);
+        double used = calculateUsedQuota(employeeId, year);
+        double remaining = quota - used;
+        
+        remaining = Math.round(remaining * 2) / 2.0;
+
+        res.setAnnualLeaveQuota(quota);
+        res.setAnnualLeaveUsed(used);
+        res.setAnnualLeaveRemaining(Math.max(0, remaining));
 
         return res;
     }
+	
+	private double calculateUsedQuota(Long employeeId, int year) {
+	    LocalDate startDate = LocalDate.of(year, 1, 1);
+	    LocalDate endDate = LocalDate.of(year, 12, 31);
+
+	    List<LeaveRequest> list =
+	            leaveRequestRepository.findForQuotaByYear(
+	                    employeeId,
+	                    LeaveType.ANNUAL,
+	                    List.of(LeaveStatus.APPROVED, LeaveStatus.PENDING),
+	                    startDate,
+	                    endDate
+	            );
+
+	    return list.stream()
+	            .mapToDouble(lr -> getDurationValue(lr.getDuration()))
+	            .sum();
+	}
+	
+	private LocalDate normalizeOnboardStart(LocalDate onboardDate) {
+	    if (onboardDate.getDayOfMonth() == 1) {
+	        return onboardDate.withDayOfMonth(1);
+	    } else {
+	        return onboardDate.plusMonths(1).withDayOfMonth(1);
+	    }
+	}
+
+	private int countMonthsInclusive(LocalDate start, LocalDate end) {
+	    LocalDate s = start.withDayOfMonth(1);
+	    LocalDate e = end.withDayOfMonth(1);
+
+	    if (s.isAfter(e)) return 0;
+
+	    return (e.getYear() - s.getYear()) * 12
+	         + (e.getMonthValue() - s.getMonthValue()) + 1;
+	}
+
+	private double getCurrentQuota(Employee emp, LocalDate asOfDate) {
+	    int year = asOfDate.getYear();
+
+	    LocalDate onboard = emp.getOnboardDate();
+	    LocalDate yearStart = LocalDate.of(year, 1, 1);
+	    LocalDate yearEnd = LocalDate.of(year, 12, 31);
+
+	    if (onboard.isAfter(yearEnd)) {
+	        return 0;
+	    }
+
+	    LocalDate onboardStart = normalizeOnboardStart(onboard);
+	    LocalDate effectiveStart = onboardStart.isAfter(yearStart) ? onboardStart : yearStart;
+
+	    return countMonthsInclusive(effectiveStart, asOfDate);
+	}
+	
+	private double getDurationValue(LeaveDuration duration) {
+	    if (duration == null) return 1.0;
+	    return switch (duration) {
+	        case FULL_DAY -> 1.0;
+	        case MORNING, AFTERNOON -> 0.5;
+	    };
+	}
 	
 	// =========================
     // Mapper

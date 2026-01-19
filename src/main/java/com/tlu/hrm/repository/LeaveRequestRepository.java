@@ -94,4 +94,40 @@ JpaSpecificationExecutor<LeaveRequest> {
 	    @Param("employeeId") Long employeeId,
 	    @Param("date") LocalDate date
 	);
+    
+    @Query("""
+	SELECT lr
+	FROM LeaveRequest lr
+	WHERE lr.employee.id = :employeeId
+	AND lr.type = :type
+	AND lr.status IN :statuses
+	AND lr.leaveDate >= :startDate
+	AND lr.leaveDate <= :endDate
+	""")
+	List<LeaveRequest> findForQuotaByYear(
+	    @Param("employeeId") Long employeeId,
+	    @Param("type") LeaveType type,
+	    @Param("statuses") List<LeaveStatus> statuses,
+	    @Param("startDate") LocalDate startDate,
+	    @Param("endDate") LocalDate endDate
+	);
+    
+    @Query("""
+	SELECT lr
+	FROM LeaveRequest lr
+	WHERE lr.employee.id = :employeeId
+	AND lr.id <> :excludeId
+	AND lr.type = :type
+	AND lr.status IN :statuses
+	AND lr.leaveDate >= :startDate
+	AND lr.leaveDate <= :endDate
+	""")
+	List<LeaveRequest> findForQuotaExcludeByYear(
+	    @Param("employeeId") Long employeeId,
+	    @Param("excludeId") Long excludeId,
+	    @Param("type") LeaveType type,
+	    @Param("statuses") List<LeaveStatus> statuses,
+	    @Param("startDate") LocalDate startDate,
+	    @Param("endDate") LocalDate endDate
+	);
 }

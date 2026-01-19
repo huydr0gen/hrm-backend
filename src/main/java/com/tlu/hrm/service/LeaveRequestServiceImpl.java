@@ -30,8 +30,6 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class LeaveRequestServiceImpl implements LeaveRequestService {
-
-	private static final int ANNUAL_LEAVE_QUOTA = 12;
 	
 	private final LeaveRequestRepository leaveRequestRepository;
     private final EmployeeRepository employeeRepo;
@@ -93,27 +91,69 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         return leaveRequestRepository.existsApprovedOverlapExclude(employeeId, excludeId, leaveDate);
     }
 
-    private double calculateUsedQuota(Long employeeId, Long excludeId) {
+    private double calculateUsedQuota(Long employeeId, Long excludeId, int year) {
+        LocalDate startDate = LocalDate.of(year, 1, 1);
+        LocalDate endDate = LocalDate.of(year, 12, 31);
+
         List<LeaveRequest> list;
 
         if (excludeId == null) {
-            list = leaveRequestRepository.findForQuota(
-                    employeeId,
-                    LeaveType.ANNUAL,
-                    List.of(LeaveStatus.APPROVED, LeaveStatus.PENDING)
+            list = leaveRequestRepository.findForQuotaByYear(
+                employeeId,
+                LeaveType.ANNUAL,
+                List.of(LeaveStatus.APPROVED, LeaveStatus.PENDING),
+                startDate,
+                endDate
             );
         } else {
-            list = leaveRequestRepository.findForQuotaExclude(
-                    employeeId,
-                    excludeId,
-                    LeaveType.ANNUAL,
-                    List.of(LeaveStatus.APPROVED, LeaveStatus.PENDING)
+            list = leaveRequestRepository.findForQuotaExcludeByYear(
+                employeeId,
+                excludeId,
+                LeaveType.ANNUAL,
+                List.of(LeaveStatus.APPROVED, LeaveStatus.PENDING),
+                startDate,
+                endDate
             );
         }
 
         return list.stream()
                 .mapToDouble(lr -> getDurationValue(lr.getDuration()))
                 .sum();
+    }
+    
+    private double getCurrentQuota(Employee emp, LocalDate asOfDate) {
+        int year = asOfDate.getYear();
+
+        LocalDate onboard = emp.getOnboardDate();
+        LocalDate yearStart = LocalDate.of(year, 1, 1);
+        LocalDate yearEnd = LocalDate.of(year, 12, 31);
+
+        if (onboard.isAfter(yearEnd)) {
+            return 0;
+        }
+
+        LocalDate onboardStart = normalizeOnboardStart(onboard);
+        LocalDate effectiveStart = onboardStart.isAfter(yearStart) ? onboardStart : yearStart;
+
+        return countMonthsInclusive(effectiveStart, asOfDate);
+    }
+    
+    private LocalDate normalizeOnboardStart(LocalDate onboardDate) {
+        if (onboardDate.getDayOfMonth() == 1) {
+            return onboardDate.withDayOfMonth(1);
+        } else {
+            return onboardDate.plusMonths(1).withDayOfMonth(1);
+        }
+    }
+    
+    private int countMonthsInclusive(LocalDate start, LocalDate end) {
+        LocalDate s = start.withDayOfMonth(1);
+        LocalDate e = end.withDayOfMonth(1);
+
+        if (s.isAfter(e)) return 0;
+
+        return (e.getYear() - s.getYear()) * 12
+             + (e.getMonthValue() - s.getMonthValue()) + 1;
     }
 
     // =====================================================
@@ -143,11 +183,18 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         }
 
         if (dto.getType() == LeaveType.ANNUAL) {
-            double used = calculateUsedQuota(emp.getId(), null);
             double newAmount = getDurationValue(dto.getDuration());
 
-            if (used + newAmount > ANNUAL_LEAVE_QUOTA) {
-                throw new IllegalStateException("Vượt quá số ngày phép năm cho phép");
+            LocalDate leaveDate = dto.getLeaveDate();
+            int year = leaveDate.getYear();
+
+            double quota = getCurrentQuota(emp, leaveDate);
+            double used = calculateUsedQuota(emp.getId(), null, year);
+
+            if (used + newAmount > quota) {
+            	throw new IllegalStateException(
+            		    "Không đủ ngày phép. Còn lại: " + (quota - used)
+            		);
             }
         }
 
@@ -228,13 +275,21 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             throw new IllegalStateException("Đơn nghỉ bị trùng ngày");
         }
 
-        if (req.getType() == LeaveType.ANNUAL) {
-
-            double used = calculateUsedQuota(emp.getId(), req.getId());
+        LeaveType finalType = dto.getType() != null ? dto.getType() : req.getType();
+        
+        if (finalType == LeaveType.ANNUAL) {
             double newAmount = getDurationValue(req.getDuration());
 
-            if (used + newAmount > ANNUAL_LEAVE_QUOTA) {
-                throw new IllegalStateException("Vượt quá số ngày phép năm cho phép");
+            LocalDate leaveDate = req.getLeaveDate();
+            int year = leaveDate.getYear();
+
+            double quota = getCurrentQuota(emp, leaveDate);
+            double used = calculateUsedQuota(emp.getId(), req.getId(), year);
+
+            if (used + newAmount > quota) {
+            	throw new IllegalStateException(
+            		    "Không đủ ngày phép. Còn lại: " + (quota - used)
+            		);
             }
         }
 
