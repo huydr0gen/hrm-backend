@@ -6,7 +6,9 @@ import com.tlu.hrm.dto.SalaryImportHistoryResponseDTO;
 
 public interface SalaryImportHistoryService {
 
-	Page<SalaryImportHistoryResponseDTO> getByMonth(String month, int page, int size);
+	Page<SalaryImportHistoryResponseDTO> getAll(int page, int size);
+
+    Page<SalaryImportHistoryResponseDTO> getByMonth(String month, int page, int size);
 
     void createHistory(String month, String fileName, String filePath);
 }

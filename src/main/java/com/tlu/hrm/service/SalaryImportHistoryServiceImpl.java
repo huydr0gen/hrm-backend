@@ -60,9 +60,27 @@ public class SalaryImportHistoryServiceImpl implements SalaryImportHistoryServic
 
         historyRepo.save(h);
     }
+    
+    @Override
+    public Page<SalaryImportHistoryResponseDTO> getAll(int page, int size) {
+
+        PageRequest pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        return historyRepo.findAll(pageable)
+                .map(this::toDTO);
+    }
 
     private Long getCurrentEmployeeId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !(auth.getPrincipal() instanceof CustomUserDetails)) {
+            throw new RuntimeException("Unauthorized");
+        }
+
         CustomUserDetails ud = (CustomUserDetails) auth.getPrincipal();
 
         Employee emp = employeeRepo.findByUserId(ud.getId())
