@@ -90,4 +90,25 @@ extends JpaRepository<SpecialSchedule, Long>, JpaSpecificationExecutor<SpecialSc
 	        @Param("start") LocalDate start,
 	        @Param("end") LocalDate end
 	);
+    
+    @Query("""
+	    SELECT CASE WHEN COUNT(s) > 0 THEN true ELSE false END
+	    FROM SpecialSchedule s
+	    WHERE s.employee = :employee
+	      AND s.type = :type
+	      AND s.status IN :statuses
+	      AND s.id <> :excludeId
+	      AND (
+	            s.startDate <= :endDate
+	        AND s.endDate >= :startDate
+	      )
+	""")
+	boolean existsOverlappingScheduleExcludeId(
+	        @Param("employee") Employee employee,
+	        @Param("type") SpecialScheduleType type,
+	        @Param("statuses") List<SpecialScheduleStatus> statuses,
+	        @Param("startDate") LocalDate startDate,
+	        @Param("endDate") LocalDate endDate,
+	        @Param("excludeId") Long excludeId
+	);
 }

@@ -3,7 +3,9 @@ package com.tlu.hrm.service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -265,7 +267,7 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
                     && e.getEmployee().getDepartment().getId()
                            .equals(actor.getDepartment().getId())
                 )
-                || actor.getUser().getId().equals(e.getApproverId());
+                || actor.getId().equals(e.getApproverId());
 
         if (!canView) {
             throw new AccessDeniedException("Bạn không có quyền truy cập");
@@ -295,12 +297,12 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
         }
 
         Employee actor = getCurrentEmployee();
-        Long actorUserId = actor.getUser().getId();
+        Long actorEmployeeId = actor.getId();
 
-        if (!actorUserId.equals(e.getApproverId())) {
+        if (!actorEmployeeId.equals(e.getApproverId())) {
             throw new AccessDeniedException("Bạn không phải người duyệt");
         }
-
+        
         if (e.getEmployee().getId().equals(actor.getId())) {
             throw new AccessDeniedException("Bạn không thể tự duyệt giải trình của chính mình");
         }
@@ -324,7 +326,7 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
                         : TimekeepingExplanationStatus.REJECTED
         );
 
-        e.setDecidedBy(actorUserId);
+        e.setDecidedBy(actorEmployeeId);
         e.setDecidedAt(LocalDateTime.now());
         e.setManagerNote(dto.getManagerNote());
 
@@ -381,21 +383,50 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
 
         List<Long> success = new ArrayList<>();
         List<Long> failed = new ArrayList<>();
+        Map<Long, String> failedReasons = new HashMap<>();
 
         for (Long id : dto.getIds()) {
             try {
                 decide(id,
-                        new TimekeepingExplanationDecisionDTO() {{
-                            setAction(dto.getAction());
-                            setManagerNote(dto.getManagerNote());
-                        }});
+                    new TimekeepingExplanationDecisionDTO() {{
+                        setAction(dto.getAction());
+                        setManagerNote(dto.getManagerNote());
+                    }}
+                );
                 success.add(id);
+            } catch (AccessDeniedException e) {
+                failed.add(id);
+                failedReasons.put(id, e.getMessage());
+            } catch (IllegalStateException e) {
+                failed.add(id);
+                failedReasons.put(id, translateIllegalState(e.getMessage()));
+            } catch (RuntimeException e) {
+                failed.add(id);
+                failedReasons.put(id, translateRuntime(e.getMessage()));
             } catch (Exception e) {
                 failed.add(id);
+                failedReasons.put(id, "Lỗi không xác định");
             }
         }
 
-        return new BulkDecisionResultDTO(success, failed);
+        return new BulkDecisionResultDTO(success, failed, failedReasons);
+    }
+    
+    private String translateIllegalState(String msg) {
+        if (msg.contains("Đơn đã được xử lý")) {
+            return "Đơn này đã được xử lý trước đó";
+        }
+        return msg;
+    }
+    
+    private String translateRuntime(String msg) {
+        if (msg.contains("Không tìm thấy")) {
+            return "Không tìm thấy giải trình";
+        }
+        if (msg.contains("onboard")) {
+            return "Không thể duyệt giải trình trước ngày onboard";
+        }
+        return msg;
     }
 
     // =====================================================

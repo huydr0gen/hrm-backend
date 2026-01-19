@@ -5,7 +5,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -70,10 +72,6 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         requireRole("ROLE_EMPLOYEE");
 
         Employee emp = getCurrentEmployee();
-
-        if (emp.getOnboardDate() != null && dto.getStartDate().isBefore(emp.getOnboardDate())) {
-            throw new RuntimeException("Không thể tạo lịch đặc thù trước ngày onboard");
-        }
         
         Long approverId = approvalResolverService.resolveApproverId(
                 emp.getId(),
@@ -150,6 +148,13 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
                 applyWorkingTime(ss, dto); // optional
             }
         }
+        
+        if (emp.getOnboardDate() != null
+                && ss.getEndDate().isBefore(emp.getOnboardDate())) {
+            throw new RuntimeException(
+                "Không thể tạo lịch đặc thù nằm hoàn toàn trước ngày onboard"
+            );
+        }
 
         boolean overlap = repository.existsOverlappingSchedule(
                 emp,
@@ -163,7 +168,7 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         );
 
         if (overlap) {
-            throw new IllegalStateException("Overlapping schedule of same type exists");
+            throw new IllegalStateException("Đã tồn tại lịch đặc thù cùng loại trong khoảng thời gian này");
         }
         
         SpecialSchedule saved = repository.save(ss);
@@ -297,10 +302,16 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
             throw new IllegalStateException("Only PENDING schedule can be updated");
         }
         
-        if (dto.getStartDate() != null && dto.getStartDate().isBefore(actor.getOnboardDate())) {
-            throw new RuntimeException("Không thể chỉnh lịch đặc thù về trước ngày onboard");
-        }
+        LocalDate newStart = dto.getStartDate() != null ? dto.getStartDate() : ss.getStartDate();
+        LocalDate newEnd = dto.getEndDate() != null ? dto.getEndDate() : ss.getEndDate();
 
+        if (actor.getOnboardDate() != null
+                && newEnd.isBefore(actor.getOnboardDate())) {
+            throw new RuntimeException(
+                "Không thể chỉnh lịch đặc thù nằm hoàn toàn trước ngày onboard"
+            );
+        }
+        
         switch (ss.getType()) {
 
             case MATERNITY -> {
@@ -341,7 +352,7 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
 
         ss.setReason(dto.getReason());
 
-        boolean overlap = repository.existsOverlappingSchedule(
+        boolean overlap = repository.existsOverlappingScheduleExcludeId(
                 actor,
                 ss.getType(),
                 List.of(
@@ -349,11 +360,14 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
                         SpecialScheduleStatus.APPROVED
                 ),
                 ss.getStartDate(),
-                ss.getEndDate()
+                ss.getEndDate(),
+                ss.getId()
         );
 
-        if (overlap && !ss.getId().equals(id)) {
-            throw new IllegalStateException("Overlapping schedule of same type exists");
+        if (overlap) {
+            throw new IllegalStateException(
+                "Đã tồn tại lịch đặc thù cùng loại trong khoảng thời gian này"
+            );
         }
 
         return toDTO(repository.save(ss));
@@ -396,22 +410,26 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         SpecialSchedule ss = getById(id);
 
         Employee actor = getCurrentEmployee();
-        Long actorUserId = actor.getUser().getId();
         
         Employee emp = ss.getEmployee();
         
-        if (!actorUserId.equals(ss.getApproverId())) {
-            throw new AccessDeniedException("You are not the approver");
-        }
-        
-        if (ss.getEmployee().getId().equals(actor.getId())) {
-            throw new AccessDeniedException("Bạn không thể tự duyệt lịch của chính mình");
-        }
-        
-        if (emp.getOnboardDate() != null && ss.getEndDate().isBefore(emp.getOnboardDate())) {
-            throw new RuntimeException("Không thể duyệt lịch đặc thù trước ngày onboard");
+        Long actorEmployeeId = actor.getId();
+
+        if (!actorEmployeeId.equals(ss.getApproverId())) {
+            throw new AccessDeniedException("Bạn không phải là người được phân quyền duyệt đơn này");
         }
 
+        if (ss.getEmployee().getId().equals(actorEmployeeId)) {
+            throw new AccessDeniedException("Bạn không thể tự duyệt đơn của chính mình");
+        }
+        
+        if (emp.getOnboardDate() != null
+                && ss.getEndDate().isBefore(emp.getOnboardDate())) {
+            throw new RuntimeException(
+                "Không thể duyệt lịch đặc thù nằm hoàn toàn trước ngày onboard"
+            );
+        }
+        
         if (ss.getStatus() != SpecialScheduleStatus.PENDING) {
             throw new IllegalStateException("Already processed");
         }
@@ -422,7 +440,7 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
                         : SpecialScheduleStatus.REJECTED
         );
 
-        ss.setDecidedBy(actorUserId);
+        ss.setDecidedBy(actorEmployeeId);
         ss.setDecidedAt(LocalDateTime.now());
         
         SpecialSchedule saved = repository.save(ss);
@@ -461,19 +479,30 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
             List<Long> ids,
             DecisionAction action) {
 
-        List<Long> success = new ArrayList<>();
+    	List<Long> success = new ArrayList<>();
         List<Long> failed = new ArrayList<>();
+        Map<Long, String> failedReasons = new HashMap<>();
 
         for (Long id : ids) {
             try {
                 decide(id, action);
                 success.add(id);
+            } catch (AccessDeniedException e) {
+                failed.add(id);
+                failedReasons.put(id, e.getMessage());
+            } catch (IllegalStateException e) {
+                failed.add(id);
+                failedReasons.put(id, translateIllegalState(e.getMessage()));
+            } catch (RuntimeException e) {
+                failed.add(id);
+                failedReasons.put(id, translateRuntime(e.getMessage()));
             } catch (Exception e) {
                 failed.add(id);
+                failedReasons.put(id, "Lỗi không xác định");
             }
         }
 
-        return new BulkDecisionResultDTO(success, failed);
+        return new BulkDecisionResultDTO(success, failed, failedReasons);
     }
 
     // ======================================================
@@ -550,6 +579,23 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
     // ======================================================
     // HELPERS
     // ======================================================
+    private String translateIllegalState(String msg) {
+        if ("Already processed".equals(msg)) {
+            return "Đơn này đã được xử lý trước đó";
+        }
+        return "Trạng thái đơn không hợp lệ";
+    }
+    
+    private String translateRuntime(String msg) {
+        if (msg.contains("not found")) {
+            return "Không tìm thấy đơn";
+        }
+        if (msg.contains("onboard")) {
+            return "Lịch này trước ngày onboard, không thể duyệt";
+        }
+        return msg;
+    }
+    
     private SpecialSchedule getById(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Special schedule not found"));

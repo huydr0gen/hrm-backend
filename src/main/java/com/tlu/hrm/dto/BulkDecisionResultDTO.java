@@ -1,6 +1,7 @@
 package com.tlu.hrm.dto;
 
 import java.util.List;
+import java.util.Map;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -18,15 +19,18 @@ public class BulkDecisionResultDTO {
 	        example = "[3]"
 	    )
     private List<Long> failed;
+	
+	private Map<Long, String> failedReasons;
     
 	public BulkDecisionResultDTO() {
 		super();
 	}
 
-	public BulkDecisionResultDTO(List<Long> success, List<Long> failed) {
+	public BulkDecisionResultDTO(List<Long> success, List<Long> failed, Map<Long, String> failedReasons) {
 		super();
 		this.success = success;
 		this.failed = failed;
+		this.failedReasons = failedReasons;
 	}
 
 	public List<Long> getSuccess() {
@@ -43,6 +47,14 @@ public class BulkDecisionResultDTO {
 
 	public void setFailed(List<Long> failed) {
 		this.failed = failed;
+	}
+
+	public Map<Long, String> getFailedReasons() {
+		return failedReasons;
+	}
+
+	public void setFailedReasons(Map<Long, String> failedReasons) {
+		this.failedReasons = failedReasons;
 	}
     
     

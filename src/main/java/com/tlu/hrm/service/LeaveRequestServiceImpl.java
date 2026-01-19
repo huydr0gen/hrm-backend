@@ -3,7 +3,9 @@ package com.tlu.hrm.service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.data.domain.Page;
@@ -432,15 +434,26 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
             Long actorId
     ) {
 
-        List<Long> success = new ArrayList<>();
+    	List<Long> success = new ArrayList<>();
         List<Long> failed = new ArrayList<>();
+        Map<Long, String> failedReasons = new HashMap<>();
 
         for (Long id : ids) {
             try {
                 decide(id, action, note, actorId);
                 success.add(id);
-            } catch (Exception ex) {
+            } catch (SecurityException e) {
                 failed.add(id);
+                failedReasons.put(id, e.getMessage());
+            } catch (IllegalStateException e) {
+                failed.add(id);
+                failedReasons.put(id, translateIllegalState(e.getMessage()));
+            } catch (RuntimeException e) {
+                failed.add(id);
+                failedReasons.put(id, translateRuntime(e.getMessage()));
+            } catch (Exception e) {
+                failed.add(id);
+                failedReasons.put(id, "Lỗi không xác định");
             }
         }
 
@@ -450,7 +463,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
                         : "Từ chối hàng loạt đơn nghỉ phép: " + ids
         );
 
-        return new BulkDecisionResultDTO(success, failed);
+        return new BulkDecisionResultDTO(success, failed, failedReasons);
     }
 
     // =====================================================
@@ -484,6 +497,29 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 
         return leaveRequestRepository.findAll(spec, pageable)
                 .map(this::toDTO);
+    }
+    
+    private String translateIllegalState(String msg) {
+        if ("Request already processed".equals(msg)) {
+            return "Đơn này đã được xử lý trước đó";
+        }
+        if (msg.contains("PENDING")) {
+            return "Chỉ được xử lý đơn ở trạng thái chờ duyệt";
+        }
+        return msg;
+    }
+    
+    private String translateRuntime(String msg) {
+        if (msg.contains("not found")) {
+            return "Không tìm thấy đơn";
+        }
+        if (msg.contains("onboard")) {
+            return "Không thể duyệt đơn trước ngày onboard";
+        }
+        if (msg.contains("trùng")) {
+            return msg; // giữ nguyên tiếng Việt
+        }
+        return msg;
     }
 
     // =====================================================

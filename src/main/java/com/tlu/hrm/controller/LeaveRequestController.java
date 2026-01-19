@@ -8,6 +8,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import com.tlu.hrm.dto.*;
+import com.tlu.hrm.repository.EmployeeRepository;
 import com.tlu.hrm.security.CustomUserDetails;
 import com.tlu.hrm.service.LeaveRequestService;
 
@@ -25,10 +26,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class LeaveRequestController {
 
 	private final LeaveRequestService service;
+	private final EmployeeRepository employeeRepo;
 
-	public LeaveRequestController(LeaveRequestService service) {
+	public LeaveRequestController(LeaveRequestService service, EmployeeRepository employeeRepo) {
 		super();
 		this.service = service;
+		this.employeeRepo = employeeRepo;
 	}
 	
 	// =====================================================
@@ -46,6 +49,13 @@ public class LeaveRequestController {
         }
 
         throw new RuntimeException("Cannot resolve user id");
+    }
+    
+    private Long getCurrentEmployeeId() {
+        Long userId = getCurrentUserId();
+        return employeeRepo.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"))
+                .getId();
     }
 
     // =====================================================
@@ -215,7 +225,7 @@ public class LeaveRequestController {
             @PathVariable Long id,
             @RequestBody LeaveRequestDecisionDTO dto) {
 
-        Long actorId = getCurrentUserId();
+    	Long actorId = getCurrentEmployeeId();
         return ResponseEntity.ok(
                 service.decide(id, dto.getAction(), dto.getManagerNote(), actorId)
         );
@@ -242,7 +252,7 @@ public class LeaveRequestController {
     public ResponseEntity<BulkDecisionResultDTO> decideMany(
             @RequestBody BulkDecisionDTO dto) {
 
-        Long actorId = getCurrentUserId();
+    	Long actorId = getCurrentEmployeeId();
         return ResponseEntity.ok(
                 service.decideMany(
                         dto.getIds(),
