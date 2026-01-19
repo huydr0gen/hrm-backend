@@ -9,8 +9,6 @@ public class SpecialScheduleUpdateDTO {
     private LocalDate endDate;
 
     private LocalTime morningStart;
-    private LocalTime morningEnd;
-    private LocalTime afternoonStart;
     private LocalTime afternoonEnd;
 
     // ON_SITE project info (cho phép chỉnh khi PENDING)
@@ -47,22 +45,6 @@ public class SpecialScheduleUpdateDTO {
 
 	public void setMorningStart(LocalTime morningStart) {
 		this.morningStart = morningStart;
-	}
-
-	public LocalTime getMorningEnd() {
-		return morningEnd;
-	}
-
-	public void setMorningEnd(LocalTime morningEnd) {
-		this.morningEnd = morningEnd;
-	}
-
-	public LocalTime getAfternoonStart() {
-		return afternoonStart;
-	}
-
-	public void setAfternoonStart(LocalTime afternoonStart) {
-		this.afternoonStart = afternoonStart;
 	}
 
 	public LocalTime getAfternoonEnd() {

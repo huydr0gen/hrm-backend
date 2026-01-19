@@ -39,12 +39,6 @@ public class SpecialSchedule {
     @Column(name = "morning_start")
     private LocalTime morningStart;
 
-    @Column(name = "morning_end")
-    private LocalTime morningEnd;
-
-    @Column(name = "afternoon_start")
-    private LocalTime afternoonStart;
-
     @Column(name = "afternoon_end")
     private LocalTime afternoonEnd;
 
@@ -177,22 +171,6 @@ public class SpecialSchedule {
 
 	public void setMorningStart(LocalTime morningStart) {
 		this.morningStart = morningStart;
-	}
-
-	public LocalTime getMorningEnd() {
-		return morningEnd;
-	}
-
-	public void setMorningEnd(LocalTime morningEnd) {
-		this.morningEnd = morningEnd;
-	}
-
-	public LocalTime getAfternoonStart() {
-		return afternoonStart;
-	}
-
-	public void setAfternoonStart(LocalTime afternoonStart) {
-		this.afternoonStart = afternoonStart;
 	}
 
 	public LocalTime getAfternoonEnd() {

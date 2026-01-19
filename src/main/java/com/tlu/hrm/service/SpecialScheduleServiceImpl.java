@@ -3,6 +3,7 @@ package com.tlu.hrm.service;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -39,6 +40,9 @@ import jakarta.transaction.Transactional;
 @Service
 @Transactional
 public class SpecialScheduleServiceImpl implements SpecialScheduleService {
+	
+	private static final LocalTime MORNING_END = LocalTime.of(12, 0);
+	private static final LocalTime AFTERNOON_START = LocalTime.of(13, 0);
 
 	private final SpecialScheduleRepository repository;
     private final EmployeeRepository employeeRepository;
@@ -477,31 +481,35 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
     // ======================================================
     private void applyWorkingTime(SpecialSchedule ss, SpecialScheduleCreateDTO dto) {
         ss.setMorningStart(dto.getMorningStart());
-        ss.setMorningEnd(dto.getMorningEnd());
-        ss.setAfternoonStart(dto.getAfternoonStart());
         ss.setAfternoonEnd(dto.getAfternoonEnd());
     }
 
     private void applyWorkingTime(SpecialSchedule ss, SpecialScheduleUpdateDTO dto) {
         ss.setMorningStart(dto.getMorningStart());
-        ss.setMorningEnd(dto.getMorningEnd());
-        ss.setAfternoonStart(dto.getAfternoonStart());
         ss.setAfternoonEnd(dto.getAfternoonEnd());
     }
 
     private void validateChildCareWorkingTime(SpecialSchedule ss) {
         long minutes = 0;
+        
+        if (ss.getMorningStart() != null && ss.getMorningStart().isAfter(MORNING_END)) {
+            throw new IllegalArgumentException("Giờ bắt đầu buổi sáng phải trước 12:00");
+        }
 
-        if (ss.getMorningStart() != null && ss.getMorningEnd() != null) {
+        if (ss.getAfternoonEnd() != null && ss.getAfternoonEnd().isBefore(AFTERNOON_START)) {
+            throw new IllegalArgumentException("Giờ kết thúc buổi chiều phải sau 13:00");
+        }
+
+        if (ss.getMorningStart() != null) {
             minutes += Duration.between(
                     ss.getMorningStart(),
-                    ss.getMorningEnd()
+                    MORNING_END
             ).toMinutes();
         }
 
-        if (ss.getAfternoonStart() != null && ss.getAfternoonEnd() != null) {
+        if (ss.getAfternoonEnd() != null) {
             minutes += Duration.between(
-                    ss.getAfternoonStart(),
+                    AFTERNOON_START,
                     ss.getAfternoonEnd()
             ).toMinutes();
         }
@@ -588,8 +596,6 @@ public class SpecialScheduleServiceImpl implements SpecialScheduleService {
         dto.setEndDate(e.getEndDate());
 
         dto.setMorningStart(e.getMorningStart());
-        dto.setMorningEnd(e.getMorningEnd());
-        dto.setAfternoonStart(e.getAfternoonStart());
         dto.setAfternoonEnd(e.getAfternoonEnd());
 
         dto.setType(e.getType());

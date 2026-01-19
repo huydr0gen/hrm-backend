@@ -40,9 +40,10 @@ public class SpecialScheduleCreateDTO {
 	    // =========================
 	    // Working time
 	    // =========================
+	    @Schema(description = "Giờ bắt đầu làm buổi sáng (kết thúc cố định 12:00)")
 	    private LocalTime morningStart;
-	    private LocalTime morningEnd;
-	    private LocalTime afternoonStart;
+
+	    @Schema(description = "Giờ kết thúc làm buổi chiều (bắt đầu cố định 13:00)")
 	    private LocalTime afternoonEnd;
 
 	    // =========================
@@ -69,7 +70,6 @@ public class SpecialScheduleCreateDTO {
 	            - MATERNITY
 	            - ON_SITE
 	            - CHILD_CARE
-	            - OTHER
 	            """,
 	        required = true
 	    )
@@ -111,22 +111,6 @@ public class SpecialScheduleCreateDTO {
 
 		public void setMorningStart(LocalTime morningStart) {
 			this.morningStart = morningStart;
-		}
-
-		public LocalTime getMorningEnd() {
-			return morningEnd;
-		}
-
-		public void setMorningEnd(LocalTime morningEnd) {
-			this.morningEnd = morningEnd;
-		}
-
-		public LocalTime getAfternoonStart() {
-			return afternoonStart;
-		}
-
-		public void setAfternoonStart(LocalTime afternoonStart) {
-			this.afternoonStart = afternoonStart;
 		}
 
 		public LocalTime getAfternoonEnd() {

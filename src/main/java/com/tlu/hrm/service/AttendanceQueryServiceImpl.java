@@ -265,8 +265,6 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
         dto.setStartDate(s.getStartDate());
         dto.setEndDate(s.getEndDate());
         dto.setMorningStart(s.getMorningStart());
-        dto.setMorningEnd(s.getMorningEnd());
-        dto.setAfternoonStart(s.getAfternoonStart());
         dto.setAfternoonEnd(s.getAfternoonEnd());
 
         dto.setProjectCode(s.getProjectCode());
