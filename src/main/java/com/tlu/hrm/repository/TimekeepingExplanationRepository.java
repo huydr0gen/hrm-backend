@@ -14,14 +14,16 @@ public interface TimekeepingExplanationRepository extends JpaRepository<Timekeep
 JpaSpecificationExecutor<TimekeepingExplanation> {
 
 	@Query("""
-	        SELECT te
-	        FROM TimekeepingExplanation te
-	        WHERE te.employee.id = :employeeId
-	          AND te.workDate = :date
-	          AND te.status = 'APPROVED'
-	    """)
-	    Optional<TimekeepingExplanation> findApprovedByEmployeeAndDate(
-	            @Param("employeeId") Long employeeId,
-	            @Param("date") LocalDate date
-	    );
+        SELECT te
+        FROM TimekeepingExplanation te
+        WHERE te.employee.id = :employeeId
+          AND te.workDate = :date
+          AND te.status = 'APPROVED'
+    """)
+    Optional<TimekeepingExplanation> findApprovedByEmployeeAndDate(
+            @Param("employeeId") Long employeeId,
+            @Param("date") LocalDate date
+    );
+	
+	boolean existsByEmployeeIdAndWorkDate(Long employeeId, LocalDate workDate);
 }

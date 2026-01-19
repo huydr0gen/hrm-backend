@@ -24,12 +24,14 @@ import com.tlu.hrm.dto.TimekeepingExplanationCreateDTO;
 import com.tlu.hrm.dto.TimekeepingExplanationDecisionDTO;
 import com.tlu.hrm.dto.TimekeepingExplanationFilterDTO;
 import com.tlu.hrm.dto.TimekeepingExplanationResponseDTO;
+import com.tlu.hrm.entities.AttendanceRecord;
 import com.tlu.hrm.entities.Department;
 import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.entities.TimekeepingExplanation;
 import com.tlu.hrm.enums.DecisionAction;
 import com.tlu.hrm.enums.NotificationType;
 import com.tlu.hrm.enums.TimekeepingExplanationStatus;
+import com.tlu.hrm.repository.AttendanceRecordRepository;
 import com.tlu.hrm.repository.EmployeeRepository;
 import com.tlu.hrm.repository.TimekeepingExplanationRepository;
 import com.tlu.hrm.security.CustomUserDetails;
@@ -43,16 +45,19 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
     private final ApprovalResolverService approvalResolverService;
     private final AttendanceCalculationService attendanceCalculationService;
     private final NotificationService notificationService;
+    private final AttendanceRecordRepository attendanceRecordRepository;
     
 	public TimekeepingExplanationServiceImpl(TimekeepingExplanationRepository repository,
 			EmployeeRepository employeeRepository, ApprovalResolverService approvalResolverService,
-			AttendanceCalculationService attendanceCalculationService, NotificationService notificationService) {
+			AttendanceCalculationService attendanceCalculationService, NotificationService notificationService,
+			AttendanceRecordRepository attendanceRecordRepository) {
 		super();
 		this.repository = repository;
 		this.employeeRepository = employeeRepository;
 		this.approvalResolverService = approvalResolverService;
 		this.attendanceCalculationService = attendanceCalculationService;
 		this.notificationService = notificationService;
+		this.attendanceRecordRepository =attendanceRecordRepository;
 	}
 
 	// =====================================================
@@ -116,6 +121,10 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
             throw new IllegalArgumentException("Không thể giải trình cho ngày trước khi onboard");
         }
         
+        if (repository.existsByEmployeeIdAndWorkDate(emp.getId(), dto.getWorkDate())) {
+            throw new RuntimeException("Bạn đã tạo giải trình cho ngày này rồi");
+        }
+        
         TimekeepingExplanation e = new TimekeepingExplanation();
         e.setEmployee(emp);
         e.setWorkDate(dto.getWorkDate());
@@ -124,6 +133,15 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
         e.setReason(dto.getReason());
         e.setStatus(TimekeepingExplanationStatus.PENDING);
         e.setApproverId(approverId);
+        
+        AttendanceRecord ar = attendanceRecordRepository
+        	    .findByEmployeeIdAndWorkDate(emp.getId(), dto.getWorkDate())
+        	    .orElse(null);
+        
+    	if (ar != null) {
+    	    e.setOriginalCheckIn(ar.getCheckIn());
+    	    e.setOriginalCheckOut(ar.getCheckOut());
+    	}
 
         
         TimekeepingExplanation saved = repository.save(e);
@@ -282,7 +300,7 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
         if (!actorUserId.equals(e.getApproverId())) {
             throw new AccessDeniedException("Bạn không phải người duyệt");
         }
-        
+
         if (e.getEmployee().getId().equals(actor.getId())) {
             throw new AccessDeniedException("Bạn không thể tự duyệt giải trình của chính mình");
         }
@@ -292,7 +310,14 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
                 throw new IllegalArgumentException("Không có giờ đề xuất để duyệt");
             }
         }
-
+        
+        if (dto.getAction() == DecisionAction.APPROVE) {
+            if (e.getProposedCheckIn() != null && e.getProposedCheckOut() != null
+                && !e.getProposedCheckIn().isBefore(e.getProposedCheckOut())) {
+                throw new IllegalArgumentException("Giờ vào phải trước giờ ra");
+            }
+        }
+        
         e.setStatus(
                 dto.getAction() == DecisionAction.APPROVE
                         ? TimekeepingExplanationStatus.APPROVED
@@ -302,12 +327,30 @@ public class TimekeepingExplanationServiceImpl implements TimekeepingExplanation
         e.setDecidedBy(actorUserId);
         e.setDecidedAt(LocalDateTime.now());
         e.setManagerNote(dto.getManagerNote());
-        
-        if (e.getStatus() == TimekeepingExplanationStatus.APPROVED) {
 
-            attendanceCalculationService.recalculateDaily(
+        if (dto.getAction() == DecisionAction.APPROVE) {
+
+            AttendanceRecord ar = attendanceRecordRepository
+                .findByEmployeeIdAndWorkDate(
                     e.getEmployee().getId(),
                     e.getWorkDate()
+                )
+                .orElse(null);
+
+            if (ar != null) {
+                if (e.getProposedCheckIn() != null) {
+                    ar.setCheckIn(e.getProposedCheckIn());
+                }
+                if (e.getProposedCheckOut() != null) {
+                    ar.setCheckOut(e.getProposedCheckOut());
+                }
+
+                attendanceRecordRepository.save(ar);
+            }
+
+            attendanceCalculationService.recalculateDaily(
+                e.getEmployee().getId(),
+                e.getWorkDate()
             );
         }
 
