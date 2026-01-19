@@ -210,14 +210,6 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
 	            .mapToDouble(lr -> getDurationValue(lr.getDuration()))
 	            .sum();
 	}
-	
-	private LocalDate normalizeOnboardStart(LocalDate onboardDate) {
-	    if (onboardDate.getDayOfMonth() == 1) {
-	        return onboardDate.withDayOfMonth(1);
-	    } else {
-	        return onboardDate.plusMonths(1).withDayOfMonth(1);
-	    }
-	}
 
 	private int countMonthsInclusive(LocalDate start, LocalDate end) {
 	    LocalDate s = start.withDayOfMonth(1);
@@ -230,7 +222,7 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
 	}
 
 	private double getCurrentQuota(Employee emp, LocalDate asOfDate) {
-	    int year = asOfDate.getYear();
+		int year = asOfDate.getYear();
 
 	    LocalDate onboard = emp.getOnboardDate();
 	    LocalDate yearStart = LocalDate.of(year, 1, 1);
@@ -240,8 +232,11 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
 	        return 0;
 	    }
 
-	    LocalDate onboardStart = normalizeOnboardStart(onboard);
-	    LocalDate effectiveStart = onboardStart.isAfter(yearStart) ? onboardStart : yearStart;
+	    // Tính từ tháng onboard luôn
+	    LocalDate effectiveStart =
+	            onboard.isAfter(yearStart)
+	                    ? onboard.withDayOfMonth(1)
+	                    : yearStart;
 
 	    return countMonthsInclusive(effectiveStart, asOfDate);
 	}
