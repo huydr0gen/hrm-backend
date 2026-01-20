@@ -92,7 +92,15 @@ public class AttendanceDisplayUtil {
         dto.setPaidMinutes(r.getPaidMinutes());
         dto.setOtMinutes(r.getOtMinutes());
 
-        // Rule: thiếu giờ vào hoặc ra -> X:0
+        // Cả hai đều null → không hiển thị gì
+        if (r.getCheckIn() == null && r.getCheckOut() == null) {
+            dto.setDisplay("");
+            dto.setWorkedMinutes(0);
+            dto.setPaidMinutes(0);
+            return;
+        }
+
+        // Thiếu 1 trong 2 → X:0
         if (r.getCheckIn() == null || r.getCheckOut() == null) {
             dto.setDisplay("X:0");
             dto.setWorkedMinutes(0);
