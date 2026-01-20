@@ -413,16 +413,22 @@ public class UserServiceImpl implements UserService {
                 dto.setUsername(user.getUsername());
                 dto.setStatus(user.getStatus());
 
-                dto.setRoles(
-                    user.getRoles().stream()
-                        .map(Role::getName)
-                        .collect(Collectors.toSet())
-                );
+                // ===== Null-safe roles =====
+                if (user.getRoles() != null) {
+                    dto.setRoles(
+                        user.getRoles().stream()
+                            .map(Role::getName)
+                            .collect(Collectors.toSet())
+                    );
+                }
 
                 if (user.getEmployee() != null) {
                     Long empId = user.getEmployee().getId();
                     dto.setEmployeeId(empId);
-                    dto.setEmpCode(user.getEmployee().getCode());
+
+                    if (user.getEmployee().getCode() != null) {
+                        dto.setEmpCode(user.getEmployee().getCode());
+                    }
 
                     // ===== Ưu tiên cá nhân → fallback phòng ban =====
                     String approveCode = finalPersonalMap.get(empId);
@@ -446,6 +452,7 @@ public class UserServiceImpl implements UserService {
 
             
         } catch (Exception e) {
+        	e.printStackTrace();
             throw new RuntimeException("Lỗi khi lấy danh sách user: " + e.getMessage());
         }
     }
