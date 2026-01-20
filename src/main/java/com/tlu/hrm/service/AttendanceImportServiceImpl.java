@@ -131,6 +131,23 @@ public class AttendanceImportServiceImpl implements AttendanceImportService {
                         workedMinutes = (int) Duration
                                 .between(checkIn, checkOut)
                                 .toMinutes();
+
+                        // ===== TRỪ NGHỈ TRƯA 12h–13h =====
+                        LocalTime lunchStart = LocalTime.of(12, 0);
+                        LocalTime lunchEnd = LocalTime.of(13, 0);
+
+                        // Chỉ trừ khi khoảng làm việc cắt qua 12:00–13:00
+                        boolean overlapLunch =
+                                checkIn.isBefore(lunchEnd) &&
+                                checkOut.isAfter(lunchStart);
+
+                        if (overlapLunch) {
+                            workedMinutes -= 60;
+                        }
+
+                        if (workedMinutes < 0) {
+                            workedMinutes = 0;
+                        }
                     }
 
                     AttendanceRecord record =
