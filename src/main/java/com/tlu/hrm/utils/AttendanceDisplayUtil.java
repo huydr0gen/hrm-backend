@@ -103,6 +103,11 @@ public class AttendanceDisplayUtil {
         if (r.getWorkedMinutes() != null) {
             double hours = r.getWorkedMinutes() / 60.0;
 
+            // ===== GIỚI HẠN TỐI ĐA 8 GIỜ =====
+            if (hours > 8) {
+                hours = 8;
+            }
+
             // Làm tròn 2 chữ số thập phân
             double rounded = Math.round(hours * 100.0) / 100.0;
 
