@@ -19,6 +19,7 @@ public class AttendanceDisplayUtil {
 
         if (leave == null) {
             applyNormalAttendance(dto, r);
+            appendOT(dto, r);
             return;
         }
 
@@ -39,6 +40,8 @@ public class AttendanceDisplayUtil {
                 applyNormalAttendance(dto, r);
                 break;
         }
+
+        appendOT(dto, r);
     }
 
     // ===== RV =====
@@ -102,6 +105,23 @@ public class AttendanceDisplayUtil {
             dto.setDisplay("X:" + hours);
         } else {
             dto.setDisplay("X:0");
+        }
+    }
+
+    // ===== APPEND OT =====
+    private static void appendOT(AttendanceDayResponseDTO dto, AttendanceRecord r) {
+        if (r == null || r.getOtMinutes() == null || r.getOtMinutes() <= 0) {
+            return;
+        }
+
+        int otHours = r.getOtMinutes() / 60;
+        if (otHours <= 0) return;
+
+        String current = dto.getDisplay();
+        if (current == null || current.isBlank()) {
+            dto.setDisplay("OT:" + otHours);
+        } else {
+            dto.setDisplay(current + " - OT:" + otHours);
         }
     }
 }
