@@ -77,6 +77,9 @@ public class ApprovalConfigDTO {
         example = "quanglm - EMP005 - Lê Minh Quang"
     )
     private String targetDisplay;
+    
+    @Schema(description = "Username của đối tượng áp dụng (nếu là cá nhân)")
+    private String targetUsername;
 
     // =====================================================
     // APPROVER INFO (UI / UX)
@@ -107,6 +110,9 @@ public class ApprovalConfigDTO {
         example = "quanglm - EMP003 - Nguyễn Văn A"
     )
     private String approverDisplay;
+
+    @Schema(description = "Username của người duyệt")
+    private String approverUsername;
     
     
     // =====================================================
@@ -197,6 +203,22 @@ public class ApprovalConfigDTO {
 
 	public void setTargetDisplay(String targetDisplay) {
 		this.targetDisplay = targetDisplay;
+	}
+
+	public String getTargetUsername() {
+		return targetUsername;
+	}
+
+	public void setTargetUsername(String targetUsername) {
+		this.targetUsername = targetUsername;
+	}
+
+	public String getApproverUsername() {
+		return approverUsername;
+	}
+
+	public void setApproverUsername(String approverUsername) {
+		this.approverUsername = approverUsername;
 	}
 
 	public boolean isActive() {

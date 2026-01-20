@@ -230,6 +230,8 @@ public class ApprovalConfigServiceImpl implements ApprovalConfigService {
         ApprovalConfigDTO dto = new ApprovalConfigDTO();
         dto.setId(config.getId());
         dto.setTargetType(config.getTargetType());
+        dto.setTargetId(config.getTargetId());
+        dto.setApproverId(config.getApproverId());
         dto.setTargetCode(config.getTargetCode());
         dto.setApproverCode(config.getApproverCode());
         dto.setActive(config.isActive());
@@ -248,6 +250,7 @@ public class ApprovalConfigServiceImpl implements ApprovalConfigService {
                         .orElse(null);
 
                 if (targetUser != null) {
+                	dto.setTargetUsername(targetUser.getUsername());
                     dto.setTargetDisplay(
                             buildDisplay(
                                     targetUser.getUsername(),
@@ -280,6 +283,7 @@ public class ApprovalConfigServiceImpl implements ApprovalConfigService {
                     .orElse(null);
 
             if (approverUser != null) {
+            	dto.setApproverUsername(approverUser.getUsername());
                 dto.setApproverDisplay(
                         buildDisplay(
                                 approverUser.getUsername(),
