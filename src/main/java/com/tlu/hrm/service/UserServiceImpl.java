@@ -1,8 +1,11 @@
 package com.tlu.hrm.service;
 
 import java.text.Normalizer;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -16,12 +19,16 @@ import org.springframework.transaction.annotation.Transactional;
 import com.tlu.hrm.config.CompanyConfig;
 import com.tlu.hrm.dto.ChangePasswordDTO;
 import com.tlu.hrm.dto.UserCreateDTO;
+import com.tlu.hrm.dto.UserDTO;
 import com.tlu.hrm.dto.UserUpdateDTO;
+import com.tlu.hrm.entities.ApprovalConfig;
 import com.tlu.hrm.entities.Employee;
 import com.tlu.hrm.entities.Role;
 import com.tlu.hrm.entities.User;
+import com.tlu.hrm.enums.ApprovalTargetType;
 import com.tlu.hrm.enums.EmployeeStatus;
 import com.tlu.hrm.enums.UserStatus;
+import com.tlu.hrm.repository.ApprovalConfigRepository;
 import com.tlu.hrm.repository.EmployeeRepository;
 import com.tlu.hrm.repository.RoleRepository;
 import com.tlu.hrm.repository.UserRepository;
@@ -42,9 +49,12 @@ public class UserServiceImpl implements UserService {
 	
 	private final AuditLogService auditLogService;
 	
+	private final ApprovalConfigRepository approvalConfigRepository;
+	
 	public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository,
 			PasswordEncoder passwordEncoder, EmployeeRepository employeeRepository, 
-			CompanyConfig companyConfig, AuditLogService auditLogService) {
+			CompanyConfig companyConfig, AuditLogService auditLogService, 
+			ApprovalConfigRepository approvalConfigRepository) {
 		super();
 		this.userRepository = userRepository;
 		this.roleRepository = roleRepository;
@@ -52,6 +62,7 @@ public class UserServiceImpl implements UserService {
 		this.employeeRepository = employeeRepository;
 		this.companyConfig = companyConfig;
 		this.auditLogService = auditLogService;
+		this.approvalConfigRepository = approvalConfigRepository;
 	}
 
 	@Override
@@ -319,11 +330,112 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Page<User> getUsers(int page, int size) {
+    public Page<UserDTO> getUsers(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return userRepository.findAllSortedByStatusAndTime(pageable);
-    }
+        Page<User> users = userRepository.findAllSortedByStatusAndTime(pageable);
 
+        // ===============================
+        // 1. Gom employeeIds + departmentIds
+        // ===============================
+        List<User> userList = users.getContent();
+
+        List<Long> employeeIds = userList.stream()
+            .filter(u -> u.getEmployee() != null)
+            .map(u -> u.getEmployee().getId())
+            .toList();
+
+        Map<Long, Long> employeeDeptMap = userList.stream()
+            .filter(u -> u.getEmployee() != null && u.getEmployee().getDepartment() != null)
+            .collect(Collectors.toMap(
+                u -> u.getEmployee().getId(),
+                u -> u.getEmployee().getDepartment().getId()
+            ));
+
+        List<Long> departmentIds = employeeDeptMap.values().stream()
+            .distinct()
+            .toList();
+
+        // ===============================
+        // 2. Lấy cấu hình cá nhân
+        // ===============================
+        Map<Long, String> personalApproveMap = new HashMap<>();
+
+        if (!employeeIds.isEmpty()) {
+            List<ApprovalConfig> personalConfigs =
+                approvalConfigRepository.findByTargetTypeAndTargetIdInAndActiveTrue(
+                    ApprovalTargetType.EMPLOYEE,
+                    employeeIds
+                );
+
+            personalApproveMap = personalConfigs.stream()
+                .collect(Collectors.toMap(
+                    ApprovalConfig::getTargetId,
+                    ApprovalConfig::getApproverCode
+                ));
+        }
+
+        // ===============================
+        // 3. Lấy cấu hình phòng ban
+        // ===============================
+        Map<Long, String> departmentApproveMap = new HashMap<>();
+
+        if (!departmentIds.isEmpty()) {
+            List<ApprovalConfig> deptConfigs =
+                approvalConfigRepository.findByTargetTypeAndTargetIdInAndActiveTrue(
+                    ApprovalTargetType.DEPARTMENT,
+                    departmentIds
+                );
+
+            departmentApproveMap = deptConfigs.stream()
+                .collect(Collectors.toMap(
+                    ApprovalConfig::getTargetId,
+                    ApprovalConfig::getApproverCode
+                ));
+        }
+
+        Map<Long, String> finalPersonalMap = personalApproveMap;
+        Map<Long, String> finalDepartmentMap = departmentApproveMap;
+
+        // ===============================
+        // 4. Map DTO với logic fallback
+        // ===============================
+        return users.map(user -> {
+            UserDTO dto = new UserDTO();
+            dto.setId(user.getId());
+            dto.setUsername(user.getUsername());
+            dto.setStatus(user.getStatus());
+
+            dto.setRoles(
+                user.getRoles().stream()
+                    .map(Role::getName)
+                    .collect(Collectors.toSet())
+            );
+
+            if (user.getEmployee() != null) {
+                Long empId = user.getEmployee().getId();
+                dto.setEmployeeId(empId);
+                dto.setEmpCode(user.getEmployee().getCode());
+
+                // ===== Ưu tiên cá nhân → fallback phòng ban =====
+                String approveCode = finalPersonalMap.get(empId);
+
+                if (approveCode == null) {
+                    Long deptId = employeeDeptMap.get(empId);
+                    if (deptId != null) {
+                        approveCode = finalDepartmentMap.get(deptId);
+                    }
+                }
+
+                dto.setApproveCode(approveCode);
+            }
+
+            dto.setLastLogin(user.getLastLogin());
+            dto.setCreatedAt(user.getCreatedAt());
+            dto.setUpdatedAt(user.getUpdatedAt());
+
+            return dto;
+        });
+    }
     @Override
     public User getUserByUsername(String username) {
         return userRepository.findByUsername(username)

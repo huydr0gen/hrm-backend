@@ -158,10 +158,9 @@ public class UserController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        Page<User> users = userService.getUsers(page, size);
-        Page<UserDTO> dtoPage = users.map(this::mapToDto);
+    	Page<UserDTO> dtoPage = userService.getUsers(page, size);
+    	return ResponseEntity.ok(dtoPage);
 
-        return ResponseEntity.ok(dtoPage);
     }
 
     // =====================================================

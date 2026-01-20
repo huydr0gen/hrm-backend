@@ -41,6 +41,18 @@ public class UserDTO {
     private Long employeeId;
 	
 	@Schema(
+	    description = "Mã nhân viên",
+	    example = "NV001"
+	)
+	private String empCode;
+	
+	@Schema(
+	    description = "Mã nhân viên của người duyệt (ưu tiên cá nhân, fallback phòng ban)",
+	    example = "NV005"
+	)
+	private String approveCode;
+	
+	@Schema(
 	        description = "Thời điểm tạo user",
 	        example = "2025-12-01T09:00:00"
 	    )
@@ -86,6 +98,18 @@ public class UserDTO {
 	}
 	public void setEmployeeId(Long employeeId) {
 		this.employeeId = employeeId;
+	}
+	public String getEmpCode() {
+		return empCode;
+	}
+	public void setEmpCode(String empCode) {
+		this.empCode = empCode;
+	}
+	public String getApproveCode() {
+		return approveCode;
+	}
+	public void setApproveCode(String approveCode) {
+		this.approveCode = approveCode;
 	}
 	public LocalDateTime getCreatedAt() {
 		return createdAt;

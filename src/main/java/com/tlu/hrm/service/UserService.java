@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 
 import com.tlu.hrm.dto.ChangePasswordDTO;
 import com.tlu.hrm.dto.UserCreateDTO;
+import com.tlu.hrm.dto.UserDTO;
 import com.tlu.hrm.dto.UserUpdateDTO;
 import com.tlu.hrm.entities.User;
 
@@ -40,7 +41,7 @@ public interface UserService {
     
     void updateRefreshToken(Long userId, String refreshToken);
     
-    Page<User> getUsers(int page, int size);
+    Page<UserDTO> getUsers(int page, int size);
     
     User getUserByUsername(String username);
 

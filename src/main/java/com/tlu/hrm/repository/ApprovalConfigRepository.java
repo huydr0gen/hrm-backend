@@ -37,4 +37,9 @@ public interface ApprovalConfigRepository extends JpaRepository<ApprovalConfig, 
             ApprovalTargetType targetType,
             Pageable pageable
     );
+    
+    List<ApprovalConfig> findByTargetTypeAndTargetIdInAndActiveTrue(
+	    ApprovalTargetType targetType,
+	    List<Long> targetIds
+	);
 }
