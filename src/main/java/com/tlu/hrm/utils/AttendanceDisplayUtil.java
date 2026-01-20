@@ -92,7 +92,7 @@ public class AttendanceDisplayUtil {
         dto.setPaidMinutes(r.getPaidMinutes());
         dto.setOtMinutes(r.getOtMinutes());
 
-        // NEW RULE: thiếu giờ vào hoặc ra -> X:0
+        // Rule: thiếu giờ vào hoặc ra -> X:0
         if (r.getCheckIn() == null || r.getCheckOut() == null) {
             dto.setDisplay("X:0");
             dto.setWorkedMinutes(0);
@@ -101,8 +101,17 @@ public class AttendanceDisplayUtil {
         }
 
         if (r.getWorkedMinutes() != null) {
-            int hours = r.getWorkedMinutes() / 60;
-            dto.setDisplay("X:" + hours);
+            double hours = r.getWorkedMinutes() / 60.0;
+
+            // Làm tròn 2 chữ số thập phân
+            double rounded = Math.round(hours * 100.0) / 100.0;
+
+            // Nếu là số nguyên thì bỏ .00
+            if (rounded == Math.floor(rounded)) {
+                dto.setDisplay("X:" + (int) rounded);
+            } else {
+                dto.setDisplay("X:" + rounded);
+            }
         } else {
             dto.setDisplay("X:0");
         }
@@ -114,14 +123,14 @@ public class AttendanceDisplayUtil {
             return;
         }
 
-        int otHours = r.getOtMinutes() / 60;
-        if (otHours <= 0) return;
+        double otHours = r.getOtMinutes() / 60.0;
+        double roundedOT = Math.round(otHours * 100.0) / 100.0;
 
         String current = dto.getDisplay();
         if (current == null || current.isBlank()) {
-            dto.setDisplay("OT:" + otHours);
+            dto.setDisplay("OT:" + roundedOT);
         } else {
-            dto.setDisplay(current + " - OT:" + otHours);
+            dto.setDisplay(current + " - OT:" + roundedOT);
         }
     }
 }
