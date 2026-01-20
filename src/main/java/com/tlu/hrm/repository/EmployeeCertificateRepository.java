@@ -37,10 +37,10 @@ public interface EmployeeCertificateRepository extends JpaRepository<EmployeeCer
 	);
     
     @Query("""
-	    SELECT c FROM EmployeeCertificate c
-	    WHERE c.status = 'ACTIVE'
-	      AND c.expiredDate IS NOT NULL
-	      AND c.expiredDate < CURRENT_DATE
+	SELECT c FROM EmployeeCertificate c
+	WHERE c.status = 'ACTIVE'
+	  AND c.expiredDate IS NOT NULL
+	  AND c.expiredDate <= CURRENT_DATE
 	""")
 	List<EmployeeCertificate> findCertificatesToExpire();
 }

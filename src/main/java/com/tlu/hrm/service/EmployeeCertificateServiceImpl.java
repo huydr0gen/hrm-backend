@@ -92,8 +92,8 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
     }
 
     @Override
-    public Page<EmployeeCertificateResponseDTO> listAll(
-            int page, int size, String sort) {
+    public Page<EmployeeCertificateResponseDTO> listAll(int page, int size, String sort) {
+        syncExpiredStatuses();
 
         Pageable pageable = PageRequest.of(page, size, parseSort(sort));
 
@@ -102,8 +102,8 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
     }
 
     @Override
-    public Page<EmployeeCertificateResponseDTO> search(
-            String keyword, int page, int size, String sort) {
+    public Page<EmployeeCertificateResponseDTO> search(String keyword, int page, int size, String sort) {
+        syncExpiredStatuses();
 
         Pageable pageable = PageRequest.of(page, size, parseSort(sort));
 
@@ -127,6 +127,8 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
     public Page<EmployeeCertificateResponseDTO> listByStatus(
             CertificateStatus status, int page, int size, String sort) {
 
+        syncExpiredStatuses();
+
         Pageable pageable = PageRequest.of(page, size, parseSort(sort));
 
         return certificateRepo.findByStatus(status, pageable)
@@ -135,6 +137,8 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
 
     public Page<EmployeeCertificateResponseDTO> listByEmployeeAndStatus(
             Long employeeId, CertificateStatus status, int page, int size) {
+
+        syncExpiredStatuses();
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
@@ -147,8 +151,8 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
     // =====================================================
 
     @Override
-    public Page<EmployeeCertificateResponseDTO> getMyCertificates(
-            Long userId, int page, int size) {
+    public Page<EmployeeCertificateResponseDTO> getMyCertificates(Long userId, int page, int size) {
+        syncExpiredStatuses();
 
         Employee emp = employeeRepo.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
@@ -177,8 +181,8 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
     }
     
     @Override
-    public Page<EmployeeCertificateResponseDTO> getByEmployee(
-            Long employeeId, int page, int size) {
+    public Page<EmployeeCertificateResponseDTO> getByEmployee(Long employeeId, int page, int size) {
+        syncExpiredStatuses();
 
         Pageable pageable = PageRequest.of(page, size);
 
@@ -190,13 +194,31 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
     // AUTO EXPIRE (CRONJOB)
     // =====================================================
 
-    @Scheduled(cron = "0 0 0 * * ?") // chạy mỗi ngày lúc 00:00
+    @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Ho_Chi_Minh")
     @Transactional
     public void autoExpireCertificates() {
+        System.out.println(">>> AUTO EXPIRE JOB RUNNING <<<");
+
         List<EmployeeCertificate> list = certificateRepo.findCertificatesToExpire();
+
+        System.out.println("Found: " + list.size() + " certificates to expire");
+
         for (EmployeeCertificate c : list) {
             c.setStatus(CertificateStatus.EXPIRED);
         }
+
+        certificateRepo.saveAll(list);
+    }
+    
+    @Transactional
+    public void syncExpiredStatuses() {
+        List<EmployeeCertificate> list = certificateRepo.findCertificatesToExpire();
+        if (list.isEmpty()) return;
+
+        for (EmployeeCertificate c : list) {
+            c.setStatus(CertificateStatus.EXPIRED);
+        }
+
         certificateRepo.saveAll(list);
     }
 
@@ -206,7 +228,7 @@ public class EmployeeCertificateServiceImpl implements EmployeeCertificateServic
 
     private void updateStatusByExpiredDate(EmployeeCertificate cert) {
         if (cert.getExpiredDate() != null
-                && cert.getExpiredDate().isBefore(LocalDate.now())) {
+                && !cert.getExpiredDate().isAfter(LocalDate.now())) {
             cert.setStatus(CertificateStatus.EXPIRED);
         } else {
             cert.setStatus(CertificateStatus.ACTIVE);
