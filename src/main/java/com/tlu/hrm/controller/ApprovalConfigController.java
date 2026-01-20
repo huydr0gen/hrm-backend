@@ -55,4 +55,13 @@ public class ApprovalConfigController {
         return ResponseEntity.ok(service.createOrUpdate(dto));
     }
 
+	@Operation(
+	    summary = "Xóa cấu hình người duyệt",
+	    description = "Cho phép ADMIN xóa cấu hình người duyệt theo ID"
+	)
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Void> delete(@PathVariable Long id) {
+	    service.deleteById(id);
+	    return ResponseEntity.noContent().build();
+	}
 }

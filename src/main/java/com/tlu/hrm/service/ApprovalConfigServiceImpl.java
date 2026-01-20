@@ -194,6 +194,26 @@ public class ApprovalConfigServiceImpl implements ApprovalConfigService {
 
 	    return mapToDTO(saved);
 	}
+	
+	@Override
+	public void deleteById(Long id) {
+	    ApprovalConfig config = approvalConfigRepository.findById(id)
+	        .orElseThrow(() -> new RuntimeException("Không tìm thấy cấu hình người duyệt"));
+
+	    approvalConfigRepository.delete(config);
+
+	    AuditLog log = new AuditLog();
+	    log.setUserId(getCurrentUserId());
+	    log.setAction("APPROVAL_CONFIG_DELETE");
+	    log.setDetails(String.format(
+	        "Delete approver for %s[%s] -> %s",
+	        config.getTargetType().name(),
+	        config.getTargetCode(),
+	        config.getApproverCode()
+	    ));
+
+	    auditLogRepository.save(log);
+	}
 
     // =====================================================
     // ROLE CHECK HELPER
