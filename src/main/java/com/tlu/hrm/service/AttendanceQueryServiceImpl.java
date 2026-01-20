@@ -62,7 +62,6 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
         LocalDate startOfMonth = month.atDay(1);
         LocalDate endOfMonth = month.atEndOfMonth();
 
-        // Nếu chưa onboard trong tháng này
         if (onboardDate.isAfter(endOfMonth)) {
             AttendanceMonthlyResponseDTO empty = new AttendanceMonthlyResponseDTO();
             empty.setDays(new ArrayList<>());
@@ -96,6 +95,20 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
         	            r -> r,
         	            (a, b) -> a 
         	        ));
+
+        // ===== LOAD LEAVE REQUEST =====
+        List<LeaveRequest> leaves =
+                leaveRequestRepository.findByEmployeeAndMonth(
+                        employeeId,
+                        actualStart,
+                        endOfMonth,
+                        List.of(LeaveStatus.APPROVED, LeaveStatus.PENDING)
+                );
+
+        Map<LocalDate, LeaveRequest> leaveMap = new HashMap<>();
+        for (LeaveRequest l : leaves) {
+            leaveMap.put(l.getLeaveDate(), l);
+        }
         
         List<SpecialSchedule> schedules =
         	    specialScheduleRepo.findApprovedByEmployeeAndMonth(
@@ -129,26 +142,16 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
         for (LocalDate date = actualStart; !date.isAfter(endOfMonth); date = date.plusDays(1)) {
 
             AttendanceRecord r = map.get(date);
+            LeaveRequest leave = leaveMap.get(date);
 
             AttendanceDayResponseDTO dto = new AttendanceDayResponseDTO();
             dto.setDate(date);
 
-            if (r != null) {
-                dto.setCheckIn(r.getCheckIn());
-                dto.setCheckOut(r.getCheckOut());
-                dto.setWorkedMinutes(r.getWorkedMinutes());
-                dto.setPaidMinutes(r.getPaidMinutes());
+            // ===== NEW LOGIC =====
+            AttendanceDisplayUtil.applyLeaveLogic(dto, r, leave);
 
-                int ot = r.getOtMinutes() != null ? r.getOtMinutes() : 0;
-                dto.setOtMinutes(ot);
-
-                dto.setDisplay(
-                        AttendanceDisplayUtil.buildDisplay(r)
-                );
-
-                if (r.getPaidMinutes() != null) {
-                    totalPaidMinutes += r.getPaidMinutes();
-                }
+            if (dto.getPaidMinutes() != null) {
+                totalPaidMinutes += dto.getPaidMinutes();
             }
             
             List<SpecialSchedule> daySchedules = scheduleMap.get(date);
@@ -232,7 +235,6 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
 	        return 0;
 	    }
 
-	    // Tính từ tháng onboard luôn
 	    LocalDate effectiveStart =
 	            onboard.isAfter(yearStart)
 	                    ? onboard.withDayOfMonth(1)
@@ -249,28 +251,21 @@ public class AttendanceQueryServiceImpl implements AttendanceQueryService {
 	    };
 	}
 	
-	// =========================
-    // Mapper
-    // =========================
     private SpecialScheduleResponseDTO toSpecialScheduleDTO(SpecialSchedule s) {
         SpecialScheduleResponseDTO dto = new SpecialScheduleResponseDTO();
 
         dto.setId(s.getId());
-
         dto.setStartDate(s.getStartDate());
         dto.setEndDate(s.getEndDate());
         dto.setMorningStart(s.getMorningStart());
         dto.setAfternoonEnd(s.getAfternoonEnd());
-
         dto.setProjectCode(s.getProjectCode());
         dto.setProjectName(s.getProjectName());
         dto.setManagerCode(s.getOnsiteManagerCode());
         dto.setManagerName(s.getOnsiteManagerName());
-
         dto.setType(s.getType());
         dto.setReason(s.getReason());
         dto.setStatus(s.getStatus());
-
         dto.setCreatedAt(s.getCreatedAt());
 
         return dto;

@@ -130,4 +130,17 @@ JpaSpecificationExecutor<LeaveRequest> {
 	    @Param("startDate") LocalDate startDate,
 	    @Param("endDate") LocalDate endDate
 	);
+    
+    @Query("""
+	    SELECT lr FROM LeaveRequest lr
+	    WHERE lr.employee.id = :employeeId
+	      AND lr.leaveDate BETWEEN :start AND :end
+	      AND lr.status IN :statuses
+	""")
+	List<LeaveRequest> findByEmployeeAndMonth(
+	        @Param("employeeId") Long employeeId,
+	        @Param("start") LocalDate start,
+	        @Param("end") LocalDate end,
+	        @Param("statuses") List<LeaveStatus> statuses
+	);
 }

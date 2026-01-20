@@ -1,52 +1,107 @@
 package com.tlu.hrm.utils;
 
+import com.tlu.hrm.dto.AttendanceDayResponseDTO;
 import com.tlu.hrm.entities.AttendanceRecord;
+import com.tlu.hrm.entities.LeaveRequest;
+import com.tlu.hrm.enums.LeaveDuration;
+import com.tlu.hrm.enums.LeaveType;
 
 public class AttendanceDisplayUtil {
 
 	private static final int FULL_DAY_MINUTES = 480;
+    private static final int HALF_DAY_MINUTES = 240;
 
-    public static String buildDisplay(AttendanceRecord r) {
+    public static void applyLeaveLogic(
+            AttendanceDayResponseDTO dto,
+            AttendanceRecord r,
+            LeaveRequest leave
+    ) {
 
-    	if (r == null || r.getPaidMinutes() == null || r.getWorkType() == null) {
-            return "";
+        if (leave == null) {
+            applyNormalAttendance(dto, r);
+            return;
         }
 
-        StringBuilder sb = new StringBuilder();
+        LeaveType type = leave.getType();
+        LeaveDuration duration = leave.getDuration();
 
-        int paid = r.getPaidMinutes();
-        int otMinutes = r.getOtMinutes() != null ? r.getOtMinutes() : 0;
-        int hours = paid / 60;
-
-        switch (r.getWorkType()) {
-
-            case FULL_DAY:
-                sb.append("x:8");
+        switch (type) {
+            case PERSONAL:
+                applyRV(dto);
                 break;
-
-            case HALF_DAY:
-            case PARTIAL:
-                sb.append("x:").append(hours);
+            case ANNUAL:
+                applyAnnual(dto, duration);
                 break;
-
-            case LEAVE:
-                if (hours == 0) {
-                    sb.append("p:8");
-                } else {
-                    sb.append("x:").append(hours)
-                      .append(" p:").append(8 - hours);
-                }
+            case UNPAID:
+                applyUnpaid(dto, duration);
                 break;
-
             default:
-                // ABSENT, SPECIAL_OFF, UNPAID → không hiển thị gì
-                return "";
+                applyNormalAttendance(dto, r);
+                break;
+        }
+    }
+
+    // ===== RV =====
+    private static void applyRV(AttendanceDayResponseDTO dto) {
+        dto.setDisplay("RV:8");
+        dto.setWorkedMinutes(0);
+        dto.setPaidMinutes(FULL_DAY_MINUTES);
+    }
+
+    // ===== ANNUAL =====
+    private static void applyAnnual(AttendanceDayResponseDTO dto, LeaveDuration duration) {
+        if (duration == LeaveDuration.FULL_DAY) {
+            dto.setDisplay("P:8");
+            dto.setWorkedMinutes(0);
+            dto.setPaidMinutes(FULL_DAY_MINUTES);
+        } else {
+            dto.setDisplay("X:4 - P:4");
+            dto.setWorkedMinutes(HALF_DAY_MINUTES);
+            dto.setPaidMinutes(FULL_DAY_MINUTES);
+        }
+    }
+
+    // ===== UNPAID =====
+    private static void applyUnpaid(AttendanceDayResponseDTO dto, LeaveDuration duration) {
+        if (duration == LeaveDuration.FULL_DAY) {
+            dto.setDisplay("Ro:8");
+            dto.setWorkedMinutes(0);
+            dto.setPaidMinutes(0);
+        } else {
+            dto.setDisplay("X:4 - Ro:4");
+            dto.setWorkedMinutes(HALF_DAY_MINUTES);
+            dto.setPaidMinutes(HALF_DAY_MINUTES);
+        }
+    }
+
+    // ===== NORMAL =====
+    private static void applyNormalAttendance(AttendanceDayResponseDTO dto, AttendanceRecord r) {
+        if (r == null) {
+            dto.setDisplay("");
+            dto.setWorkedMinutes(0);
+            dto.setPaidMinutes(0);
+            return;
         }
 
-        if (otMinutes > 0) {
-            sb.append(" ot:").append(otMinutes / 60);
+        dto.setCheckIn(r.getCheckIn());
+        dto.setCheckOut(r.getCheckOut());
+        dto.setWorkedMinutes(r.getWorkedMinutes());
+        dto.setPaidMinutes(r.getPaidMinutes());
+        dto.setOtMinutes(r.getOtMinutes());
+
+        // NEW RULE: thiếu giờ vào hoặc ra -> X:0
+        if (r.getCheckIn() == null || r.getCheckOut() == null) {
+            dto.setDisplay("X:0");
+            dto.setWorkedMinutes(0);
+            dto.setPaidMinutes(0);
+            return;
         }
 
-        return sb.toString();
+        if (r.getWorkedMinutes() != null) {
+            int hours = r.getWorkedMinutes() / 60;
+            dto.setDisplay("X:" + hours);
+        } else {
+            dto.setDisplay("X:0");
+        }
     }
 }
