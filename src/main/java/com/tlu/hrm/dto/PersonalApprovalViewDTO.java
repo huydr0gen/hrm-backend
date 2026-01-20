@@ -32,6 +32,12 @@ public class PersonalApprovalViewDTO {
 	        example = "Nguyễn Văn B"
 	    )
 	    private String employeeName;
+	    
+	    @Schema(
+    	    description = "Username của nhân viên được duyệt",
+    	    example = "linhvkh"
+    	)
+    	private String targetUsername;
 
 	    @Schema(
             description = """
@@ -64,6 +70,12 @@ public class PersonalApprovalViewDTO {
 	        example = "Nguyễn Văn A"
 	    )
 	    private String approverName;
+	    
+	    @Schema(
+    	    description = "Username của người duyệt",
+    	    example = "quanglm"
+    	)
+    	private String approverUsername;
 	    
 	    @Schema(
             description = """
@@ -147,6 +159,22 @@ public class PersonalApprovalViewDTO {
 
 		public void setApproverDisplay(String approverDisplay) {
 			this.approverDisplay = approverDisplay;
+		}
+
+		public String getTargetUsername() {
+			return targetUsername;
+		}
+
+		public void setTargetUsername(String targetUsername) {
+			this.targetUsername = targetUsername;
+		}
+
+		public String getApproverUsername() {
+			return approverUsername;
+		}
+
+		public void setApproverUsername(String approverUsername) {
+			this.approverUsername = approverUsername;
 		}
 
 		public LocalDateTime getCreatedAt() {

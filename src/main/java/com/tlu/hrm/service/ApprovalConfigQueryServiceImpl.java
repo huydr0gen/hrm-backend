@@ -81,7 +81,13 @@ public class ApprovalConfigQueryServiceImpl implements ApprovalConfigQueryServic
                         dto.setApproverCode(approver.getCode());
                         dto.setApproverName(approver.getFullName());
 
-                        // build display
+                        String username = userRepository
+                                .findByEmployee_Id(approver.getId())
+                                .map(u -> u.getUsername())
+                                .orElse(null);
+
+                        dto.setApproverUsername(username);
+
                         String display = buildEmployeeDisplay(approver);
                         dto.setApproverDisplay(display);
 
@@ -89,6 +95,7 @@ public class ApprovalConfigQueryServiceImpl implements ApprovalConfigQueryServic
                         dto.setApproverId(null);
                         dto.setApproverCode(cfg.getApproverCode());
                         dto.setApproverName("[APPROVER NOT FOUND]");
+                        dto.setApproverUsername(null);
                         dto.setApproverDisplay("[APPROVER NOT FOUND]");
                     }
 
@@ -128,13 +135,21 @@ public class ApprovalConfigQueryServiceImpl implements ApprovalConfigQueryServic
                         dto.setEmployeeCode(emp.getCode());
                         dto.setEmployeeName(emp.getFullName());
 
+                        String username = userRepository
+                                .findByEmployee_Id(emp.getId())
+                                .map(u -> u.getUsername())
+                                .orElse(null);
+
+                        dto.setTargetUsername(username);
+
                         String display = buildEmployeeDisplay(emp);
                         dto.setEmployeeDisplay(display);
-
+                        
                     } else {
                         dto.setEmployeeId(null);
                         dto.setEmployeeCode(cfg.getTargetCode());
                         dto.setEmployeeName("[EMPLOYEE NOT FOUND]");
+                        dto.setTargetUsername(null);
                         dto.setEmployeeDisplay("[EMPLOYEE NOT FOUND]");
                     }
 
@@ -148,13 +163,20 @@ public class ApprovalConfigQueryServiceImpl implements ApprovalConfigQueryServic
                         dto.setApproverCode(approver.getCode());
                         dto.setApproverName(approver.getFullName());
 
+                        String username = userRepository
+                                .findByEmployee_Id(approver.getId())
+                                .map(u -> u.getUsername())
+                                .orElse(null);
+
+                        dto.setApproverUsername(username);
+
                         String display = buildEmployeeDisplay(approver);
                         dto.setApproverDisplay(display);
-
                     } else {
                         dto.setApproverId(null);
                         dto.setApproverCode(cfg.getApproverCode());
                         dto.setApproverName("[APPROVER NOT FOUND]");
+                        dto.setApproverUsername(null);
                         dto.setApproverDisplay("[APPROVER NOT FOUND]");
                     }
 

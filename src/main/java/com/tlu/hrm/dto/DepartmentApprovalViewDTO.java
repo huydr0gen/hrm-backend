@@ -51,6 +51,12 @@ public class DepartmentApprovalViewDTO {
     private String approverName;
     
     @Schema(
+	    description = "Username của người duyệt",
+	    example = "quanglm"
+	)
+	private String approverUsername;
+    
+    @Schema(
         description = """
             Chuỗi hiển thị người duyệt.
 
@@ -117,7 +123,13 @@ public class DepartmentApprovalViewDTO {
 	public void setApproverName(String approverName) {
 		this.approverName = approverName;
 	}
-	
+	public String getApproverUsername() {
+	    return approverUsername;
+	}
+
+	public void setApproverUsername(String approverUsername) {
+	    this.approverUsername = approverUsername;
+	}
 	public String getApproverDisplay() {
 		return approverDisplay;
 	}
