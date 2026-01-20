@@ -331,130 +331,131 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Page<UserDTO> getUsers(int page, int size) {
-        try {
-            // ===== Validate input =====
-            if (page < 0) page = 0;
-            if (size <= 0) size = 10;
+        Pageable pageable = PageRequest.of(page, size);
+        Page<User> users = userRepository.findAllSortedByStatusAndTime(pageable);
 
-            Pageable pageable = PageRequest.of(page, size);
-            Page<User> users = userRepository.findAllSortedByStatusAndTime(pageable);
+        List<User> userList = users.getContent();
 
-            // ===============================
-            // 1. Gom employeeIds + departmentIds
-            // ===============================
-            List<User> userList = users.getContent();
+        // ===============================
+        // 1. Gom employeeIds
+        // ===============================
+        List<Long> employeeIds = userList.stream()
+            .filter(u -> u.getEmployee() != null)
+            .map(u -> u.getEmployee().getId())
+            .filter(id -> id != null)
+            .toList();
 
-            List<Long> employeeIds = userList.stream()
-                .filter(u -> u.getEmployee() != null)
-                .map(u -> u.getEmployee().getId())
-                .toList();
+        // ===============================
+        // 2. Map employee -> department
+        // ===============================
+        Map<Long, Long> employeeDeptMap = userList.stream()
+            .filter(u -> u.getEmployee() != null)
+            .filter(u -> u.getEmployee().getId() != null)
+            .filter(u -> u.getEmployee().getDepartment() != null)
+            .filter(u -> u.getEmployee().getDepartment().getId() != null)
+            .collect(Collectors.toMap(
+                u -> u.getEmployee().getId(),
+                u -> u.getEmployee().getDepartment().getId(),
+                (a, b) -> a
+            ));
 
-            Map<Long, Long> employeeDeptMap = userList.stream()
-                .filter(u -> u.getEmployee() != null && u.getEmployee().getDepartment() != null)
+        List<Long> departmentIds = employeeDeptMap.values().stream()
+            .distinct()
+            .toList();
+
+        // ===============================
+        // 3. Lấy cấu hình cá nhân
+        // ===============================
+        Map<Long, String> personalApproveMap = new HashMap<>();
+
+        if (!employeeIds.isEmpty()) {
+            List<ApprovalConfig> personalConfigs =
+                approvalConfigRepository.findByTargetTypeAndTargetIdInAndActiveTrue(
+                    ApprovalTargetType.EMPLOYEE,
+                    employeeIds
+                );
+
+            personalApproveMap = personalConfigs.stream()
+                .filter(c -> c.getTargetId() != null)
+                .filter(c -> c.getApproverCode() != null)
                 .collect(Collectors.toMap(
-                    u -> u.getEmployee().getId(),
-                    u -> u.getEmployee().getDepartment().getId(),
-                    (a, b) -> a // chống duplicate key
+                    ApprovalConfig::getTargetId,
+                    ApprovalConfig::getApproverCode,
+                    (a, b) -> a
                 ));
+        }
 
-            List<Long> departmentIds = employeeDeptMap.values().stream()
-                .distinct()
-                .toList();
+        // ===============================
+        // 4. Lấy cấu hình phòng ban
+        // ===============================
+        Map<Long, String> departmentApproveMap = new HashMap<>();
 
-            // ===============================
-            // 2. Lấy cấu hình cá nhân
-            // ===============================
-            Map<Long, String> personalApproveMap = new HashMap<>();
+        if (!departmentIds.isEmpty()) {
+            List<ApprovalConfig> deptConfigs =
+                approvalConfigRepository.findByTargetTypeAndTargetIdInAndActiveTrue(
+                    ApprovalTargetType.DEPARTMENT,
+                    departmentIds
+                );
 
-            if (!employeeIds.isEmpty()) {
-                List<ApprovalConfig> personalConfigs =
-                    approvalConfigRepository.findByTargetTypeAndTargetIdInAndActiveTrue(
-                        ApprovalTargetType.EMPLOYEE,
-                        employeeIds
-                    );
+            departmentApproveMap = deptConfigs.stream()
+                .filter(c -> c.getTargetId() != null)
+                .filter(c -> c.getApproverCode() != null)
+                .collect(Collectors.toMap(
+                    ApprovalConfig::getTargetId,
+                    ApprovalConfig::getApproverCode,
+                    (a, b) -> a
+                ));
+        }
 
-                personalApproveMap = personalConfigs.stream()
-                    .collect(Collectors.toMap(
-                        ApprovalConfig::getTargetId,
-                        ApprovalConfig::getApproverCode,
-                        (a, b) -> a
-                    ));
+        Map<Long, String> finalPersonalMap = personalApproveMap;
+        Map<Long, String> finalDepartmentMap = departmentApproveMap;
+
+        // ===============================
+        // 5. Map DTO + fallback logic
+        // ===============================
+        return users.map(user -> {
+            UserDTO dto = new UserDTO();
+            dto.setId(user.getId());
+            dto.setUsername(user.getUsername());
+            dto.setStatus(user.getStatus());
+
+            if (user.getRoles() != null) {
+                dto.setRoles(
+                    user.getRoles().stream()
+                        .map(Role::getName)
+                        .collect(Collectors.toSet())
+                );
             }
 
-            // ===============================
-            // 3. Lấy cấu hình phòng ban
-            // ===============================
-            Map<Long, String> departmentApproveMap = new HashMap<>();
+            if (user.getEmployee() != null) {
+                Long empId = user.getEmployee().getId();
+                dto.setEmployeeId(empId);
+                dto.setEmpCode(user.getEmployee().getCode());
 
-            if (!departmentIds.isEmpty()) {
-                List<ApprovalConfig> deptConfigs =
-                    approvalConfigRepository.findByTargetTypeAndTargetIdInAndActiveTrue(
-                        ApprovalTargetType.DEPARTMENT,
-                        departmentIds
-                    );
+                String approveCode = null;
 
-                departmentApproveMap = deptConfigs.stream()
-                    .collect(Collectors.toMap(
-                        ApprovalConfig::getTargetId,
-                        ApprovalConfig::getApproverCode,
-                        (a, b) -> a
-                    ));
-            }
+                if (empId != null) {
+                    // Ưu tiên cá nhân
+                    approveCode = finalPersonalMap.get(empId);
 
-            Map<Long, String> finalPersonalMap = personalApproveMap;
-            Map<Long, String> finalDepartmentMap = departmentApproveMap;
-
-            // ===============================
-            // 4. Map DTO với logic fallback
-            // ===============================
-            return users.map(user -> {
-                UserDTO dto = new UserDTO();
-                dto.setId(user.getId());
-                dto.setUsername(user.getUsername());
-                dto.setStatus(user.getStatus());
-
-                // ===== Null-safe roles =====
-                if (user.getRoles() != null) {
-                    dto.setRoles(
-                        user.getRoles().stream()
-                            .map(Role::getName)
-                            .collect(Collectors.toSet())
-                    );
-                }
-
-                if (user.getEmployee() != null) {
-                    Long empId = user.getEmployee().getId();
-                    dto.setEmployeeId(empId);
-
-                    if (user.getEmployee().getCode() != null) {
-                        dto.setEmpCode(user.getEmployee().getCode());
-                    }
-
-                    // ===== Ưu tiên cá nhân → fallback phòng ban =====
-                    String approveCode = finalPersonalMap.get(empId);
-
+                    // Fallback phòng ban
                     if (approveCode == null) {
                         Long deptId = employeeDeptMap.get(empId);
                         if (deptId != null) {
                             approveCode = finalDepartmentMap.get(deptId);
                         }
                     }
-
-                    dto.setApproveCode(approveCode);
                 }
 
-                dto.setLastLogin(user.getLastLogin());
-                dto.setCreatedAt(user.getCreatedAt());
-                dto.setUpdatedAt(user.getUpdatedAt());
+                dto.setApproveCode(approveCode);
+            }
 
-                return dto;
-            });
+            dto.setLastLogin(user.getLastLogin());
+            dto.setCreatedAt(user.getCreatedAt());
+            dto.setUpdatedAt(user.getUpdatedAt());
 
-            
-        } catch (Exception e) {
-        	e.printStackTrace();
-            throw new RuntimeException("Lỗi khi lấy danh sách user: " + e.getMessage());
-        }
+            return dto;
+        });
     }
     
     @Override
